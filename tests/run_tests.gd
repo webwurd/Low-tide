@@ -570,6 +570,7 @@ func _walk(main, pts: Array, max_s := 60.0) -> bool:
 	var cb := func(): swept[0] = true
 	p.swept.connect(cb)
 	var first: Vector3 = pts[0]
+	root.get_node("TideSystem").refresh()      # the clock was just set; do not walk on last frame's water level
 	main._place("outdoors", Vector3(first.x, Terr.height(first.x, first.z) + 0.2, first.z), 0.0)
 	await _frames(10)
 	var t_start := Time.get_ticks_msec()
@@ -583,6 +584,7 @@ func _walk(main, pts: Array, max_s := 60.0) -> bool:
 				break
 			if swept[0] or (Time.get_ticks_msec() - t_start) / 1000.0 > max_s:
 				reached = false
+				print("  (note: walk ended early: swept=%s pos=%s target=%s water=%.2f depth=%.2f t=%.1fs)" % [swept[0], p.global_position, target, root.get_node("TideSystem").current_height, p.water_depth, (Time.get_ticks_msec() - t_start) / 1000.0])
 				break
 			p.yaw = atan2(-to.x, -to.y)
 			Input.action_press("move_forward")
