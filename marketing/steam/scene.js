@@ -350,6 +350,7 @@
     ctx.restore();
 
     // cottage (left of the tower, or right when the tower sits left of centre)
+    if (o.cottage !== false) {
     const side = o.lx > 0.5 ? -1 : 1;
     const cw = th * 0.3, ch = th * 0.13, cx = lx + side * th * 0.34, cy = rockBot - (rockBot - rockTop) * prof(0.5 + (side * th * 0.34) / (2 * rw)) + 0.006 * H;
     ctx.fillStyle = '#26323a'; ctx.fillRect(cx - cw / 2, cy - ch, cw, ch);
@@ -373,6 +374,7 @@
         ctx.stroke();
       }
     });
+    }
 
     // tower
     const bw0 = th * 0.095, bw1 = th * 0.062, topBody = tb - th * 0.74;
@@ -520,7 +522,7 @@
     main_capsule:     { w: 1232, h: 706,  scene: { ...SCENE_WIDE, lx: 0.76, lh: 0.58, base: 0.74, barX: 0.7, figT: 0.3, pilX: 0.03 }, scrim: 'bottom', logo: { x: 0.075, y: 0.62, w: 0.46 }, tagline: { x: 0.078, y: 0.93 } },
     vertical_capsule: { w: 748,  h: 896,  scene: { lx: 0.58, hz: 0.4, base: 0.55, lh: 0.36, barX: 0.3, pilX: 0.06, pilH: 0.34, figT: 0.5 }, scrim: 'bottom', logo: { x: 0.13, y: 0.745, w: 0.76 }, eyebrow: { x: 0.5, y: 0.725, center: true }, tagline: { x: 0.5, y: 0.96, center: true } },
     library_capsule:  { w: 600,  h: 900,  scene: { lx: 0.58, hz: 0.4, base: 0.55, lh: 0.36, barX: 0.3, pilX: 0.06, pilH: 0.34, figT: 0.5 }, scrim: 'bottom', logo: { x: 0.13, y: 0.745, w: 0.76 }, eyebrow: { x: 0.5, y: 0.725, center: true }, tagline: { x: 0.5, y: 0.96, center: true } },
-    page_background:  { w: 1438, h: 810,  scene: { ...SCENE_WIDE, lx: 0.93, lh: 0.62, base: 0.78, barX: 0.7, pilX: 0.03, pilH: 0.6, figT: 0.4, dim: 0.35, vig: 0.7 }, fadeBottom: true },
+    page_background:  { w: 1438, h: 810,  scene: { ...SCENE_WIDE, lx: 0.965, lh: 0.66, base: 0.8, barX: 0.8, pilX: 0.02, pilH: 0.6, fig: false, cottage: false, dim: 0.5, vig: 0.75 }, fadeBottom: true },
     key_art:          { w: 1920, h: 1080, scene: { ...SCENE_WIDE, lx: 0.66, lh: 0.58, base: 0.74 } },
     logo_transparent: { w: 1280, h: 720,  transparent: true, logo: { x: 0.06, y: 0.28, w: 0.88 } },
     community_icon:   { w: 184,  h: 184,  icon: true },
@@ -558,7 +560,7 @@
     }
     if (A.fadeBottom) {
       const g = ctx.createLinearGradient(0, A.h * 0.55, 0, A.h);
-      g.addColorStop(0, 'rgba(22,32,41,0)'); g.addColorStop(1, PAL.night);
+      g.addColorStop(0, 'rgba(27,40,56,0)'); g.addColorStop(1, '#1b2838');  // Steam's page blue, so the art melts into the page
       ctx.fillStyle = g; ctx.fillRect(0, 0, A.w, A.h);
     }
     if (A.logo) {

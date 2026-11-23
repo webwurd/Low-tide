@@ -26,5 +26,5 @@ python3 tools/build_wordmark.py    # only if the wordmark spacing changes (pip i
 ## Steam rules these follow
 
 - Capsules carry the logo and are readable at their smallest displayed size.
-- `library_hero.png`, `page_background.png` and `key_art.png` contain no text. Steam draws the logo over the library hero.
+- `library_hero.png`, `page_background.png` (fades into the store page blue `#1b2838`) and `key_art.png` contain no text. Steam draws the logo over the library hero.
 - Real screenshots (1920 x 1080, at least five) and the trailer still need capturing from the build.
