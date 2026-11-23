@@ -1,0 +1,423 @@
+{
+ "convs": {
+  "morning_d1": [
+   {
+    "text": "Gannet Rock, this is Station Rockland. Radio check. Tide's dropping fast; if you want the outer stacks before noon, now's your window.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Copy, Clara. Lamp's steady, weights are wound. Heading out.",
+      "reply": "Roger. Give me a shout if anything strange washed up in last night's squall.",
+      "trust": 1
+     },
+     {
+      "text": "Copy. I'll look around and radio if I find anything worth your time.",
+      "reply": "Worth my time is a low bar out here, Arthur. Anything you find, I'd like to hear about.",
+      "trust": 0
+     }
+    ]
+   }
+  ],
+  "react_east_bar_first": [
+   {
+    "text": "Careful crossing that bar, Arthur. Keep one eye on your pocket watch so you make it back before high tide.",
+    "priority": 0,
+    "speaker": "clara",
+    "options": []
+   }
+  ],
+  "react_west_bar_first": [
+   {
+    "text": "West bar's narrower than the east, and it floods first. Mind the gulleys.",
+    "priority": 0,
+    "speaker": "clara",
+    "options": []
+   }
+  ],
+  "react_bar_rising": [
+   {
+    "text": "Water's making, Arthur. You've maybe an hour of crossing left.",
+    "priority": 0,
+    "speaker": "clara",
+    "options": []
+   }
+  ],
+  "react_bar_closing": [
+   {
+    "text": "Arthur, get off that bar. Now. I mean it.",
+    "priority": 1,
+    "speaker": "clara",
+    "options": []
+   }
+  ],
+  "react_west_withheld": [
+   {
+    "text": "You're out on the west stack. Is there anything about the east stack you'd like to tell me?",
+    "priority": 1,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "There was a canister in the hull. PROJECT PELAGIC, 1974. I should have said.",
+      "reply": "Yes. You should have. Thank you for saying it now.",
+      "trust": 2,
+      "set": [
+       "reported_canister"
+      ],
+      "clear": [
+       "withheld_canister"
+      ]
+     },
+     {
+      "text": "Not yet.",
+      "reply": "All right. Whenever you're ready.",
+      "trust": -1
+     }
+    ]
+   }
+  ],
+  "react_cottage_curious": [
+   {
+    "text": "Sounds quiet in there. Are you eating properly, Arthur?",
+    "priority": 0,
+    "speaker": "clara",
+    "options": []
+   }
+  ],
+  "shipwreck": [
+   {
+    "text": "You walked all the way out to the East Stack. What did you find wedged in the hull?",
+    "priority": 1,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "An orange canister stamped 'PROJECT PELAGIC, 1974'. It's in the satchel.",
+      "reply": "...Keep it dry, and bring it back before the bar floods. Don't open it out in the salt spray.",
+      "trust": 1,
+      "set": [
+       "reported_canister"
+      ]
+     },
+     {
+      "text": "Old trawler wreck, Clara. Nothing worth reporting.",
+      "reply": "Mm. Watch the water behind you; that bar vanishes fast.",
+      "trust": -1,
+      "set": [
+       "withheld_canister"
+      ]
+     }
+    ]
+   }
+  ],
+  "seacave": [
+   {
+    "text": "Echo Cave? Your signal's bouncing off the walls. What's sitting in the arch?",
+    "priority": 1,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "A rusted acoustic buoy. The casing is warm, and there's a cassette taped inside the hatch.",
+      "reply": "Warm? ...Nobody's serviced those buoys since the station closed. Bring the tape home, Arthur, and head for high ground.",
+      "trust": 1,
+      "set": [
+       "reported_buoy"
+      ]
+     },
+     {
+      "text": "Just kelp and barnacles. Eerie acoustics.",
+      "reply": "Don't linger. The Atlantic doesn't wait for sightseers.",
+      "trust": -1,
+      "set": [
+       "withheld_buoy"
+      ]
+     }
+    ]
+   }
+  ],
+  "evening_d1": [
+   {
+    "text": "The beam looks beautiful from here. Thank you for telling me about that canister, Arthur. I know it isn't easy, handing over odd things you find.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "It said PROJECT PELAGIC on the side. Does that mean anything to you?",
+      "reply": "...Not tonight. I'll tell you what I can, when I can.",
+      "trust": 0,
+      "set": [
+       "asked_pelagic"
+      ]
+     },
+     {
+      "text": "Just doing the job.",
+      "reply": "Then you're better at it than the last three keepers.",
+      "trust": 1
+     }
+    ],
+    "when": [
+     "has:canister",
+     "flag:reported_canister"
+    ]
+   },
+   {
+    "text": "Lamp's turning well. You were out on the east stack a long time today. Anything you'd care to tell me?",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "There was a canister in the hull. PROJECT PELAGIC, 1974. I should have said.",
+      "reply": "Yes. You should have. Thank you for saying it now.",
+      "trust": 2,
+      "set": [
+       "reported_canister"
+      ],
+      "clear": [
+       "withheld_canister"
+      ]
+     },
+     {
+      "text": "Nothing to report.",
+      "reply": "All right, Arthur. Goodnight.",
+      "trust": -1
+     }
+    ],
+    "when": [
+     "has:canister",
+     "flag:withheld_canister"
+    ]
+   },
+   {
+    "text": "Beam's turning pretty from here. How was your first day on the rock, really?",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Lonelier than I expected. But I like it.",
+      "reply": "That's honest. Most keepers say it takes three days to stop listening for company.",
+      "trust": 1
+     },
+     {
+      "text": "Busy. Plenty to log.",
+      "reply": "All business. Fine. Get some sleep, Arthur.",
+      "trust": 0
+     }
+    ]
+   }
+  ],
+  "morning_d2": [
+   {
+    "text": "Morning, Arthur. Slept better than I have in weeks, knowing someone out there tells me the truth. How's the rock?",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Quiet night. Where do you want me today?",
+      "reply": "West stack, if the water allows. The old echo cave. Mind the tide table.",
+      "trust": 0
+     },
+     {
+      "text": "That canister's still on my mind.",
+      "reply": "Leave it dry and don't pry at it. I mean that kindly.",
+      "trust": 1
+     }
+    ],
+    "when": [
+     "flag:reported_canister",
+     "trust>=2"
+    ]
+   },
+   {
+    "text": "Morning. Fog's lifting a little. Arthur, I'd rather you were straight with me about what's out there.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "I'll do better.",
+      "reply": "That's all I ask.",
+      "trust": 1
+     },
+     {
+      "text": "I'm doing my job, Clara.",
+      "reply": "Then do it well.",
+      "trust": -1
+     }
+    ],
+    "when": [
+     "flag:withheld_canister"
+    ]
+   },
+   {
+    "text": "Morning, Arthur. Flat calm and grey out here. Anything strange wash up overnight?",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Quiet night. Lamp held.",
+      "reply": "Good. Keep it that way.",
+      "trust": 0
+     },
+     {
+      "text": "That canister's still bothering me.",
+      "reply": "Leave it dry and don't pry at it. I mean that kindly.",
+      "trust": 1
+     }
+    ]
+   }
+  ],
+  "evening_d2": [
+   {
+    "text": "You've been quiet all evening. Did you play the tape?",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Walt was talking to his wife. June. He said the Navy lied about the cable job.",
+      "reply": "...Yes. I know the name. Let me tell you about it, another night.",
+      "trust": 1,
+      "set": [
+       "told_clara_june"
+      ]
+     },
+     {
+      "text": "Just static and wind.",
+      "reply": "Static and wind. Of course.",
+      "trust": -2,
+      "set": [
+       "lied_about_tape"
+      ]
+     }
+    ],
+    "when": [
+     "flag:heard_tape_1"
+    ]
+   },
+   {
+    "text": "Did you find a tape out there? You've got a cassette player in the cottage.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "I'll play it tonight.",
+      "reply": "Do. And tell me what's on it.",
+      "trust": 1
+     },
+     {
+      "text": "No tape, Clara.",
+      "reply": "...All right.",
+      "trust": -1,
+      "set": [
+       "lied_about_tape"
+      ]
+     }
+    ],
+    "when": [
+     "has:tape_1",
+     "!flag:heard_tape_1"
+    ]
+   },
+   {
+    "text": "How was the day, Arthur? You sound far away.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Tired. The rock's getting to me.",
+      "reply": "It does that. Sleep.",
+      "trust": 0
+     },
+     {
+      "text": "Fine. Nothing to report.",
+      "reply": "Goodnight, then.",
+      "trust": 0
+     }
+    ]
+   }
+  ]
+ },
+ "reactions": [
+  {
+   "id": "r_east_bar_first",
+   "when": [
+    "zone:east_bar"
+   ],
+   "conv": "react_east_bar_first",
+   "once": true
+  },
+  {
+   "id": "r_west_bar_first",
+   "when": [
+    "zone:west_bar"
+   ],
+   "conv": "react_west_bar_first",
+   "once": true
+  },
+  {
+   "id": "r_bar_closing",
+   "when": [
+    "zone:east_bar,west_bar",
+    "tide>=1.9",
+    "tide:rising"
+   ],
+   "conv": "react_bar_closing",
+   "cooldown": 45
+  },
+  {
+   "id": "r_bar_rising",
+   "when": [
+    "zone:east_bar,west_bar",
+    "tide>=1.4",
+    "tide:rising"
+   ],
+   "conv": "react_bar_rising",
+   "cooldown": 120
+  },
+  {
+   "id": "r_west_withheld",
+   "when": [
+    "zone:west_stack",
+    "flag:withheld_canister"
+   ],
+   "conv": "react_west_withheld",
+   "once": true
+  }
+ ],
+ "tapes": {
+  "tape_1": {
+   "title": "TAPE 1  -  WALT, JANUARY 1976",
+   "lines": [
+    {
+     "t": 0,
+     "text": "[Click. Tape hiss. Wind against the microphone.]"
+    },
+    {
+     "t": 3,
+     "text": "June. It's the nineteenth. The array's quiet tonight, so I thought I'd talk to you instead of the log."
+    },
+    {
+     "t": 9,
+     "text": "The Navy men left on the Tuesday boat. They took the good coffee and left me the paperwork."
+    },
+    {
+     "t": 16,
+     "text": "I walked out to the stack this morning at low water. Your buoy's still ticking away in the arch, warm as a loaf. I don't think I'll ever get used to that."
+    },
+    {
+     "t": 25,
+     "text": "I keep telling myself you'd laugh at me, talking to a machine."
+    },
+    {
+     "t": 31,
+     "text": "They tell me you were never on the manifest. That there was no cable job that night. I've read their letter four times and I still don't believe it."
+    },
+    {
+     "t": 41,
+     "text": "[A long breath.] Goodnight, June."
+    },
+    {
+     "t": 45,
+     "text": "[Click.]"
+    }
+   ]
+  }
+ }
+}

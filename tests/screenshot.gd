@@ -46,6 +46,28 @@ func _run() -> void:
 	await _shoot("10_storm_day", "outdoors", main.island.cottage_exit() + Vector3(1, 0, 3), PI + 0.45, 0.0)
 	clock.set_time(5, 650.0)
 	await _shoot("11_day5_spring_low_clear", "outdoors", main.island.spawn_point, 0.0, 0.05)
+	# journal + tape panel (M4)
+	var st := root.get_node("GameState")
+	st.reset()
+	st.give_item("canister"); st.give_item("tape_1"); st.give_item("uni_logs")
+	st.set_flag("heard_tape_1")
+	st.add_log(1, "Glass 30.1 and steady. Fog, then. East stack: old trawler wreck. Canister stamped PROJECT PELAGIC 1974 wedged in the hull. Told Clara about the canister.")
+	await _shoot("12_journal_log", "cottage", main.interiors.spawn["cottage"], 0.6, -0.05)
+	main.hud.show_card("", "", 0.0)
+	main.hud._journal_page = 1
+	main.hud._render_journal()
+	await _wait(4)
+	await _snap(out, "13_journal_satchel")
+	main.hud._journal_page = 2
+	main.hud._render_journal()
+	await _wait(4)
+	await _snap(out, "14_journal_tapes")
+	main.hud.close_modal()
+	main.hud._tape_title.text = "TAPE 1  -  WALT, JANUARY 1976"
+	main.hud._tape_text.text = "I keep telling myself you'd laugh at me, talking to a machine."
+	main.hud._tape_panel.visible = true
+	await _wait(4)
+	await _snap(out, "15_tape_playing")
 	quit(0)
 
 func _shoot(shot: String, loc: String, pos: Vector3, yaw: float, pitch: float) -> void:

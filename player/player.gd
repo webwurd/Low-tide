@@ -27,7 +27,6 @@ var bino_dist := -1
 var water_depth := 0.0
 var _bob_t := 0.0
 var _stride := 0.0
-var _sandbar_warned := false
 var indoors := false              # interiors: no tide, no world limit, wooden steps
 var ui_lock := false              # a modal panel (logbook, tide table) is open
 var hold_progress := 0.0          # 0..1 while holding a hold-to-use interactable
@@ -134,7 +133,6 @@ func _physics_process(delta: float) -> void:
 	_update_hold(delta)
 	_update_binoculars()
 	if not indoors:
-		_check_sandbar_warning()
 		if water_depth > TideSystem.SWEPT_DEPTH or p.y < -8.0:
 			swept.emit()
 
@@ -183,11 +181,3 @@ func _update_binoculars() -> void:
 			best_dot = dot
 			bino_label = n.get_meta("label")
 			bino_dist = int(round(dist))
-
-func _check_sandbar_warning() -> void:
-	if _sandbar_warned:
-		return
-	var x := absf(global_position.x)
-	if x > 32.0 and x < 62.0:
-		_sandbar_warned = true
-		RadioSystem.play(Conversations.get_conv("sandbar_warning"))

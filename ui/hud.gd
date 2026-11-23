@@ -50,6 +50,10 @@ var _tut_back: Button
 var _title_panel: PanelContainer
 var _continue_btn: Button
 var modal_open := false
+var _journal_page := -1          # -1 = not a journal modal; 0 log, 1 satchel, 2 tapes
+var _tape_panel: PanelContainer
+var _tape_title: Label
+var _tape_text: Label
 
 func _ready() -> void:
 	layer = 10
@@ -61,10 +65,14 @@ func _ready() -> void:
 	_build_fade()
 	_build_toasts()
 	_build_modal()
+	_build_tape_panel()
 	_build_card()
 	_build_tutorial()
 	_build_title()
 	GameState.note_posted.connect(show_note)
+	TapePlayer.started.connect(func(t): _tape_title.text = t; _tape_text.text = ""; _tape_panel.visible = true)
+	TapePlayer.line_shown.connect(func(l): _tape_text.text = l)
+	TapePlayer.finished.connect(func(_id): _tape_panel.visible = false)
 	RadioSystem.line_shown.connect(_on_line)
 	RadioSystem.reply_shown.connect(_on_reply)
 	RadioSystem.hidden.connect(func(): _radio.visible = false)
@@ -287,7 +295,7 @@ func _build_tutorial() -> void:
 			["Binoculars (hold)", "Right mouse  or  B", "Left trigger"],
 			["Radio: answer 1 / 2", "1  /  2", "D-pad left / right"],
 			["Radio: dismiss", "X", "B"],
-			["Keeper's log", "Tab", "View / Back"],
+			["Journal: log, satchel, tapes", "Tab  (A / D turn pages)", "View / Back"],
 			["Assist readout (clock + tide)", "F1", "Y"],
 		], "text": ""},
 		{"title": "3 / 3   A day on Gannet Rock", "rows": [], "text":
@@ -366,18 +374,18 @@ func _build_modal() -> void:
 	_modal = PanelContainer.new()
 	_modal.add_theme_stylebox_override("panel", _style(Color("e8dfc8"), Color("8a7448")))
 	_modal.set_anchors_preset(Control.PRESET_CENTER)
-	_modal.custom_minimum_size = Vector2(520, 360)
-	_modal.position = Vector2(-260, -200)
+	_modal.custom_minimum_size = Vector2(680, 420)
+	_modal.position = Vector2(-340, -230)
 	_modal.visible = false
 	_modal.z_index = 4
 	add_child(_modal)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	_modal.add_child(v)
-	_modal_title = _label("", 22, Color("2b2418"))
+	_modal_title = _label("", 18, Color("2b2418"))
 	_modal_body = _label("", 17, Color("2b2418"))
 	_modal_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_modal_body.custom_minimum_size = Vector2(480, 0)
+	_modal_body.custom_minimum_size = Vector2(640, 0)
 	v.add_child(_modal_title)
 	v.add_child(_modal_body)
 	v.add_child(_label("[E / Tab / Esc] close", 12, Color("6a5a3a")))
@@ -391,6 +399,7 @@ func _open_modal(title: String, body: String) -> void:
 	player.ui_lock = true
 
 func close_modal() -> void:
+	_journal_page = -1
 	_modal.visible = false
 	modal_open = false
 	if player:
@@ -408,17 +417,63 @@ func show_tide_table(day: int, extremes: Array) -> void:
 	lines.append("Sandbars close above 2.1 m.")
 	_open_modal("TIDE TABLE   -   Day %d" % day, "\n".join(lines))
 
+func _build_tape_panel() -> void:
+	_tape_panel = PanelContainer.new()
+	_tape_panel.add_theme_stylebox_override("panel", _style(Color(0.1, 0.08, 0.06, 0.9), Color(0.7, 0.55, 0.3, 0.5)))
+	_tape_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_tape_panel.custom_minimum_size = Vector2(640, 0)
+	_tape_panel.position = Vector2(-320, 24)
+	_tape_panel.visible = false
+	add_child(_tape_panel)
+	var v := VBoxContainer.new()
+	_tape_panel.add_child(v)
+	_tape_title = _label("", 12, Color("d9b26a"))
+	_tape_text = _label("", 17, Color("f1e6cf"))
+	_tape_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tape_text.custom_minimum_size = Vector2(610, 0)
+	v.add_child(_tape_title)
+	v.add_child(_tape_text)
+
+## The journal: Log / Satchel / Tapes. Tab toggles; A/D (or stick) turn pages.
 func toggle_logbook() -> void:
 	if modal_open:
 		close_modal()
 		return
-	var lines: Array = []
-	for i in range(GameState.logbook.size() - 1, -1, -1):
-		var e: Dictionary = GameState.logbook[i]
-		lines.append("DAY %d\n%s\n" % [e["day"], e["text"]])
-	if lines.is_empty():
-		lines.append("No entries yet. Write one at the cottage desk each evening.")
-	_open_modal("KEEPER'S LOG", "\n".join(lines))
+	_journal_page = 0
+	_render_journal()
+
+func _render_journal() -> void:
+	var tabs := ["Log", "Satchel", "Tapes"]
+	var head: Array = []
+	for i in tabs.size():
+		head.append("[ %s ]" % tabs[i] if i == _journal_page else tabs[i])
+	var body: Array = []
+	match _journal_page:
+		0:
+			for i in range(GameState.logbook.size() - 1, -1, -1):
+				var e: Dictionary = GameState.logbook[i]
+				body.append("DAY %d\n%s\n" % [e["day"], e["text"]])
+			if body.is_empty():
+				body.append("No entries yet. Write one at the cottage desk each evening.")
+		1:
+			for id in GameState.items:
+				body.append("%s\n   %s\n" % [Items.title(id), Items.desc(id)])
+			if body.is_empty():
+				body.append("The satchel is empty.")
+		2:
+			for id in GameState.items:
+				if String(id).begins_with("tape_"):
+					var tape := Conversations.tape(id)
+					body.append(String(tape.get("title", id)))
+					if TapePlayer.is_heard(id):
+						for l in tape.get("lines", []):
+							body.append("   " + String(l["text"]))
+					else:
+						body.append("   (not yet played)")
+					body.append("")
+			if body.is_empty():
+				body.append("No tapes yet.")
+	_open_modal("KEEPER'S JOURNAL     " + "   ".join(head) + "     (A / D to turn)", "\n".join(body))
 
 func _build_card() -> void:
 	_card = Control.new()
@@ -461,6 +516,13 @@ func _process(delta: float) -> void:
 	if modal_open and Engine.get_process_frames() > _modal_frame:
 		if Input.is_action_just_pressed("interact") or Input.is_action_just_pressed("pause") or Input.is_action_just_pressed("radio_dismiss"):
 			close_modal()
+	if modal_open and _journal_page >= 0 and Engine.get_process_frames() > _modal_frame:
+		if Input.is_action_just_pressed("move_right"):
+			_journal_page = (_journal_page + 1) % 3
+			_render_journal()
+		elif Input.is_action_just_pressed("move_left"):
+			_journal_page = (_journal_page + 2) % 3
+			_render_journal()
 	_hold_bar.visible = player.hold_progress > 0.0
 	_hold_bar.value = player.hold_progress
 	if _note_t > 0.0:

@@ -115,6 +115,16 @@ func _build_cottage() -> void:
 	# bed
 	_prop(o + Vector3(-3.0, 0.3, 0.0), Vector3(1.8, 0.6, 1.0), Color("3f5163"))
 	_it("bed", "Go to bed", o + Vector3(-2.2, 1.0, -0.6))
+	# shelf with the old university logbooks (left wall)
+	_prop(o + Vector3(-3.8, 0.9, 2.4), Vector3(0.4, 1.8, 1.0), Color("5c4938"))
+	_prop(o + Vector3(-3.58, 1.3, 2.4), Vector3(0.05, 0.3, 0.8), Color("b89f72"), false)
+	var shelf := _it("shelf_logs", "Take the old university logbooks", o + Vector3(-3.0, 1.3, 2.4), 1.8)
+	shelf.give_item = "uni_logs"
+	shelf.visible_fn = func(): return not GameState.has_item("uni_logs")
+	# cassette player on a side table
+	_prop(o + Vector3(-0.8, 0.4, 2.3), Vector3(0.8, 0.8, 0.6), Color("5c4938"))
+	_prop(o + Vector3(-0.8, 0.88, 2.3), Vector3(0.4, 0.16, 0.25), Color("2b3138"), false)
+	_it("cassette_player", "Cassette player", o + Vector3(-0.8, 1.1, 1.8), 1.8)
 	# door
 	_prop(o + Vector3(2.4, 1.05, 3.0), Vector3(1.1, 2.1, 0.1), Color("5c4938"), false)
 	_it("door_cottage_out", "Step outside", o + Vector3(2.4, 1.1, 2.2))

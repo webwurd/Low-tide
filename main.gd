@@ -83,6 +83,8 @@ func _autosave() -> void:
 
 func _place(loc: String, pos: Vector3, yaw: float) -> void:
 	location = loc
+	GameState.location = loc
+	GameState.zone = loc
 	var indoor := loc != "outdoors"
 	player.indoors = indoor
 	player.teleport(pos, yaw)
@@ -126,6 +128,12 @@ func _wire_interactables() -> void:
 	i["log_desk"].used.connect(_on_log_desk)
 	i["chair_cottage"].used.connect(_wait_hour)
 	i["bed"].used.connect(_on_bed)
+	i["cassette_player"].title_fn = func():
+		var id := _next_tape()
+		if id == "":
+			return "Cassette player (no tapes)"
+		return ("Play: " if not TapePlayer.is_heard(id) else "Replay: ") + Items.title(id)
+	i["cassette_player"].used.connect(_on_cassette)
 	# tower
 	i["weights"].used.connect(_on_weights)
 	i["stairs_up"].used.connect(func(): travel("tower_top", interiors.spawn["tower_top"], 0.0))
@@ -181,6 +189,25 @@ func _on_radio_desk() -> void:
 			RadioSystem.play(Conversations.get_conv(D.data().evening_conv))
 	else:
 		GameState.note("Nothing to report yet.")
+
+## Next unheard tape in the satchel, else the most recent tape, else "".
+func _next_tape() -> String:
+	var last := ""
+	for id in GameState.items:
+		if String(id).begins_with("tape_"):
+			if not TapePlayer.is_heard(id):
+				return id
+			last = id
+	return last
+
+func _on_cassette() -> void:
+	var id := _next_tape()
+	if id == "":
+		GameState.note("No tapes in the satchel yet.")
+	elif TapePlayer.playing:
+		GameState.note("The tape is already playing.")
+	else:
+		TapePlayer.play(id)
 
 func _on_log_desk() -> void:
 	if DayDirector.phase != DayDirector.Phase.EVENING:
@@ -331,6 +358,9 @@ func _process(delta: float) -> void:
 		GameClock.paused = true
 		return
 	GameClock.paused = location != "outdoors"
+	if location == "outdoors":
+		var pp := player.global_position
+		GameState.zone = Terrain.zone_at(pp.x, pp.z, pp.y)
 	_apply_lighting()
 	var dd := DayDirector.data()
 	ocean.set_wave_height(dd.wave_height)

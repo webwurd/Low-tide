@@ -15,6 +15,7 @@ var _foghorn_timer := 14.0
 var foghorn_enabled := true
 var indoors := false
 var weather_db := 0.0
+var _hiss: AudioStreamPlayer
 
 func _ready() -> void:
 	_rng.seed = 1998
@@ -31,6 +32,14 @@ func _ready() -> void:
 	_variants["splash"] = [_splash(), _splash()]
 	_variants["squelch"] = [_squelch()]
 	_variants["foghorn"] = [_foghorn()]
+	_variants["clunk"] = [_thud(90.0, 40.0, 0.12, "triangle", 500.0, 1.0, 0.3)]
+	var hiss := PackedFloat32Array()
+	hiss.resize(RATE * 2)
+	for i in hiss.size():
+		hiss[i] = (_rng.randf() * 2.0 - 1.0) * 0.5
+	_hiss = _loop_player(_bandpass(hiss, 3200.0, 0.6), -200.0)
+	_hiss.stop()
+	_hiss.volume_db = -34.0
 
 func _process(delta: float) -> void:
 	if not foghorn_enabled or GameClock.paused:
@@ -46,6 +55,12 @@ func update_ambient(time: float, altitude: float, tide: float) -> void:
 	var muffle := -14.0 if indoors else 0.0
 	_surf.volume_db = -20.0 + swell * 5.0 + clampf(tide - 1.0, 0.0, 3.0) * 1.0 + muffle + weather_db * 0.5
 	_wind.volume_db = -30.0 + clampf(altitude, 0.0, 25.0) * 0.45 + muffle + weather_db
+
+func set_tape(on: bool) -> void:
+	if on and not _hiss.playing:
+		_hiss.play()
+	elif not on:
+		_hiss.stop()
 
 func play_sfx(sfx_name: String, volume_db := 0.0, pitch := 1.0) -> void:
 	var list: Array = _variants.get(sfx_name, [])

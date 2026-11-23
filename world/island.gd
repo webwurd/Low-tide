@@ -257,7 +257,9 @@ func _build_wreck() -> void:
 	_mesh(g, _cyl(2.2, 3.4, 11.5, 8), wood, Vector3(0, 1.3, 0), Vector3(0.4, 0.4, PI / 2.35))
 	_mesh(g, _cyl(0.18, 0.28, 8.5, 8), wood, Vector3(-1.2, 3.6, 0.5), Vector3(0, 0, -0.35))
 	_mesh(g, _cyl(0.35, 0.35, 1.1), _mat(Color("d99b26"), 0.4, 0.5), Vector3(2.5, 0.8, 2.2), Vector3(0, 0, 1.2))
-	_interactable("shipwreck", "Inspect 1974 Waterproof Canister", Vector3(78.5, 6.2, 8.2), 5.5, "shipwreck")
+	var wreck_it := _interactable("shipwreck", "Take the canister from the hull", Vector3(78.5, 6.2, 8.2), 5.5, "shipwreck")
+	wreck_it.give_item = "canister"
+	wreck_it.visible_fn = func(): return not GameState.has_item("canister")
 	_bino_target("EAST SEA STACK // UNCHARTED WRECK", Vector3(76, 8, 6))
 
 # --- west sea stack: echo cave -----------------------------------------
@@ -274,7 +276,9 @@ func _build_cave() -> void:
 	var buoy := SphereMesh.new(); buoy.radius = 1.1; buoy.height = 2.2; buoy.radial_segments = 10; buoy.rings = 6
 	_mesh(g, buoy, _mat(Color("b83b2b"), 0.5), Vector3(1.5, 1.2, 0))
 	_mesh(g, _cyl(0.15, 0.15, 1.6, 8), _mat(Color("d4a446"), 0.3, 0.8), Vector3(1.5, 2.4, 0))
-	_interactable("seacave", "Examine Washed-Up Acoustic Buoy", Vector3(-72.5, 6.5, -8), 6.0, "seacave")
+	var cave_it := _interactable("seacave", "Check the buoy's hatch", Vector3(-72.5, 6.5, -8), 6.0, "seacave")
+	cave_it.give_item = "tape_1"
+	cave_it.visible_fn = func(): return not GameState.has_item("tape_1")
 	_bino_target("WEST SEA STACK // ECHO SEA CAVE", Vector3(-74, 9, -8))
 
 func _build_rocks() -> void:

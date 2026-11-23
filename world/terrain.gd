@@ -119,3 +119,19 @@ static func _tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
 	for p in [a, b, c]:
 		st.set_color(col)
 		st.add_vertex(p)
+
+## Coarse named zone for location-aware radio reactions.
+static func zone_at(x: float, z: float, y: float) -> String:
+	if on_pier(x, z) and y >= PIER_TOP - 0.3:
+		return "pier"
+	if Vector2(x - 76.0, z - 6.0).length() < 17.0 and y > 3.0:
+		return "east_stack"
+	if Vector2(x + 74.0, z + 8.0).length() < 18.0 and y > 3.0:
+		return "west_stack"
+	if Vector2(x, z + 4.0).length() < 12.0 or y > 7.0:
+		return "summit"
+	if x > 20.0 and y < 3.0:
+		return "east_bar"
+	if x < -20.0 and y < 3.0:
+		return "west_bar"
+	return "shore"

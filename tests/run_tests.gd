@@ -87,9 +87,9 @@ func _run() -> void:
 	ok(ex[0]["minute"] < ex[1]["minute"], "tide table is sorted by time")
 	var day_two_low: Array = tide.extremes_for_day(2).filter(func(e): return not e["high"])
 	ok(day_two_low.size() >= 1 and absf(day_two_low[0]["minute"] - 500.0) < 5.0, "day 2 low is ~50 min later (%d)" % int(day_two_low[0]["minute"]))
-	ok(Days.get_day(4).rain and Days.get_day(4).weather == "Storm", "day 4 data: storm with rain")
+	ok(load("res://story/days.gd").get_day(4).rain and load("res://story/days.gd").get_day(4).weather == "Storm", "day 4 data: storm with rain")
 	for d in range(1, 8):
-		ok(Conversations.get_conv("morning_d%d" % d).size() > 0 and Conversations.get_conv("evening_d%d" % d).size() > 0, "day %d has morning + evening conversations" % d)
+		ok(load("res://story/conversations.gd").get_conv("morning_d%d" % d).size() > 0 and load("res://story/conversations.gd").get_conv("evening_d%d" % d).size() > 0, "day %d has morning + evening conversations" % d)
 
 	print("== save/load round trip")
 	var save := root.get_node("SaveSystem")
@@ -290,8 +290,142 @@ func _run() -> void:
 	await create_timer(1.6).timeout
 	ok(ended[0] and clock.day == 7, "sleeping on day 7 ends the week without a day 8")
 
+	await create_timer(1.5).timeout     # let the day-7 sleep sequence finish unlocking Arthur
+	_reset_radio(radio)
+	print("== M4: conditions + dialogue variants")
+	var Cond = load("res://story/conditions.gd")
+	var Conv = load("res://story/conversations.gd")
+	var react := root.get_node("ReactiveDirector")
+	var tapes := root.get_node("TapePlayer")
+	react.auto = false
+	state.reset()
+	director.begin_day(1)
+	clock.set_time(1, 596.0)
+	tide.refresh()
+	state.trust = 3
+	state.set_flag("a")
+	state.items.append("canister")
+	state.zone = "east_bar"
+	ok(Cond.check(["flag:a", "trust>=3", "has:canister", "!has:tape_1", "zone:east_bar,west_bar", "day==1", "time>=500"]), "conditions: AND of flag/trust/item/zone/day/time")
+	ok(not Cond.check(["flag:b"]) and not Cond.check(["trust>3"]) and not Cond.check(["zone:pier"]), "conditions: failing clauses fail")
+	ok(Cond.check(["tide>=1.4", "tide:rising"]) and not Cond.check(["tide:falling"]), "conditions: tide level and direction at 09:56 (%.2f m)" % tide.current_height)
+	ok(Cond.check(["phase:morning"]) and Cond.check(["!phase:evening"]), "conditions: phase")
+
+	state.reset(); state.items.append("canister"); state.set_flag("reported_canister")
+	ok(Conv.get_conv("evening_d1")["text"].contains("Thank you for telling me"), "evening_d1: reported variant")
+	state.clear_flag("reported_canister"); state.set_flag("withheld_canister")
+	ok(Conv.get_conv("evening_d1")["text"].contains("care to tell me"), "evening_d1: withheld variant")
+	state.reset()
+	ok(Conv.get_conv("evening_d1")["text"].contains("first day on the rock"), "evening_d1: fallback variant")
+	state.set_flag("reported_canister"); state.trust = 2
+	ok(Conv.get_conv("morning_d2")["text"].contains("Slept better"), "morning_d2: trusting variant")
+	state.clear_flag("reported_canister"); state.set_flag("withheld_canister")
+	ok(Conv.get_conv("morning_d2")["text"].contains("straight with me"), "morning_d2: withheld variant")
+	var filt: Dictionary = Conv.get_conv("evening_d2")
+	ok(filt["options"].size() == 2, "options capped at two for the radio UI")
+
+	print("== M4: report / withhold, satchel, reactions")
+	state.reset()
+	director.begin_day(1)
+	clock.set_time(1, 596.0)
+	tide.refresh()
+	main._place("outdoors", main.island.spawn_point, 0.0)
+	await _frames(5)
+	_reset_radio(radio)
+	await _use(main, "shipwreck")
+	ok(state.has_item("canister"), "taking the canister puts it in the satchel")
+	ok(radio.active and radio.current["id"] == "shipwreck", "Clara asks what was in the hull")
+	radio.choose(1)
+	ok(state.has_flag("withheld_canister") and not state.has_flag("reported_canister") and state.trust == -1, "withholding sets the flag and costs trust")
+	radio.dismiss()
+	await _frames(3)
+	var wreck_it = null
+	for n in get_nodes_in_group("interactable"):
+		if n.id == "shipwreck": wreck_it = n
+	ok(wreck_it != null and not wreck_it.is_available(), "canister pickup disappears once taken")
+
+	# Reactive lines: west stack + withheld canister -> Clara probes
+	_reset_radio(radio)
+	main._place("outdoors", Vector3(-71.0, 7.0, -8.0), 0.0)
+	await _frames(20)
+	ok(state.zone == "west_stack", "zone detection: west stack (%s)" % state.zone)
+	ok(react.tick() == "r_west_withheld", "Clara probes about the withheld canister on the west stack")
+	radio.choose(0)
+	ok(state.has_flag("reported_canister") and not state.has_flag("withheld_canister") and state.trust == 1, "confessing later flips the flags and nets trust (%d)" % state.trust)
+	radio.dismiss()
+	ok(react.tick() == "", "one-shot reactions do not repeat")
+
+	var zc2: float = 4.0 + sin(20.0 * 0.07) * 3.5
+	main._place("outdoors", Vector3(45.0, Terr.height(45.0, zc2) + 0.1, zc2), 0.0)
+	await _frames(20)
+	ok(state.zone == "east_bar", "zone detection: east bar (%s)" % state.zone)
+	ok(react.tick() == "r_east_bar_first", "first time on the east bar: Clara's warning")
+	radio.dismiss()
+	ok(react.tick() == "r_bar_rising", "rising water on a bar: Clara warns (%.2f m)" % tide.current_height)
+	radio.dismiss()
+	ok(react.tick() == "", "reaction cooldown holds")
+	clock.set_time(1, 450.0)
+	tide.refresh()
+	ok(react.tick() == "", "no bar warning at dead low water")
+
+	print("== M4: chained replies, items, tapes, journal")
+	_reset_radio(radio)
+	radio.play({"id": "t", "speaker": "X", "priority": 2, "text": "hi", "options": [{"text": "a", "reply": "r", "next": "react_cottage_curious", "trust": 0}]})
+	radio.choose(0)
+	radio.dismiss()
+	await _frames(3)
+	ok(radio.active and radio.current.get("id", "") == "react_cottage_curious", "a reply can chain into a follow-up conversation")
+	radio.dismiss()
+	await _frames(2)
+
+	main._place("cottage", main.interiors.spawn["cottage"], 0.0)
+	await _frames(10)
+	await _use(main, "shelf_logs")
+	ok(state.has_item("uni_logs"), "shelf logbooks go in the satchel")
+	await _use(main, "cassette_player")
+	ok(not tapes.playing, "cassette player does nothing without a tape")
+	state.give_item("tape_1")
+	tapes.speed = 40.0
+	await _use(main, "cassette_player")
+	await _frames(3)
+	ok(tapes.playing, "cassette player starts the tape")
+	await create_timer(2.0).timeout
+	ok(state.has_flag("heard_tape_1") and not tapes.playing, "tape plays to the end and is marked heard")
+
+	main.hud._journal_page = 1
+	main.hud._render_journal()
+	ok(main.hud._modal_body.text.contains("Pelagic canister") and main.hud._modal_body.text.contains("University logbooks"), "journal satchel page lists items")
+	main.hud._journal_page = 2
+	main.hud._render_journal()
+	ok(main.hud._modal_body.text.contains("June"), "journal tapes page shows the transcript of a heard tape")
+	main.hud.close_modal()
+
+	state.reset()
+	clock.set_time(1, 900.0)
+	state.set_flag("reported_canister"); state.set_flag("heard_tape_1")
+	state.discover("shipwreck")
+	var LogE = load("res://story/log_entries.gd")
+	var entry: String = LogE.compose(1)
+	ok(entry.contains("PELAGIC") and entry.contains("Told Clara about the canister") and entry.contains("June"), "log entry records finds, reports and tapes")
+
+	state.reset(); state.give_item("tape_1"); state.set_flag("withheld_canister"); state.trust = -2
+	save.path = "user://test_save.json"
+	save.save_game("cottage")
+	state.reset()
+	save.load_game()
+	ok(state.has_item("tape_1") and state.has_flag("withheld_canister") and state.trust == -2 and state.flag_day.has("withheld_canister"), "satchel, flags and flag days survive save/load")
+	save.delete_save()
+
 	print("\n%d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)
+
+func _reset_radio(radio) -> void:
+	radio._queue.clear()
+	radio._pending_next = ""
+	for i in 4:
+		if radio.active:
+			radio.dismiss()
+			radio._queue.clear()
 
 ## Walk Arthur to an interactable (by id) and use it: tap, or hold for `hold` seconds.
 func _use(main: Node3D, id: String, hold := 0.0) -> void:

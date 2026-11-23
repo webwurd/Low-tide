@@ -8,6 +8,7 @@ class_name Interactable extends Node3D
 @export var radius := 4.5
 @export var conversation := ""
 @export var hold_time := 0.0
+@export var give_item := ""
 
 var title_fn: Callable = Callable()     # () -> String   dynamic prompt
 var visible_fn: Callable = Callable()   # () -> bool     false hides it entirely
@@ -29,6 +30,8 @@ func is_available() -> bool:
 
 func interact() -> void:
 	var first := GameState.discover(id)
+	if give_item != "":
+		GameState.give_item(give_item)
 	used.emit()
 	if first and conversation != "":
 		RadioSystem.play(Conversations.get_conv(conversation))

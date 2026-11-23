@@ -10,6 +10,7 @@ var active := false
 var current: Dictionary = {}
 var awaiting_choice := false
 var _queue: Array = []
+var _pending_next := ""
 var _timer: Timer
 
 func _ready() -> void:
@@ -46,6 +47,11 @@ func choose(index: int) -> void:
 	var opt: Dictionary = opts[index]
 	awaiting_choice = false
 	GameState.trust += int(opt.get("trust", 0))
+	for f in opt.get("set", []):
+		GameState.set_flag(String(f))
+	for f in opt.get("clear", []):
+		GameState.clear_flag(String(f))
+	_pending_next = String(opt.get("next", ""))
 	AudioDirector.play_sfx("squelch")
 	reply_shown.emit("CH-16 // CLARA (REPLY)", opt.get("reply", ""))
 	_timer.start(reading_time(opt.get("reply", "")))
@@ -73,5 +79,11 @@ func _finish() -> void:
 	awaiting_choice = false
 	current = {}
 	hidden.emit()
+	var nxt := _pending_next
+	_pending_next = ""
+	if nxt != "":
+		_queue.push_front(Conversations.get_conv(nxt))
+	while _queue.size() > 0 and _queue[0].is_empty():
+		_queue.pop_front()
 	if _queue.size() > 0:
 		_show.call_deferred(_queue.pop_front())
