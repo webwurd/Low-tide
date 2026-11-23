@@ -21,7 +21,8 @@ func _ready() -> void:
 	_key("radio_1", KEY_1); _btn("radio_1", JOY_BUTTON_DPAD_LEFT)
 	_key("radio_2", KEY_2); _btn("radio_2", JOY_BUTTON_DPAD_RIGHT)
 	_key("radio_dismiss", KEY_X); _btn("radio_dismiss", JOY_BUTTON_B)
-	_key("toggle_assist", KEY_F1); _btn("toggle_assist", JOY_BUTTON_BACK)
+	_key("toggle_assist", KEY_F1); _btn("toggle_assist", JOY_BUTTON_Y)
+	_key("logbook", KEY_TAB); _btn("logbook", JOY_BUTTON_BACK)
 	_key("debug_skip", KEY_T)
 	_key("pause", KEY_ESCAPE); _btn("pause", JOY_BUTTON_START)
 

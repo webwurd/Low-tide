@@ -5,6 +5,9 @@ var time_scale := 1.0
 var day := 1
 var minute_of_day := 375.0      # 06:15
 var paused := true
+## The day only ends when Arthur sleeps; the clock stops at 23:59 until then.
+var day_locked := true
+const LAST_MINUTE := 1439.0
 
 signal day_changed(new_day: int)
 
@@ -17,6 +20,9 @@ func abs_minute() -> float:
 
 func advance(minutes: float) -> void:
 	minute_of_day += minutes
+	if day_locked:
+		minute_of_day = minf(minute_of_day, LAST_MINUTE)
+		return
 	while minute_of_day >= 1440.0:
 		minute_of_day -= 1440.0
 		day += 1

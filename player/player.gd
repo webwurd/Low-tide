@@ -28,6 +28,11 @@ var water_depth := 0.0
 var _bob_t := 0.0
 var _stride := 0.0
 var _sandbar_warned := false
+var indoors := false              # interiors: no tide, no world limit, wooden steps
+var ui_lock := false              # a modal panel (logbook, tide table) is open
+var hold_progress := 0.0          # 0..1 while holding a hold-to-use interactable
+var _hold_t := 0.0
+var _hold_done := false
 
 func _ready() -> void:
 	var cs := CollisionShape3D.new()
@@ -47,13 +52,13 @@ func _ready() -> void:
 	floor_max_angle = deg_to_rad(50.0)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if locked:
+	if locked or ui_lock:
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var s := BINO_SENS if binoculars else MOUSE_SENS
 		_look(-event.relative.x * s, -event.relative.y * s)
 	elif event.is_action_pressed("interact"):
-		if nearby:
+		if nearby and nearby.hold_time <= 0.0:
 			nearby.interact()
 
 func _look(dyaw: float, dpitch: float) -> void:
@@ -67,8 +72,9 @@ func teleport(pos: Vector3, new_yaw := 0.0) -> void:
 	pitch = 0.0
 
 func _physics_process(delta: float) -> void:
-	if locked:
+	if locked or ui_lock:
 		velocity = Vector3.ZERO
+		hold_progress = 0.0
 		return
 	binoculars = Input.is_action_pressed("binoculars")
 	var pad := Input.get_vector("look_left", "look_right", "look_up", "look_down")
@@ -78,7 +84,7 @@ func _physics_process(delta: float) -> void:
 	rotation.y = yaw
 	cam.rotation.x = pitch
 
-	water_depth = TideSystem.current_height - global_position.y
+	water_depth = 0.0 if indoors else TideSystem.current_height - global_position.y
 	var wade := TideSystem.speed_multiplier(water_depth)
 
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
@@ -102,9 +108,10 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	var p := global_position
-	p.x = clampf(p.x, -WORLD_LIMIT, WORLD_LIMIT)
-	p.z = clampf(p.z, -WORLD_LIMIT, WORLD_LIMIT)
-	global_position = p
+	if not indoors:
+		p.x = clampf(p.x, -WORLD_LIMIT, WORLD_LIMIT)
+		p.z = clampf(p.z, -WORLD_LIMIT, WORLD_LIMIT)
+		global_position = p
 
 	# Head-bob + footsteps by distance walked
 	var planar := Vector2(velocity.x, velocity.z).length()
@@ -114,7 +121,7 @@ func _physics_process(delta: float) -> void:
 		_stride += planar * delta
 		if _stride >= (1.9 if not wants_brisk else 2.4):
 			_stride = 0.0
-			var surf := Terrain.surface_at(p.x, p.z, p.y)
+			var surf := "wood" if indoors else Terrain.surface_at(p.x, p.z, p.y)
 			AudioDirector.play_footstep(surf, wants_brisk, water_depth > 0.05)
 	else:
 		cam.position.y = lerpf(cam.position.y, EYE, minf(1.0, delta * 8.0))
@@ -124,11 +131,28 @@ func _physics_process(delta: float) -> void:
 		cam.fov = lerpf(cam.fov, target_fov, minf(1.0, delta * 10.0))
 
 	_update_interaction()
+	_update_hold(delta)
 	_update_binoculars()
-	_check_sandbar_warning()
+	if not indoors:
+		_check_sandbar_warning()
+		if water_depth > TideSystem.SWEPT_DEPTH or p.y < -8.0:
+			swept.emit()
 
-	if water_depth > TideSystem.SWEPT_DEPTH or p.y < -8.0:
-		swept.emit()
+func _update_hold(delta: float) -> void:
+	var holdable := nearby != null and nearby.hold_time > 0.0
+	if not holdable or not Input.is_action_pressed("interact"):
+		_hold_t = 0.0
+		hold_progress = 0.0
+		_hold_done = false if not Input.is_action_pressed("interact") else _hold_done
+		return
+	if _hold_done:
+		return
+	_hold_t += delta
+	hold_progress = clampf(_hold_t / nearby.hold_time, 0.0, 1.0)
+	if _hold_t >= nearby.hold_time:
+		_hold_done = true
+		hold_progress = 0.0
+		nearby.interact()
 
 func _update_interaction() -> void:
 	var eye := global_position + Vector3(0, EYE, 0)
@@ -136,6 +160,8 @@ func _update_interaction() -> void:
 	var best_d := INF
 	for n in get_tree().get_nodes_in_group("interactable"):
 		var it := n as Interactable
+		if not it.is_available():
+			continue
 		var d := eye.distance_to(it.global_position)
 		if d <= it.radius and d < best_d:
 			best = it

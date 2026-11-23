@@ -93,11 +93,19 @@ Arthur's backstory is still open. My default: a recently widowed schoolteacher t
 | # | Goal | Exit criteria |
 |---|---|---|
 | **M2: Godot greybox parity** | Port the prototype: terrain bake, ocean shader, tide-table TideSystem, player, binoculars, pocket watch, Assist HUD, radio panel (placeholder lines), 4 landmarks, swept-respawn, procedural audio, gamepad. | Prototype loop playable in Godot on PC and Deck. GUT tests pass for tide math and depth bands. |
-| **M3: Day structure and interiors** | DayDirector, Morning/Expedition/Evening, cottage and tower interiors, rituals, wait anchors, save/load, the 7 DayData tables. | Day 1→2 loop works end to end with autosave. |
+| **M3: Day structure and interiors** ✅ | DayDirector, Morning/Expedition/Evening, cottage and tower interiors, rituals, wait anchors, save/load, 7 day tables, day/night + weather lighting, **controls tutorial in New Watch setup**. | Day 1→2 loop works end to end with autosave. |
 | **M4: Narrative systems** | Dialogue Manager integration with conditions, trust/flags, satchel, cassette player, logbook UI, location-aware reactive lines. | One full day scripted with branching reports and withholds. |
 | **M5: Full island blockout and weather** | North cove, south reef vault, fog-density weather states, storm day, buoy bells, surface materials. | All locations reachable under the correct tides. |
 | **M6: Content** | Write and implement Days 1–7, 4–6 tapes, and 3 endings. | Full playthrough on all 3 ending paths. |
-| **M7: Art, audio and ship** | Stylized art pass, music stings, accessibility (Assist, subtitles size, hold→toggle), Deck perf (≥40 fps at 800p), Steam build. | Release candidate. |
+| **M7: Art, audio, settings and ship** | Stylized art pass, music stings, **Settings menu** (see below), pause menu with "replay controls tutorial", accessibility (subtitle size, hold→toggle), Deck perf (≥40 fps at 800p), Steam build. | Release candidate. |
+
+### M7 Settings menu (requested; reachable from the title screen and the pause menu)
+- **Graphics:** quality presets (Low / Medium / High / Deck), resolution, window mode, vsync, FPS cap, render scale, shadow quality and distance, fog quality, MSAA/FXAA, ocean detail, Compatibility-renderer fallback for older GPUs.
+- **Audio:** master, ambience (surf and wind), footsteps/SFX, radio/voice, music buses, radio static intensity, subtitles size and background, mono mix.
+- **Lighting:** brightness/gamma slider, exposure, night-brightness assist (lifts the darkest scenes), fog density scale, bloom/glow toggle, lamp-beam intensity, optional colour-grade strength.
+- **Controls:** rebinding for keyboard/mouse and gamepad, look sensitivity (separate for binoculars), invert Y, stick deadzone, hold-vs-toggle for binoculars/watch/interact-hold.
+- **Accessibility:** Assist HUD default on/off, reduce head-bob, reduce screen shake/fade durations.
+- Persisted to `user://settings.cfg` through the existing `Settings` autoload. The controls tutorial shown in New Watch setup (M3) can be replayed from here.
 
 **Next session (on approval):** scaffold the Godot project on `claude/tender-brahmagupta-k7oa6r`, commit `docs/` (amended bible, this plan, narrative outline, tide tables), archive the prototype in `reference/`, then start M2.
 

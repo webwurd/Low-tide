@@ -1,6 +1,8 @@
 extends SceneTree
-## Dev tool: renders a few vantage points to PNG (needs a display or xvfb).
+## Dev tool: renders vantage points to PNG (needs a display or xvfb).
 ##   xvfb-run -a godot --rendering-method gl_compatibility -s tests/screenshot.gd -- /out/dir
+
+var main: Node3D
 
 func _initialize() -> void:
 	_run.call_deferred()
@@ -12,42 +14,56 @@ func _run() -> void:
 		out = args[0]
 	root.size = Vector2i(1280, 720)
 	var clock := root.get_node("GameClock")
-	var tide := root.get_node("TideSystem")
-	clock.set_time(1, 375.0)
-	var main: Node3D = load("res://main.tscn").instantiate()
-	main.autostart = true
+	var dd := root.get_node("DayDirector")
+	main = load("res://main.tscn").instantiate()
 	root.add_child(main)
-	await _wait(30)
-	root.get_node("Settings").assist_mode = true
-	var shots := [
-		["pier_start", Vector3(0, 4.8, 24), 0.0, 0.08, 375.0, false],
-		["summit", Vector3(-3, 11.9, 4), 0.2, 0.05, 375.0, false],
-		["east_bar", Vector3(32, 2.6, 2), -PI / 2.0, 0.0, 375.0, false],
-		["east_bar_high_tide", Vector3(32, 2.6, 2), -PI / 2.0, 0.0, 450.0 + 372.5, false],
-		["binoculars_lighthouse", Vector3(0, 4.8, 24), 0.0, 0.70, 375.0, true],
-		["pier_pilings_assist", Vector3(2.0, 4.8, 22), 1.2, -0.45, 450.0 + 200.0, false],
-		["cottage_evening", Vector3(-4, 10.7, 9), 0.5, 0.0, 17 * 60.0, false],
-	]
-	for s in shots:
-		clock.set_time(1, s[4])
-		tide.refresh()
-		main.player.teleport(s[1], s[2])
-		main.player.pitch = s[3]
-		main.player.locked = true
-		main.player.binoculars = s[5]
-		if s[5]:
-			main.player.cam.fov = 20.0
-		else:
-			main.player.cam.fov = 65.0
-		main.player.cam.rotation.x = s[3]
-		main.player.rotation.y = s[2]
-		clock.paused = true
-		await _wait(8)
-		var img := root.get_texture().get_image()
-		img.save_png("%s/%s.png" % [out, s[0]])
-		print("saved ", s[0])
-		clock.paused = false
+	await _wait(10)
+	await _snap(out, "00_title")
+	main.hud._open_tutorial()
+	await _wait(4)
+	await _snap(out, "01_tutorial_controls")
+	main.hud._tut_go(1); await _wait(3); await _snap(out, "02_tutorial_tools")
+	main.hud._tut_go(2); await _wait(3); await _snap(out, "03_tutorial_day")
+	main.hud._tut_go(3)
+	await _wait(10)
+	main.hud._card.modulate.a = 0.0
+	var p = main.player
+	# interiors (indoors the clock is frozen, so lighting is constant)
+	await _shoot("04_cottage", "cottage", main.interiors.spawn["cottage"], 0.6, -0.05)
+	await _shoot("05_cottage_stove_side", "cottage", main.interiors.spawn["cottage"] + Vector3(-3.5, 0, 0.5), 0.9, -0.05)
+	await _shoot("06_watch_room", "tower_base", main.interiors.spawn["tower_base"], 0.0, 0.0)
+	dd.lamp_lit = true; main.interiors.set_lamp(true)
+	await _shoot("07_lantern_room_lit", "tower_top", main.interiors.spawn["tower_top"], 0.8, 0.0)
+	# outdoors: cottage exterior, night beam, storm
+	var Terr = load("res://world/terrain.gd")
+	clock.set_time(1, 600.0)
+	await _shoot("08_cottage_exterior_day", "outdoors", Vector3(-4.0, Terr.height(-4.0, 11.0) + 0.05, 11.0), 0.45, 0.0)
+	dd.weights_wound = true
+	clock.set_time(1, 1080.0)
+	await _shoot("09_night_beam", "outdoors", main.island.spawn_point, 0.0, 0.35)
+	clock.set_time(4, 700.0)
+	dd.lamp_lit = false
+	await _shoot("10_storm_day", "outdoors", main.island.cottage_exit() + Vector3(1, 0, 3), PI + 0.45, 0.0)
+	clock.set_time(5, 650.0)
+	await _shoot("11_day5_spring_low_clear", "outdoors", main.island.spawn_point, 0.0, 0.05)
 	quit(0)
+
+func _shoot(shot: String, loc: String, pos: Vector3, yaw: float, pitch: float) -> void:
+	main._place(loc, pos, yaw)
+	var p = main.player
+	p.locked = true
+	p.pitch = pitch
+	p.cam.rotation.x = pitch
+	p.rotation.y = yaw
+	main.started = true
+	root.get_node("GameClock").paused = true
+	await _wait(10)
+	await _snap(str(OS.get_cmdline_user_args()[0]), shot)
+
+func _snap(out: String, name: String) -> void:
+	var img := root.get_texture().get_image()
+	img.save_png("%s/%s.png" % [out, name])
+	print("saved ", name)
 
 func _wait(n: int) -> void:
 	for i in n:

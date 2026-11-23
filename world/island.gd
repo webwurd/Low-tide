@@ -6,6 +6,13 @@ class_name Island extends Node3D
 const PILING_MARK_COLOR := Color("e8dfc8")
 
 var beam_pivot: Node3D
+var beam_arms: Array[Node3D] = []
+var beam_mat: StandardMaterial3D
+var lantern_mat: StandardMaterial3D
+var lamp_light: OmniLight3D
+var beam_spinning := false
+var cottage_door: Interactable
+var tower_door: Interactable
 var spawn_point := Vector3(0.0, Terrain.PIER_TOP + 0.05, 24.0)
 var _mats := {}
 
@@ -19,10 +26,28 @@ func build() -> void:
 	_build_rocks()
 
 func _process(delta: float) -> void:
-	if beam_pivot:
+	if beam_pivot and beam_spinning:
 		beam_pivot.rotation.y += delta * 0.48
 
 # --- helpers -----------------------------------------------------------
+
+## Where Arthur stands (feet) when he steps out of the cottage door.
+func cottage_exit() -> Vector3:
+	var local := Vector3(0, 0, 3.8).rotated(Vector3.UP, Terrain.COTTAGE_YAW)
+	return Vector3(Terrain.COTTAGE_POS.x + local.x, Terrain.COTTAGE_Y + 0.05, Terrain.COTTAGE_POS.y + local.z)
+
+func tower_exit() -> Vector3:
+	return Vector3(0, 10.25, -0.9)
+
+## Lamp lit + weights wound = lens turns and the beam sweeps. `daylight` 0..1
+## makes the beam stronger at night.
+func set_lamp(lit: bool, wound: bool, daylight: float) -> void:
+	beam_spinning = lit and wound
+	for a in beam_arms:
+		a.visible = lit
+	beam_mat.albedo_color.a = lerpf(0.26, 0.07, daylight)
+	lantern_mat.albedo_color = Color("ffd27d") if lit else Color("2a2f33")
+	lamp_light.light_energy = 2.2 if lit else 0.0
 
 func _mat(color: Color, rough := 0.85, metal := 0.0, unshaded := false) -> StandardMaterial3D:
 	var key := "%s_%s_%s_%s" % [color.to_html(), rough, metal, unshaded]
@@ -112,7 +137,10 @@ func _build_lighthouse() -> void:
 	_mesh(g, _cyl(2.2, 3.3, 15.0), stone, Vector3(0, 10.5, 0))
 	_mesh(g, _cyl(2.68, 2.95, 3.5), red, Vector3(0, 11.0, 0))
 	_mesh(g, _cyl(3.0, 3.0, 0.5, 16), iron, Vector3(0, 18.2, 0))
-	_mesh(g, _cyl(1.75, 1.75, 2.8), _mat(Color(1.0, 0.82, 0.49, 0.85), 0.2, 0.0, true), Vector3(0, 19.8, 0))
+	lantern_mat = StandardMaterial3D.new()
+	lantern_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	lantern_mat.albedo_color = Color("2a2f33")
+	_mesh(g, _cyl(1.75, 1.75, 2.8), lantern_mat, Vector3(0, 19.8, 0))
 	var roof := CylinderMesh.new()
 	roof.top_radius = 0.0; roof.bottom_radius = 2.2; roof.height = 2.0; roof.radial_segments = 12
 	_mesh(g, roof, red, Vector3(0, 22.1, 0))
@@ -126,7 +154,7 @@ func _build_lighthouse() -> void:
 	beam_pivot.position = Vector3(0, 19.8, 0)
 	g.add_child(beam_pivot)
 	var cone := _cyl(14.0, 0.5, 95.0, 24)
-	var beam_mat := StandardMaterial3D.new()
+	beam_mat = StandardMaterial3D.new()
 	beam_mat.albedo_color = Color(1.0, 0.81, 0.44, 0.13)
 	beam_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	beam_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -136,23 +164,25 @@ func _build_lighthouse() -> void:
 		var arm := Node3D.new()
 		arm.rotation.y = rot_y
 		beam_pivot.add_child(arm)
+		beam_arms.append(arm)
 		var m := _mesh(arm, cone, beam_mat, Vector3(0, 0, 47.5), Vector3(PI / 2.0, 0, 0))
 		m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	var lamp := OmniLight3D.new()
-	lamp.light_color = Color("ffb84d")
-	lamp.light_energy = 2.2
-	lamp.omni_range = 45.0
-	beam_pivot.add_child(lamp)
+	lamp_light = OmniLight3D.new()
+	lamp_light.light_color = Color("ffb84d")
+	lamp_light.light_energy = 0.0
+	lamp_light.omni_range = 45.0
+	beam_pivot.add_child(lamp_light)
+	set_lamp(false, false, 1.0)
 
-	_interactable("lighthouse", "Check Fresnel Lamp Crank", Vector3(0, 11.2, -2.0), 4.5, "lighthouse")
+	tower_door = _interactable("lighthouse", "Enter the lighthouse", Vector3(0, 11.3, -1.2), 3.2, "lighthouse")
 	_bino_target("GANNET ROCK LIGHTHOUSE (1884)", Vector3(0, 30, -6))
 
 # --- cottage -----------------------------------------------------------
 
 func _build_cottage() -> void:
 	var g := Node3D.new()
-	g.position = Vector3(-8.5, 10.0, 1.5)
-	g.rotation.y = 0.45
+	g.position = Vector3(Terrain.COTTAGE_POS.x, Terrain.COTTAGE_Y, Terrain.COTTAGE_POS.y)
+	g.rotation.y = Terrain.COTTAGE_YAW
 	add_child(g)
 	_mesh(g, _box(Vector3(6.5, 3.6, 5.0)), _mat(Color("575e63"), 0.9), Vector3(0, 1.8, 0))
 	var roof := CylinderMesh.new()
@@ -170,7 +200,7 @@ func _build_cottage() -> void:
 	light.position = Vector3(0, 2.5, 3.5)
 	g.add_child(light)
 	_solid(g, _box_shape(Vector3(6.5, 3.6, 5.0)), Vector3(0, 1.8, 0))
-	_interactable("cottage", "Check Wood Stove & Radio Desk", Vector3(-7.2, 11.2, 4.0), 4.5, "cottage")
+	cottage_door = _interactable("cottage", "Enter the cottage", cottage_exit() + Vector3(0, 1.2, 0), 2.6, "cottage")
 
 # --- pier (spawn + safe high ground) ----------------------------------
 

@@ -13,3 +13,6 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	position.y = TideSystem.current_height
+
+func set_wave_height(h: float) -> void:
+	(material_override as ShaderMaterial).set_shader_parameter("wave_height", h)

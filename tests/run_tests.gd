@@ -73,79 +73,249 @@ func _run() -> void:
 	radio.dismiss()
 	ok(not radio.active, "dismiss closes the radio")
 
-	print("== full game smoke (headless, simulated play)")
-	clock.set_time(1, 375.0)
+	print("== tide: storm day + tables")
+	var storm_min := 99.0
+	var storm_max := -99.0
+	for m in range(1440 * 3 + 240, 1440 * 4 - 1):
+		var h: float = tide.water_height_abs(m)
+		storm_min = minf(storm_min, h); storm_max = maxf(storm_max, h)
+	ok(storm_min > tide.SANDBAR_CLOSED_AT, "storm day: low water stays above the bar gate (min %.2f)" % storm_min)
+	ok(storm_max <= 4.2 and storm_max < 4.7 - 0.3, "storm day: highs stay under the pier deck (max %.2f)" % storm_max)
+	var ex: Array = tide.extremes_for_day(1)
+	var first_low: Array = ex.filter(func(e): return not e["high"])
+	ok(ex.size() >= 3 and first_low.size() >= 1 and absf(first_low[0]["minute"] - 450.0) < 0.5, "tide table day 1 lists the 07:30 low")
+	ok(ex[0]["minute"] < ex[1]["minute"], "tide table is sorted by time")
+	var day_two_low: Array = tide.extremes_for_day(2).filter(func(e): return not e["high"])
+	ok(day_two_low.size() >= 1 and absf(day_two_low[0]["minute"] - 500.0) < 5.0, "day 2 low is ~50 min later (%d)" % int(day_two_low[0]["minute"]))
+	ok(Days.get_day(4).rain and Days.get_day(4).weather == "Storm", "day 4 data: storm with rain")
+	for d in range(1, 8):
+		ok(Conversations.get_conv("morning_d%d" % d).size() > 0 and Conversations.get_conv("evening_d%d" % d).size() > 0, "day %d has morning + evening conversations" % d)
+
+	print("== save/load round trip")
+	var save := root.get_node("SaveSystem")
+	save.path = "user://test_save.json"
+	save.delete_save()
+	state.reset()
+	clock.set_time(3, 777.0)
+	state.discover("shipwreck")
+	state.trust = 4
+	state.add_log(2, "test entry")
+	var director := root.get_node("DayDirector")
+	director.rituals = {"stove": true}
+	director.lamp_lit = true
+	ok(save.save_game("tower_top") and save.has_save(), "save file written")
+	state.reset(); director.rituals = {}; director.lamp_lit = false
+	clock.set_time(1, 100.0)
+	var loc: String = save.load_game()
+	ok(loc == "tower_top", "location restored")
+	ok(clock.day == 3 and absf(clock.minute_of_day - 777.0) < 0.01, "clock restored")
+	ok(state.discovered.has("shipwreck") and state.discovered_day["shipwreck"] == 3 or state.discovered_day.get("shipwreck", 0) == 3, "discoveries + discovery day restored")
+	ok(state.trust == 4 and state.logbook.size() == 1 and state.logbook[0]["day"] == 2, "trust + logbook restored")
+	ok(director.rituals.has("stove") and director.lamp_lit, "director state restored")
+	save.delete_save()
+
+	print("== full day loop (headless, simulated play)")
+	state.reset()
 	var main: Node3D = load("res://main.tscn").instantiate()
 	main.autostart = true
 	root.add_child(main)
 	await _frames(5)
 	var player = main.player
-	ok(player != null and main.island != null, "main scene builds player + island")
-	ok(player.global_position.distance_to(main.island.spawn_point) < 1.0, "player spawns on the pier")
-	await _frames(40)
-	ok(player.is_on_floor(), "player stands on the pier (floor y=%.2f)" % player.global_position.y)
-	near(player.global_position.y, Terr.PIER_TOP, 0.2, "standing at deck height")
+	ok(main.location == "cottage" and director.phase == 0, "new game starts in the cottage, morning phase")
+	ok(clock.day == 1 and absf(clock.minute_of_day - 390.0) < 0.5, "day 1 begins at 06:30")
+	await _frames(30)
+	ok(player.is_on_floor(), "Arthur stands on the cottage floor")
+	var t0: float = clock.minute_of_day
+	await create_timer(1.2).timeout
+	ok(clock.minute_of_day == t0, "clock is frozen while indoors")
 
-	# Walk north (forward = -Z) off the pier and up the hill using real input actions.
+	# door is gated until the morning rituals are done
+	await _use(main, "door_cottage_out")
+	await create_timer(0.3).timeout
+	ok(main.location == "cottage" and director.phase == 0, "front door stays shut before the rituals are done")
+
+	await _use(main, "stove")
+	await _use(main, "barometer")
+	await _use(main, "radio_desk")
+	ok(not director.rituals.has("checkin") and not radio.active, "radio check-in refused before the other rituals")
+	await _use(main, "tide_table")
+	ok(director.rituals.has("stove") and director.rituals.has("barometer") and director.rituals.has("tide_table"), "stove, barometer, tide table done")
+	ok(main.hud.modal_open, "tide table panel opened")
+	_send_action("interact", true); await _frames(3); _send_action("interact", false)
+	await _frames(3)
+	ok(not main.hud.modal_open and not player.ui_lock, "tide table closes with interact")
+
+	# wind the weights: tower, hold-to-use
+	main._place("tower_base", main.interiors.spawn["tower_base"], 0.0)
+	await _frames(10)
+	await _use(main, "weights", 0.8)
+	ok(not director.weights_wound, "a short press does not wind the weights")
+	await _use(main, "weights", 3.4)
+	ok(director.weights_wound and director.rituals.has("weights"), "holding E winds the weights")
+
+	main._place("cottage", main.interiors.spawn["cottage"], 0.0)
+	await _frames(10)
+	await _use(main, "radio_desk")
+	ok(director.rituals.has("checkin") and radio.active, "check-in plays Clara's morning call")
+	radio.choose(0)
+	radio.dismiss()
+	ok(director.morning_complete(), "all five morning rituals complete")
+
+	# step out the front door
+	await _use(main, "door_cottage_out")
+	await create_timer(1.6).timeout
+	ok(main.location == "outdoors" and director.phase == 1, "front door leads outdoors; phase is EXPEDITION")
+	ok(player.global_position.distance_to(main.island.cottage_exit()) < 2.5, "Arthur steps out at the cottage door")
+	ok(absf(player.global_position.y - 8.0) < 0.6, "cottage door stands on solid ground (y %.2f, pad 8.0)" % player.global_position.y)
+	var t1: float = clock.minute_of_day
+	await create_timer(2.2).timeout
+	ok(clock.minute_of_day - t1 > 1.5 and clock.minute_of_day - t1 < 3.0, "clock runs ~1 game-min/sec outdoors (+%.2f)" % (clock.minute_of_day - t1))
+
+	print("== outdoors regression (pier, binoculars, sandbar, swept)")
+	main._place("outdoors", main.island.spawn_point, 0.0)
+	await _frames(40)
+	ok(player.is_on_floor(), "player stands on the pier (y=%.2f)" % player.global_position.y)
+	near(player.global_position.y, Terr.PIER_TOP, 0.2, "standing at deck height")
 	Input.action_press("move_forward")
 	var z0: float = player.global_position.z
 	await _frames(240)
 	Input.action_release("move_forward")
 	ok(player.global_position.z < z0 - 5.0, "forward input moves Arthur north (z %.1f -> %.1f)" % [z0, player.global_position.z])
 
-	# Interaction: teleport next to the lighthouse and press interact.
-	player.teleport(Vector3(0, 11.0, -1.5), 0.0)
-	await _frames(10)
-	ok(player.nearby != null and player.nearby.id == "lighthouse", "lighthouse inspectable in range")
-	_send_action("interact", true)
-	await _frames(2)
-	_send_action("interact", false)
-	ok(state.discovered.has("lighthouse"), "interact discovers the lighthouse")
-	ok(radio.active, "interact opens a radio call")
+	main._place("outdoors", Vector3(0, 10.25, -0.9), 0.0)
+	await _frames(15)
+	ok(player.nearby != null and player.nearby.id == "lighthouse", "lighthouse door in range")
+	await _use(main, "lighthouse")
+	await create_timer(1.6).timeout
+	ok(main.location == "tower_base" and state.discovered.has("lighthouse"), "lighthouse door leads to the watch room and logs the landmark")
+	ok(radio.active, "first visit triggers Clara's lighthouse line")
 	radio.dismiss()
+	await _use(main, "stairs_up")
+	await create_timer(1.6).timeout
+	ok(main.location == "tower_top", "stairs lead up to the lantern room")
+	await _use(main, "stairs_down")
+	await create_timer(1.6).timeout
+	ok(main.location == "tower_base", "stairs lead back down")
 
-	# Binoculars rangefinder
-	player.teleport(Vector3(0, 4.8, 24), PI * 0.0)
+	main._place("outdoors", main.island.spawn_point, 0.0)
 	await _frames(10)
 	player.yaw = 0.0
-	player.pitch = deg_to_rad(10.0)
+	player.pitch = 0.0
 	Input.action_press("binoculars")
 	await _frames(30)
 	ok(player.binoculars and player.cam.fov < 40.0, "binoculars narrow the FOV (%.1f)" % player.cam.fov)
-	# Aim straight at the lantern room from the pier: pitch = atan(dy/dz)
 	var to_lamp: Vector3 = Vector3(0, 30, -6) - (player.global_position + Vector3(0, 1.72, 0))
-	player.yaw = 0.0
 	player.pitch = atan2(to_lamp.y, -to_lamp.z)
 	await _frames(5)
 	ok(player.bino_label.contains("LIGHTHOUSE"), "rangefinder identifies the lighthouse ('%s', %d m)" % [player.bino_label, player.bino_dist])
-	player.pitch = 0.0
-	await _frames(3)
-	ok(player.bino_label == "", "rangefinder clears when looking at open sea")
 	Input.action_release("binoculars")
 	await _frames(5)
 
-	# Swept scenario: stand mid-bar at high water.
-	clock.set_time(1, 450.0 + 372.5)          # high water 4.2 m
+	clock.set_time(1, 450.0 + 372.5)
 	tide.refresh()
 	var t_before: float = clock.abs_minute()
-	player.teleport(Vector3(45.0, Terr.height(45.0, 4.0 + sin(20.0 * 0.07) * 3.5) + 0.2, 4.0 + sin(20.0 * 0.07) * 3.5), 0.0)
+	var zc: float = 4.0 + sin(20.0 * 0.07) * 3.5
+	player.teleport(Vector3(45.0, Terr.height(45.0, zc) + 0.2, zc), 0.0)
 	var swept_fired := [false]
 	player.swept.connect(func(): swept_fired[0] = true)
 	await _frames(20)
 	ok(swept_fired[0], "standing on a submerged sandbar sweeps Arthur")
-	await _frames(200)    # fade + respawn timer (2.2 s @ ~60fps; headless frames are fast, so wait on time)
-	await create_timer(2.6).timeout
+	await create_timer(2.8).timeout
 	ok(player.global_position.distance_to(main.island.spawn_point) < 1.5, "swept Arthur is returned to the pier")
 	ok(clock.abs_minute() - t_before >= 44.0, "swept costs ~45 game minutes (%.1f)" % (clock.abs_minute() - t_before))
 	ok(radio.active, "Clara reacts on the radio after being swept")
-
-	# Pier is safe at the highest tide
+	radio.dismiss()
 	await _frames(60)
 	ok(not main._sweeping, "no sweep loop on the pier at 4.2 m high water")
-	near(tide.current_height, 4.2, 0.2, "water is at high tide during the pier check")
+
+	print("== clues, dusk, evening")
+	state.discover("shipwreck")
+	clock.set_time(1, 960.0)
+	main._place("outdoors", main.island.spawn_point, 0.0)
+	await _frames(5)
+	clock.set_time(1, 995.0)
+	await _frames(5)
+	ok(director.dusk_nudged, "Clara nudges Arthur at 16:30 dusk")
+	radio.dismiss()
+	main._place("tower_top", main.interiors.spawn["tower_top"], 0.0)
+	clock.set_time(1, 700.0)
+	await _frames(10)
+	await _use(main, "lamp", 2.6)
+	ok(not director.lamp_lit, "lamp refuses to light before 15:00")
+	clock.set_time(1, 1000.0)
+	await _use(main, "lamp", 2.6)
+	ok(director.lamp_lit and director.phase == 2, "lamp lit after 15:00; phase is EVENING")
+	ok(main.island.beam_spinning and main.island.beam_arms[0].visible, "outside beam is lit and sweeping (weights wound + lamp lit)")
+	var tw: float = clock.minute_of_day
+	await _use(main, "bench")
+	await create_timer(1.6).timeout
+	ok(absf(clock.minute_of_day - (tw + 60.0)) < 1.0, "waiting at the bench passes an hour")
+
+	main._place("cottage", main.interiors.spawn["cottage"], 0.0)
+	await _frames(10)
+	await _use(main, "radio_desk")
+	ok(not director.evening_call_done, "evening call refused before the log is written")
+	await _use(main, "bed")
+	ok(clock.day == 1, "cannot sleep before the evening tasks are done")
+	await _use(main, "log_desk")
+	ok(director.log_written and state.logbook.size() == 1, "log entry written")
+	ok(state.logbook[0]["text"].contains("PELAGIC"), "log entry records the clue found today")
+	await _use(main, "radio_desk")
+	ok(director.evening_call_done and radio.active, "evening call plays")
+	radio.choose(0)
+	radio.dismiss()
+	main.hud.toggle_logbook()
+	ok(main.hud.modal_open, "logbook opens with Tab")
+	main.hud.close_modal()
+	save.path = "user://test_save.json"
+	await _use(main, "bed")
+	await create_timer(3.0).timeout
+	ok(clock.day == 2 and absf(clock.minute_of_day - 390.0) < 1.0, "sleeping begins day 2 at 06:30")
+	ok(director.phase == 0 and director.rituals.is_empty() and not director.lamp_lit and not director.weights_wound, "day 2 rituals and lamp reset")
+	ok(save.has_save(), "autosave written when the new day begins")
+	ok(not main.island.beam_spinning, "beam is dark again on the new morning")
+	save.delete_save()
+
+	print("== forced home + week end")
+	clock.set_time(2, 1259.2)
+	main._place("outdoors", main.island.spawn_point, 0.0)
+	await _frames(5)
+	await create_timer(1.8).timeout
+	ok(main.location == "cottage" and director.phase == 2, "Arthur is forced home at 21:00 and the evening begins")
+	clock.set_time(7, 1200.0)
+	director.lamp_lit = true; director.log_written = true; director.evening_call_done = true
+	var ended := [false]
+	director.week_ended.connect(func(): ended[0] = true)
+	await _use(main, "bed")
+	await create_timer(1.6).timeout
+	ok(ended[0] and clock.day == 7, "sleeping on day 7 ends the week without a day 8")
 
 	print("\n%d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)
+
+## Walk Arthur to an interactable (by id) and use it: tap, or hold for `hold` seconds.
+func _use(main: Node3D, id: String, hold := 0.0) -> void:
+	var target = null
+	for n in get_nodes_in_group("interactable"):
+		if n.id == id:
+			target = n
+	if target == null:
+		failures += 1
+		printerr("  FAIL: no interactable '%s'" % id)
+		return
+	var p = main.player
+	var base: Vector3 = target.global_position - Vector3(0, 1.1, 0)
+	p.teleport(base + Vector3(0, 0.05, 0), p.yaw)
+	await _frames(4)
+	if hold > 0.0:
+		Input.action_press("interact")
+		await create_timer(hold).timeout
+		Input.action_release("interact")
+	else:
+		_send_action("interact", true)
+		await _frames(2)
+		_send_action("interact", false)
+	await _frames(3)
 
 func _send_action(action: String, pressed: bool) -> void:
 	var e := InputEventAction.new()

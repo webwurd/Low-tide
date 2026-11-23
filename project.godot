@@ -11,6 +11,8 @@ Settings="*res://autoload/settings.gd"
 GameClock="*res://autoload/game_clock.gd"
 TideSystem="*res://autoload/tide_system.gd"
 GameState="*res://autoload/game_state.gd"
+DayDirector="*res://autoload/day_director.gd"
+SaveSystem="*res://autoload/save_system.gd"
 RadioSystem="*res://autoload/radio_system.gd"
 AudioDirector="*res://autoload/audio_director.gd"
 

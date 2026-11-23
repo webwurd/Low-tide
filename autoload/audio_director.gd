@@ -13,6 +13,8 @@ var _pool: Array[AudioStreamPlayer] = []
 var _variants: Dictionary = {}     # name -> Array[AudioStreamWAV]
 var _foghorn_timer := 14.0
 var foghorn_enabled := true
+var indoors := false
+var weather_db := 0.0
 
 func _ready() -> void:
 	_rng.seed = 1998
@@ -41,8 +43,9 @@ func _process(delta: float) -> void:
 ## time: seconds (for swell), altitude: player y, tide: water height (m).
 func update_ambient(time: float, altitude: float, tide: float) -> void:
 	var swell := 0.5 + 0.5 * sin(time * 0.65)
-	_surf.volume_db = -20.0 + swell * 5.0 + clampf(tide - 1.0, 0.0, 3.0) * 1.0
-	_wind.volume_db = -30.0 + clampf(altitude, 0.0, 25.0) * 0.45
+	var muffle := -14.0 if indoors else 0.0
+	_surf.volume_db = -20.0 + swell * 5.0 + clampf(tide - 1.0, 0.0, 3.0) * 1.0 + muffle + weather_db * 0.5
+	_wind.volume_db = -30.0 + clampf(altitude, 0.0, 25.0) * 0.45 + muffle + weather_db
 
 func play_sfx(sfx_name: String, volume_db := 0.0, pitch := 1.0) -> void:
 	var list: Array = _variants.get(sfx_name, [])

@@ -8,6 +8,10 @@ const PIER_X := 1.85
 const PIER_Z0 := 12.5
 const PIER_Z1 := 37.0
 const PIER_TOP := 4.7           # above max high tide (4.2m) + wave height
+## Flat pad the keeper's cottage stands on (the prototype left it floating).
+const COTTAGE_POS := Vector2(-8.5, 1.5)
+const COTTAGE_Y := 8.0
+const COTTAGE_YAW := 0.45
 
 static func height(x: float, z: float) -> float:
 	var dist_main := Vector2(x, z).length()
@@ -22,6 +26,11 @@ static func height(x: float, z: float) -> float:
 	if dist_summit < 11.0:
 		var blend := maxf(0.0, 1.0 - dist_summit / 11.0)
 		h_main = h_main * (1.0 - blend) + 10.2 * blend
+
+	var d_pad := Vector2(x, z).distance_to(COTTAGE_POS)
+	if d_pad < 9.0:
+		var pad_blend := smoothstep(0.0, 1.0, clampf((9.0 - d_pad) / 4.8, 0.0, 1.0))
+		h_main = lerpf(h_main, COTTAGE_Y, pad_blend)
 
 	# East sandbar (tide-locked, crest ~1.65m)
 	var h_east_bar := -4.0
