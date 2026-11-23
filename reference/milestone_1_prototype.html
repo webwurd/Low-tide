@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Low Tide — Milestone 1 Prototype</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #16202a;
+            font-family: 'Inter', sans-serif;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .font-mono-retro {
+            font-family: 'Courier Prime', monospace;
+        }
+        /* Binocular Dual-Circle Vignette Overlay */
+        #binocular-overlay {
+            background: radial-gradient(circle at 38% 50%, transparent 25%, rgba(8, 12, 16, 0.96) 31%),
+                        radial-gradient(circle at 62% 50%, transparent 25%, rgba(8, 12, 16, 0.96) 31%);
+            background-blend-mode: darken;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+        /* Subtle CRT / Film Grain Scanline feel for Radio */
+        .radio-card {
+            background: rgba(18, 25, 33, 0.88);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(217, 179, 108, 0.35);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+        }
+        .brass-bezel {
+            background: linear-gradient(145deg, #2a241b, #1a1611);
+            border: 2px solid #9c7c44;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), inset 0 0 12px rgba(212, 175, 55, 0.15);
+        }
+        @keyframes pulse-amber {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.45; transform: scale(0.92); }
+        }
+        .led-pulse {
+            animation: pulse-amber 1.4s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-slate-100">
+
+    <!-- 3D WebGL Canvas Container -->
+    <div id="canvas-container" class="fixed inset-0 z-0"></div>
+
+    <!-- Binoculars Overlay (Shown when Right-Click or B is held) -->
+    <div id="binocular-overlay" class="fixed inset-0 z-10 opacity-0 flex flex-col justify-between p-8">
+        <div class="flex justify-between items-start max-w-4xl mx-auto w-full pt-6">
+            <div class="font-mono-retro text-xs tracking-widest text-amber-300/80 bg-black/50 px-3 py-1 rounded border border-amber-500/30">
+                7x50 MARINE OPTICS // GANNET ROCK
+            </div>
+            <div id="bino-rangefinder" class="font-mono-retro text-xs tracking-widest text-amber-300/90 bg-black/50 px-3 py-1 rounded border border-amber-500/30">
+                DIST: --- m
+            </div>
+        </div>
+        <!-- Center Crosshair -->
+        <div class="mx-auto my-auto flex items-center justify-center opacity-60">
+            <div class="w-12 h-[1px] bg-amber-300/70"></div>
+            <div class="w-2 h-2 rounded-full border border-amber-300 mx-2"></div>
+            <div class="w-12 h-[1px] bg-amber-300/70"></div>
+        </div>
+        <div class="text-center pb-6">
+            <span id="bino-target-label" class="font-mono-retro text-xs uppercase tracking-widest text-amber-200/90 bg-black/60 px-4 py-1.5 rounded-full border border-amber-400/20">
+                SCANNING HORIZON...
+            </span>
+        </div>
+    </div>
+
+    <!-- Center Reticle & Contextual Interaction Prompt -->
+    <div id="hud-reticle-layer" class="fixed inset-0 z-20 pointer-events-none flex flex-col items-center justify-center">
+        <div id="crosshair" class="w-1.5 h-1.5 rounded-full bg-amber-100/75 shadow-sm transition-transform duration-150"></div>
+        <div id="interact-prompt" class="mt-4 opacity-0 transition-opacity duration-200 bg-slate-900/85 border border-amber-400/40 px-3.5 py-1.5 rounded-lg shadow-lg flex items-center gap-2">
+            <span class="font-mono-retro text-xs font-bold bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded">E</span>
+            <span id="interact-text" class="text-xs font-medium tracking-wide text-amber-100">Inspect Object</span>
+        </div>
+    </div>
+
+    <!-- Top-Left: Analog Pocket Watch & Tide Barometer HUD -->
+    <div id="hud-top-left" class="fixed top-5 left-5 z-20 flex items-center gap-3 pointer-events-auto">
+        <!-- Analog Pocket Watch SVG -->
+        <div class="brass-bezel rounded-full w-20 h-20 flex items-center justify-center relative shrink-0" title="Keeper's Pocket Watch">
+            <svg viewBox="0 0 100 100" class="w-16 h-16">
+                <circle cx="50" cy="50" r="46" fill="#f3ebd9" stroke="#785c2a" stroke-width="3"/>
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#b89f72" stroke-width="0.8" stroke-dasharray="2 3"/>
+                <!-- Hour Markers -->
+                <line x1="50" y1="8" x2="50" y2="15" stroke="#1e293b" stroke-width="2.5"/>
+                <line x1="92" y1="50" x2="85" y2="50" stroke="#1e293b" stroke-width="2.5"/>
+                <line x1="50" y1="92" x2="50" y2="85" stroke="#1e293b" stroke-width="2.5"/>
+                <line x1="8" y1="50" x2="15" y2="50" stroke="#1e293b" stroke-width="2.5"/>
+                <!-- Watch Hands -->
+                <line id="watch-hour-hand" x1="50" y1="50" x2="50" y2="26" stroke="#0f172a" stroke-width="3.2" stroke-linecap="round"/>
+                <line id="watch-min-hand" x1="50" y1="50" x2="50" y2="16" stroke="#991b1b" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="50" cy="50" r="3.5" fill="#9c7c44"/>
+            </svg>
+        </div>
+
+        <!-- Digital Tide Gauge & Time Readout -->
+        <div class="radio-card rounded-xl px-4 py-2.5 min-w-[200px]">
+            <div class="flex items-center justify-between gap-4 border-b border-slate-700/70 pb-1.5 mb-1.5">
+                <span id="hud-clock-text" class="font-mono-retro text-base font-bold text-amber-200 tracking-wider">06:15 AM</span>
+                <button id="btn-skip-time" class="text-[11px] font-mono-retro bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded transition cursor-pointer" title="Advance Clock +1 Hour (or press T)">
+                    +1 HR [T]
+                </button>
+            </div>
+            <div class="flex items-center justify-between text-xs">
+                <span class="text-slate-400 uppercase tracking-wider text-[10px]">Tide State</span>
+                <span id="hud-tide-state" class="font-mono-retro font-bold text-emerald-300">FALLING</span>
+            </div>
+            <div class="flex items-center justify-between text-xs mt-0.5">
+                <span class="text-slate-400 uppercase tracking-wider text-[10px]">Water Level</span>
+                <span id="hud-water-level" class="font-mono-retro text-slate-200">1.35m</span>
+            </div>
+            <!-- Tide Level Progress Bar -->
+            <div class="w-full h-1.5 bg-slate-800 rounded-full mt-2 overflow-hidden relative">
+                <div id="hud-tide-bar" class="h-full bg-gradient-to-r from-teal-400 to-amber-300 transition-all duration-300" style="width: 30%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top-Right: Milestone 1 Exploration Log / Landmarks Found -->
+    <div id="hud-top-right" class="fixed top-5 right-5 z-20 radio-card rounded-xl px-4 py-3 max-w-xs pointer-events-none hidden sm:block">
+        <div class="flex items-center justify-between gap-3 mb-1.5">
+            <span class="text-[11px] font-semibold uppercase tracking-widest text-amber-300/90">Gannet Rock Log</span>
+            <span id="log-progress" class="font-mono-retro text-xs text-slate-400">0 / 4</span>
+        </div>
+        <ul id="landmark-checklist" class="space-y-1 text-xs text-slate-300 font-mono-retro">
+            <li id="chk-lighthouse" class="flex items-center gap-2 opacity-70"><span>[ ]</span> Fresnel Lantern Tower</li>
+            <li id="chk-cottage" class="flex items-center gap-2 opacity-70"><span>[ ]</span> Keeper's Stone Cottage</li>
+            <li id="chk-shipwreck" class="flex items-center gap-2 opacity-70"><span>[ ]</span> East Sandbar: Shipwreck</li>
+            <li id="chk-seacave" class="flex items-center gap-2 opacity-70"><span>[ ]</span> West Sandbar: Echo Cave</li>
+        </ul>
+    </div>
+
+    <!-- Bottom-Center: VHF Walkie-Talkie Radio Dialogue UI -->
+    <div id="radio-container" class="fixed bottom-14 left-1/2 -translate-x-1/2 z-30 w-[92%] max-w-xl transition-all duration-300 opacity-0 translate-y-4 pointer-events-none">
+        <div class="radio-card rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-400 led-pulse"></span>
+                    <span id="radio-speaker" class="font-mono-retro text-xs font-bold uppercase tracking-widest text-amber-300">
+                        CH-16 // CLARA (COAST GUARD DISPATCH)
+                    </span>
+                </div>
+                <span class="font-mono-retro text-[11px] text-slate-400">VHF MARINE</span>
+            </div>
+            <p id="radio-dialogue-text" class="text-sm sm:text-base text-slate-100 leading-relaxed font-normal">
+                "Gannet Rock, this is Station Rockland. Radio check—how's the kerosene lamp holding up against the fog?"
+            </p>
+            <!-- Branching Dialogue Options -->
+            <div id="radio-options" class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button id="radio-opt-1" class="text-left bg-slate-800/90 hover:bg-amber-500/20 border border-slate-600 hover:border-amber-400/60 rounded-xl px-3.5 py-2.5 text-xs text-amber-100 transition flex items-start gap-2 cursor-pointer">
+                    <span class="font-mono-retro font-bold bg-amber-500/30 text-amber-300 px-1.5 py-0.5 rounded shrink-0">1</span>
+                    <span id="radio-opt-1-text">"Lamp is burning steady, Clara."</span>
+                </button>
+                <button id="radio-opt-2" class="text-left bg-slate-800/90 hover:bg-amber-500/20 border border-slate-600 hover:border-amber-400/60 rounded-xl px-3.5 py-2.5 text-xs text-amber-100 transition flex items-start gap-2 cursor-pointer">
+                    <span class="font-mono-retro font-bold bg-amber-500/30 text-amber-300 px-1.5 py-0.5 rounded shrink-0">2</span>
+                    <span id="radio-opt-2-text">"The tide's dropping fast out here."</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom-Left: Stamina & Controls Bar -->
+    <div class="fixed bottom-4 left-5 z-20 flex flex-col gap-1.5 pointer-events-none">
+        <div id="stamina-wrapper" class="w-40 h-1 bg-slate-800/80 rounded-full overflow-hidden opacity-0 transition-opacity duration-300">
+            <div id="stamina-bar" class="h-full bg-amber-300/80 w-full"></div>
+        </div>
+        <div class="text-[11px] font-mono-retro text-slate-300/75 bg-slate-950/50 px-3 py-1 rounded-lg backdrop-blur-sm">
+            [WASD] Walk &nbsp;|&nbsp; [SHIFT] Brisk &nbsp;|&nbsp; [RMB / B] Binoculars &nbsp;|&nbsp; [E] Inspect &nbsp;|&nbsp; [T] +1 Hr
+        </div>
+    </div>
+
+    <!-- Tide Hazard Fade-to-Black Screen Overlay -->
+    <div id="tide-hazard-overlay" class="fixed inset-0 z-40 bg-slate-950 opacity-0 pointer-events-none transition-opacity duration-700 flex flex-col items-center justify-center p-6 text-center">
+        <p class="font-mono-retro text-amber-300 text-lg sm:text-xl tracking-wide mb-2">
+            THE TIDE CAUGHT YOU
+        </p>
+        <p class="text-slate-300 text-sm max-w-md">
+            Freezing Atlantic swells surged over the sandbar. You scrambled back to high ground at the Lighthouse Dock.
+        </p>
+    </div>
+
+    <!-- Start / Pause Overlay -->
+    <div id="start-overlay" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-6">
+        <div class="radio-card rounded-2xl max-w-lg w-full p-8 text-center border border-amber-400/30">
+            <div class="inline-block font-mono-retro text-xs tracking-widest uppercase text-amber-300 bg-amber-500/10 border border-amber-400/30 px-3 py-1 rounded-full mb-4">
+                Milestone 1 // Greybox & Tide Loop Prototype
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-light tracking-wider text-white mb-2">
+                LOW TIDE
+            </h1>
+            <p class="font-mono-retro text-xs text-slate-400 mb-6">
+                GANNET ROCK LIGHT STATION — MAINE COAST, WINTER 1998
+            </p>
+            <p class="text-sm text-slate-300 leading-relaxed mb-6">
+                You are Arthur, temporary winter lighthouse keeper on a fog-bound island. Watch the tide clock: as the water falls, sandbars emerge connecting Gannet Rock to the <span class="text-amber-200">East Shipwreck</span> and <span class="text-amber-200">West Sea Cave</span>.
+            </p>
+            <button id="btn-start-game" class="w-full py-3.5 px-6 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-sm tracking-wide transition shadow-lg shadow-amber-500/20 cursor-pointer">
+                CLICK TO BEGIN WATCH
+            </button>
+            <p class="text-[11px] text-slate-400 mt-4 font-mono-retro">
+                Tip: If pointer lock is blocked in preview, click and drag mouse to look around.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * LOW TIDE — MILESTONE 1 GREYBOX & CORE LOOP PROTOTYPE
+         * Self-contained 3D First-Person Coastal Exploration & Dynamic Tide Engine
+         */
+
+        // ==========================================
+        // 1. SYNTHESIZED WEB AUDIO ENGINE (NO EXTERNAL URLS)
+        // ==========================================
+        class CoastalAudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.initialized = false;
+                this.windGain = null;
+                this.waveGain = null;
+                this.stepTimer = 0;
+            }
+
+            init() {
+                if (this.initialized) return;
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioCtx();
+                this.initialized = true;
+                this.startAmbientOcean();
+            }
+
+            startAmbientOcean() {
+                // Create brown/pink noise buffer for realistic ocean surf & coastal wind
+                const bufferSize = this.ctx.sampleRate * 4;
+                const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                let lastOut = 0.0;
+                for (let i = 0; i < bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    output[i] = (lastOut + (0.02 * white)) / 1.02;
+                    lastOut = output[i];
+                    output[i] *= 2.8;
+                }
+
+                // Ocean Surf Layer
+                const surfSource = this.ctx.createBufferSource();
+                surfSource.buffer = noiseBuffer;
+                surfSource.loop = true;
+
+                const surfFilter = this.ctx.createBiquadFilter();
+                surfFilter.type = 'lowpass';
+                surfFilter.frequency.value = 340;
+
+                this.waveGain = this.ctx.createGain();
+                this.waveGain.gain.value = 0.14;
+
+                surfSource.connect(surfFilter);
+                surfFilter.connect(this.waveGain);
+                this.waveGain.connect(this.ctx.destination);
+                surfSource.start();
+
+                // High Coastal Wind Layer
+                const windSource = this.ctx.createBufferSource();
+                windSource.buffer = noiseBuffer;
+                windSource.loop = true;
+
+                const windFilter = this.ctx.createBiquadFilter();
+                windFilter.type = 'bandpass';
+                windFilter.frequency.value = 620;
+                windFilter.Q.value = 2.2;
+
+                this.windGain = this.ctx.createGain();
+                this.windGain.gain.value = 0.04;
+
+                windSource.connect(windFilter);
+                windFilter.connect(this.windGain);
+                this.windGain.connect(this.ctx.destination);
+                windSource.start();
+            }
+
+            updateAmbient(timeSeconds, playerAltitude) {
+                if (!this.initialized) return;
+                // Rhythmic wave swell modulation
+                const swell = 0.11 + Math.sin(timeSeconds * 0.65) * 0.05;
+                this.waveGain.gain.setTargetAtTime(swell, this.ctx.currentTime, 0.2);
+
+                // Stronger wind higher up near the lighthouse lantern
+                const windIntensity = Math.min(0.11, 0.03 + Math.max(0, playerAltitude) * 0.004);
+                this.windGain.gain.setTargetAtTime(windIntensity, this.ctx.currentTime, 0.3);
+            }
+
+            playFootstep(surfaceType = 'rock') {
+                if (!this.initialized) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                const filter = this.ctx.createBiquadFilter();
+
+                if (surfaceType === 'wood') {
+                    // Hollow wooden dock thud
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(115 + Math.random() * 20, now);
+                    osc.frequency.exponentialRampToValueAtTime(48, now + 0.09);
+                    filter.type = 'lowpass';
+                    filter.frequency.value = 420;
+                    gain.gain.setValueAtTime(0.16, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                } else if (surfaceType === 'sand') {
+                    // Soft wet sand crunch
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(180 + Math.random() * 40, now);
+                    osc.frequency.exponentialRampToValueAtTime(70, now + 0.08);
+                    filter.type = 'bandpass';
+                    filter.frequency.value = 900;
+                    gain.gain.setValueAtTime(0.09, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+                } else {
+                    // Gravel / granite boot crunch
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(140 + Math.random() * 35, now);
+                    osc.frequency.exponentialRampToValueAtTime(55, now + 0.07);
+                    filter.type = 'lowpass';
+                    filter.frequency.value = 650;
+                    gain.gain.setValueAtTime(0.11, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                }
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.11);
+            }
+
+            playRadioStaticBurst() {
+                if (!this.initialized) return;
+                const now = this.ctx.currentTime;
+                // Squelch beep + white noise burst
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1450, now);
+                osc.frequency.setValueAtTime(1120, now + 0.04);
+
+                gain.gain.setValueAtTime(0.07, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            }
+
+            playDistantFoghorn() {
+                if (!this.initialized) return;
+                const now = this.ctx.currentTime;
+                const osc1 = this.ctx.createOscillator();
+                const osc2 = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                const filter = this.ctx.createBiquadFilter();
+
+                osc1.type = 'sawtooth';
+                osc2.type = 'sawtooth';
+                osc1.frequency.setValueAtTime(82.41, now); // Low E2
+                osc2.frequency.setValueAtTime(103.83, now); // G#2 mournful minor/major interval
+
+                filter.type = 'lowpass';
+                filter.frequency.value = 260;
+
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(0.08, now + 0.6);
+                gain.gain.setValueAtTime(0.08, now + 2.2);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.8);
+
+                osc1.connect(filter);
+                osc2.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc1.start(now);
+                osc2.start(now);
+                osc1.stop(now + 3.9);
+                osc2.stop(now + 3.9);
+            }
+        }
+
+        const audioEngine = new CoastalAudioEngine();
+
+        // ==========================================
+        // 2. THREE.JS SCENE, ATMOSPHERE & LIGHTING
+        // ==========================================
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+
+        // Late-1990s Maine Coastal Fog & Overcast Slate Sky
+        const fogColor = new THREE.Color(0x526373);
+        scene.background = fogColor;
+        scene.fog = new THREE.FogExp2(0x526373, 0.0085);
+
+        const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 450);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.05;
+        container.appendChild(renderer.domElement);
+
+        // Lighting: Overcast Hemisphere + Muted Sun + Warm Lighthouse & Cottage Glows
+        const hemiLight = new THREE.HemisphereLight(0x9fb4c7, 0x26323d, 0.85);
+        scene.add(hemiLight);
+
+        const dirLight = new THREE.DirectionalLight(0xdce6f0, 0.85);
+        dirLight.position.set(-45, 75, 35);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.near = 10;
+        dirLight.shadow.camera.far = 180;
+        const d = 75;
+        dirLight.shadow.camera.left = -d;
+        dirLight.shadow.camera.right = d;
+        dirLight.shadow.camera.top = d;
+        dirLight.shadow.camera.bottom = -d;
+        dirLight.shadow.bias = -0.0005;
+        scene.add(dirLight);
+
+        // ==========================================
+        // 3. TERRAIN HEIGHTMAP & GREYBOX ISLAND ARCHITECTURE
+        // ==========================================
+        // Deterministic height function so player physics & 3D mesh match 100%
+        function getTerrainHeight(x, z) {
+            // 1. Main Island: Gannet Rock centered at (0, 0), radius ~34m
+            const distMain = Math.hypot(x, z);
+            let hMain = -4.0;
+            if (distMain < 42) {
+                const t = Math.max(0, 1 - distMain / 36);
+                // Smooth stepped coastal plateau + summit hill
+                hMain = -3.5 + Math.pow(t, 1.35) * 14.5;
+                // Add subtle craggy granite ridges
+                hMain += Math.sin(x * 0.18) * Math.cos(z * 0.18) * 0.55 * t;
+            }
+
+            // Flatten summit plateau for Lighthouse & Keeper's Cottage around (0, -4)
+            const distSummit = Math.hypot(x - 0, z + 4);
+            if (distSummit < 11) {
+                const blend = Math.max(0, 1 - distSummit / 11);
+                hMain = hMain * (1 - blend) + 10.2 * blend;
+            }
+
+            // Flatten South Dock approach around (0, 26)
+            const distDockShore = Math.hypot(x - 0, z - 25);
+            if (distDockShore < 8) {
+                const blend = Math.max(0, 1 - distDockShore / 8);
+                hMain = hMain * (1 - blend) + 2.4 * blend;
+            }
+
+            // 2. East Sandbar (x from 26 to 68, z around 4) -> Height ~ 1.55m (Tide-locked!)
+            let hEastSandbar = -4.0;
+            if (x > 20 && x < 74) {
+                const zOffset = Math.sin((x - 25) * 0.07) * 3.5;
+                const distFromBarCenter = Math.abs(z - (4 + zOffset));
+                if (distFromBarCenter < 9.5) {
+                    const widthFactor = Math.cos((distFromBarCenter / 9.5) * (Math.PI / 2));
+                    hEastSandbar = -2.0 + widthFactor * 3.65; // Peaks at +1.65m
+                }
+            }
+
+            // 3. East Sea Stack: Shipwreck Stack centered at (76, 6), radius ~15m
+            const distEastStack = Math.hypot(x - 76, z - 6);
+            let hEastStack = -4.0;
+            if (distEastStack < 19) {
+                const t = Math.max(0, 1 - distEastStack / 17);
+                hEastStack = -2.5 + Math.pow(t, 1.2) * 8.2;
+            }
+
+            // 4. West Sandbar (x from -26 to -66, z around -6) -> Height ~ 1.60m (Tide-locked!)
+            let hWestSandbar = -4.0;
+            if (x < -20 && x > -72) {
+                const zOffset = Math.cos((x + 25) * 0.08) * 3.0;
+                const distFromBarCenter = Math.abs(z - (-6 + zOffset));
+                if (distFromBarCenter < 9.0) {
+                    const widthFactor = Math.cos((distFromBarCenter / 9.0) * (Math.PI / 2));
+                    hWestSandbar = -2.0 + widthFactor * 3.70; // Peaks at +1.70m
+                }
+            }
+
+            // 5. West Sea Stack: Echo Sea Cave centered at (-74, -8), radius ~16m
+            const distWestStack = Math.hypot(x + 74, z + 8);
+            let hWestStack = -4.0;
+            if (distWestStack < 20) {
+                const t = Math.max(0, 1 - distWestStack / 18);
+                hWestStack = -2.5 + Math.pow(t, 1.25) * 9.5;
+            }
+
+            return Math.max(hMain, hEastSandbar, hEastStack, hWestSandbar, hWestStack);
+        }
+
+        // Build High-Resolution Greybox Terrain Mesh with Vertex Colors (Granite, Wet Kelp Line, Golden Sandbars)
+        function createIslandTerrain() {
+            const size = 210;
+            const segments = 180;
+            const geo = new THREE.PlaneGeometry(size, size, segments, segments);
+            geo.rotateX(-Math.PI / 2);
+
+            const pos = geo.attributes.position;
+            const colors = [];
+
+            const colorSand = new THREE.Color(0x9e957e);     // Tide-washed sandbar
+            const colorWetRock = new THREE.Color(0x3a434a);  // Dark intertidal granite / kelp zone
+            const colorGranite = new THREE.Color(0x6b747c);  // Stylized greybox island stone
+            const colorMoss = new THREE.Color(0x4d5e53);     // Hardy coastal lichen/grass on high ground
+
+            for (let i = 0; i < pos.count; i++) {
+                const vx = pos.getX(i);
+                const vz = pos.getZ(i);
+                const vy = getTerrainHeight(vx, vz);
+                pos.setY(i, vy);
+
+                // Vertex coloring based on elevation & sandbar zones
+                const c = new THREE.Color();
+                const isSandbarZone = (Math.abs(vx) > 25 && Math.abs(vx) < 67 && vy > 0.3 && vy < 2.2);
+                if (isSandbarZone || vy < 1.35) {
+                    c.copy(colorSand);
+                } else if (vy < 3.4) {
+                    c.copy(colorWetRock).lerp(colorGranite, (vy - 1.35) / 2.05);
+                } else if (vy < 7.5) {
+                    c.copy(colorGranite);
+                } else {
+                    c.copy(colorGranite).lerp(colorMoss, Math.min(1, (vy - 7.5) / 3.0));
+                }
+                colors.push(c.r, c.g, c.b);
+            }
+
+            geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            geo.computeVertexNormals();
+
+            const mat = new THREE.MeshStandardMaterial({
+                vertexColors: true,
+                roughness: 0.88,
+                metalness: 0.05,
+                flatShading: true
+            });
+
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.receiveShadow = true;
+            mesh.castShadow = true;
+            scene.add(mesh);
+        }
+        createIslandTerrain();
+
+        // ==========================================
+        // 4. LANDMARKS & INTERACTIVE STORY PROPS
+        // ==========================================
+        const interactiveObjects = []; // { mesh, position, radius, title, id, onInteract }
+        const binoTargets = [];        // { position, label }
+
+        // Materials
+        const matWhiteStone = new THREE.MeshStandardMaterial({ color: 0xd9dde0, roughness: 0.75, flatShading: true });
+        const matRedTrim = new THREE.MeshStandardMaterial({ color: 0x8f2d2d, roughness: 0.65, flatShading: true });
+        const matDarkIron = new THREE.MeshStandardMaterial({ color: 0x22282e, roughness: 0.45, metalness: 0.6 });
+        const matWeatheredWood = new THREE.MeshStandardMaterial({ color: 0x5c4938, roughness: 0.9, flatShading: true });
+        const matWarmWindow = new THREE.MeshBasicMaterial({ color: 0xffb84d });
+        const matBrass = new THREE.MeshStandardMaterial({ color: 0xd4a446, roughness: 0.3, metalness: 0.8 });
+
+        // --- A. THE LIGHTHOUSE (Central Hub at 0, 10.2, -6) ---
+        const lighthouseGroup = new THREE.Group();
+        lighthouseGroup.position.set(0, 10.1, -6);
+
+        // Granite Base
+        const lhBase = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 4.0, 3.0, 12), new THREE.MeshStandardMaterial({ color: 0x4b5359, roughness: 0.9, flatShading: true }));
+        lhBase.position.y = 1.5;
+        lhBase.castShadow = true;
+        lhBase.receiveShadow = true;
+        lighthouseGroup.add(lhBase);
+
+        // Tapered Tower Shaft
+        const lhShaft = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 3.3, 15.0, 12), matWhiteStone);
+        lhShaft.position.y = 10.5;
+        lhShaft.castShadow = true;
+        lhShaft.receiveShadow = true;
+        lighthouseGroup.add(lhShaft);
+
+        // Red Daymark Stripe
+        const lhStripe = new THREE.Mesh(new THREE.CylinderGeometry(2.68, 2.95, 3.5, 12), matRedTrim);
+        lhStripe.position.y = 11.0;
+        lighthouseGroup.add(lhStripe);
+
+        // Gallery Deck & Lantern Room
+        const lhGallery = new THREE.Mesh(new THREE.CylinderGeometry(3.0, 3.0, 0.5, 16), matDarkIron);
+        lhGallery.position.y = 18.2;
+        lighthouseGroup.add(lhGallery);
+
+        const lhLanternGlass = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.75, 1.75, 2.8, 12),
+            new THREE.MeshBasicMaterial({ color: 0xffd27d, transparent: true, opacity: 0.85 })
+        );
+        lhLanternGlass.position.y = 19.8;
+        lighthouseGroup.add(lhLanternGlass);
+
+        const lhRoof = new THREE.Mesh(new THREE.ConeGeometry(2.2, 2.0, 12), matRedTrim);
+        lhRoof.position.y = 22.1;
+        lighthouseGroup.add(lhRoof);
+
+        // Heavy Iron Lighthouse Door (Interactive)
+        const lhDoor = new THREE.Mesh(new THREE.BoxGeometry(1.3, 2.3, 0.4), matRedTrim);
+        lhDoor.position.set(0, 1.2, 3.75);
+        lighthouseGroup.add(lhDoor);
+
+        // Rotating Fresnel Light Beam Pivot
+        const beamPivot = new THREE.Group();
+        beamPivot.position.set(0, 19.8, 0);
+
+        const coneGeo = new THREE.ConeGeometry(14, 95, 24, 1, true);
+        coneGeo.translate(0, -47.5, 0);
+        coneGeo.rotateX(-Math.PI / 2);
+        const coneMat = new THREE.MeshBasicMaterial({
+            color: 0xffcf70,
+            transparent: true,
+            opacity: 0.13,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+
+        const beam1 = new THREE.Mesh(coneGeo, coneMat);
+        const beam2 = new THREE.Mesh(coneGeo, coneMat);
+        beam2.rotation.y = Math.PI;
+        beamPivot.add(beam1, beam2);
+
+        const lanternPointLight = new THREE.PointLight(0xffb84d, 2.2, 45);
+        beamPivot.add(lanternPointLight);
+        lighthouseGroup.add(beamPivot);
+        scene.add(lighthouseGroup);
+
+        interactiveObjects.push({
+            id: 'lighthouse',
+            position: new THREE.Vector3(0, 11.2, -2.0),
+            radius: 4.5,
+            title: 'Check Fresnel Lamp Crank',
+            onInteract: () => {
+                markLandmarkFound('lighthouse', 'chk-lighthouse');
+                triggerRadioConversation(
+                    "CH-16 // CLARA (COAST GUARD DISPATCH)",
+                    "\"I see your beam sweeping clear through the fog bank, Arthur. Clockwork weights holding steady?\"",
+                    [
+                        {
+                            text: "\"Wound it an hour ago. Lens is turning smooth.\"",
+                            reply: "\"Good. Keep an eye on the tide chart—low water should expose the outer bars right about now.\""
+                        },
+                        {
+                            text: "\"Fog's thick enough to chew, but the lamp cuts right through.\"",
+                            reply: "\"That's why they pay you the big bucks. Stay off the sandbars once the tide turns.\""
+                        }
+                    ]
+                );
+            }
+        });
+        binoTargets.push({ position: new THREE.Vector3(0, 30, -6), label: 'GANNET ROCK LIGHTHOUSE (1884)' });
+
+        // --- B. KEEPER'S STONE COTTAGE (Cozy Warmth at -8, 10.1, 1) ---
+        const cottageGroup = new THREE.Group();
+        cottageGroup.position.set(-8.5, 10.0, 1.5);
+        cottageGroup.rotation.y = 0.45;
+
+        const cotBody = new THREE.Mesh(new THREE.BoxGeometry(6.5, 3.6, 5.0), new THREE.MeshStandardMaterial({ color: 0x575e63, roughness: 0.9, flatShading: true }));
+        cotBody.position.y = 1.8;
+        cotBody.castShadow = true;
+        cotBody.receiveShadow = true;
+        cottageGroup.add(cotBody);
+
+        const cotRoof = new THREE.Mesh(new THREE.ConeGeometry(5.2, 2.4, 4), matRedTrim);
+        cotRoof.position.y = 4.8;
+        cotRoof.rotation.y = Math.PI / 4;
+        cotRoof.castShadow = true;
+        cottageGroup.add(cotRoof);
+
+        // Chimney
+        const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.9, 2.4, 0.9), matDarkIron);
+        chimney.position.set(1.8, 5.0, -0.8);
+        cottageGroup.add(chimney);
+
+        // Warm Glowing Cottage Windows
+        const win1 = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), matWarmWindow);
+        win1.position.set(-1.5, 2.0, 2.52);
+        const win2 = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), matWarmWindow);
+        win2.position.set(1.5, 2.0, 2.52);
+        const cotDoor = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.1, 0.2), matWeatheredWood);
+        cotDoor.position.set(0, 1.05, 2.52);
+        cottageGroup.add(win1, win2, cotDoor);
+
+        const cottageLight = new THREE.PointLight(0xffaa3b, 1.6, 16);
+        cottageLight.position.set(0, 2.5, 3.5);
+        cottageGroup.add(cottageLight);
+        scene.add(cottageGroup);
+
+        interactiveObjects.push({
+            id: 'cottage',
+            position: new THREE.Vector3(-7.2, 11.2, 4.0),
+            radius: 4.5,
+            title: 'Check Wood Stove & Radio Desk',
+            onInteract: () => {
+                markLandmarkFound('cottage', 'chk-cottage');
+                triggerRadioConversation(
+                    "CH-16 // CLARA (COAST GUARD DISPATCH)",
+                    "\"Sounds warm in there. Did you find the spare kerosene cans in the stone shed?\"",
+                    [
+                        {
+                            text: "\"Stove's roaring and coffee's on. Plenty of fuel.\"",
+                            reply: "\"Jealous. All I've got is burnt machine coffee and static on channel 16.\""
+                        },
+                        {
+                            text: "\"Found some old 1970s oceanography logs on the shelf.\"",
+                            reply: "\"Huh... yeah, the university used Gannet Rock before automation. Mostly weather balloons and drift buoys.\""
+                        }
+                    ]
+                );
+            }
+        });
+
+        // --- C. WEATHERED WOODEN DOCK (South Shore Spawn Point at 0, 2.8, 28) ---
+        const dockGroup = new THREE.Group();
+        dockGroup.position.set(0, 2.9, 28);
+
+        const dockDeck = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.35, 13.0), matWeatheredWood);
+        dockDeck.position.set(0, 0, 3.5);
+        dockDeck.castShadow = true;
+        dockDeck.receiveShadow = true;
+        dockGroup.add(dockDeck);
+
+        // Wooden Pilings
+        for (let pz = -2; pz <= 9; pz += 3.6) {
+            for (let px of [-1.6, 1.6]) {
+                const piling = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.25, 5.5, 8), matWeatheredWood);
+                piling.position.set(px, -1.6, pz);
+                piling.castShadow = true;
+                dockGroup.add(piling);
+            }
+        }
+        scene.add(dockGroup);
+        binoTargets.push({ position: new THREE.Vector3(0, 3.5, 36), label: 'SOUTH LANDING DOCK' });
+
+        // --- D. EAST SEA STACK: SHIPWRECK & 1970s CANISTER (76, 5.7, 6) ---
+        const wreckGroup = new THREE.Group();
+        wreckGroup.position.set(76, 5.4, 6);
+
+        // Tilted Wooden Hull Ribs & Keel
+        const hullBody = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 3.4, 11.5, 8), matWeatheredWood);
+        hullBody.rotation.z = Math.PI / 2.35;
+        hullBody.rotation.y = 0.4;
+        hullBody.position.set(0, 1.3, 0);
+        hullBody.castShadow = true;
+        wreckGroup.add(hullBody);
+
+        // Broken Mast
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.28, 8.5, 8), matWeatheredWood);
+        mast.position.set(-1.2, 3.6, 0.5);
+        mast.rotation.z = -0.35;
+        wreckGroup.add(mast);
+
+        // Mysterious 1970s Waterproof Canister (Brass/Yellow cylinder)
+        const canister = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.35, 0.35, 1.1, 12),
+            new THREE.MeshStandardMaterial({ color: 0xd99b26, roughness: 0.4, metalness: 0.5 })
+        );
+        canister.position.set(2.5, 0.8, 2.2);
+        canister.rotation.z = 1.2;
+        wreckGroup.add(canister);
+        scene.add(wreckGroup);
+
+        interactiveObjects.push({
+            id: 'shipwreck',
+            position: new THREE.Vector3(78.5, 6.2, 8.2),
+            radius: 5.5,
+            title: 'Inspect 1974 Waterproof Canister',
+            onInteract: () => {
+                markLandmarkFound('shipwreck', 'chk-shipwreck');
+                triggerRadioConversation(
+                    "CH-16 // CLARA (COAST GUARD DISPATCH)",
+                    "\"Wait—you walked all the way out to the East Stack? What did you find wedged in the hull?\"",
+                    [
+                        {
+                            text: "\"An orange canister marked 'PROJECT PELAGIC - 1974'.\"",
+                            reply: "\"...Keep that dry and bring it back before the sandbar floods. Don't open it out in the salt spray.\""
+                        },
+                        {
+                            text: "\"Just an old trawler wreck, Clara. Looks like it's been here decades.\"",
+                            reply: "\"Watch the water level behind you! Once the tide turns, that sandbar disappears in minutes.\""
+                        }
+                    ]
+                );
+            }
+        });
+        binoTargets.push({ position: new THREE.Vector3(76, 8, 6), label: 'EAST SEA STACK // UNCHARTED WRECK' });
+
+        // --- E. WEST SEA STACK: ECHO SEA CAVE & DRIFT BUOY (-74, 6.8, -8) ---
+        const caveGroup = new THREE.Group();
+        caveGroup.position.set(-74, 5.5, -8);
+
+        // Stone Archway Pillars & Capstone
+        const archMat = new THREE.MeshStandardMaterial({ color: 0x454e54, roughness: 0.92, flatShading: true });
+        const pillarL = new THREE.Mesh(new THREE.DodecahedronGeometry(3.8, 1), archMat);
+        pillarL.position.set(0, 2.0, -3.5);
+        const pillarR = new THREE.Mesh(new THREE.DodecahedronGeometry(3.8, 1), archMat);
+        pillarR.position.set(0, 2.0, 3.5);
+        const archTop = new THREE.Mesh(new THREE.BoxGeometry(6.5, 3.2, 11.5), archMat);
+        archTop.position.set(0, 5.2, 0);
+        caveGroup.add(pillarL, pillarR, archTop);
+
+        // Washed-up Oceanographic Buoy inside the Cave Arch
+        const buoy = new THREE.Mesh(
+            new THREE.SphereGeometry(1.1, 10, 10),
+            new THREE.MeshStandardMaterial({ color: 0xb83b2b, roughness: 0.5, flatShading: true })
+        );
+        buoy.position.set(1.5, 1.2, 0);
+        const buoyBeacon = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 1.6, 8), matBrass);
+        buoyBeacon.position.set(1.5, 2.4, 0);
+        caveGroup.add(buoy, buoyBeacon);
+        scene.add(caveGroup);
+
+        interactiveObjects.push({
+            id: 'seacave',
+            position: new THREE.Vector3(-72.5, 6.5, -8),
+            radius: 6.0,
+            title: 'Examine Washed-Up Acoustic Buoy',
+            onInteract: () => {
+                markLandmarkFound('seacave', 'chk-seacave');
+                triggerRadioConversation(
+                    "CH-16 // CLARA (COAST GUARD DISPATCH)",
+                    "\"Echo Cave? Your signal's bouncing off the basalt walls. What's sitting in the arch?\"",
+                    [
+                        {
+                            text: "\"A rusted acoustic buoy—its battery pack is still warm.\"",
+                            reply: "\"Warm? Nobody's serviced offshore buoys out there since the station closed. Head back to high ground, Arthur.\""
+                        },
+                        {
+                            text: "\"Just tangled kelp and barnacles. Acoustics are eerie in here.\"",
+                            reply: "\"Don't linger. Check your pocket watch—the Atlantic doesn't wait for sightseers.\""
+                        }
+                    ]
+                );
+            }
+        });
+        binoTargets.push({ position: new THREE.Vector3(-74, 9, -8), label: 'WEST SEA STACK // ECHO SEA CAVE' });
+
+        // Scatter Stylized Greybox Coastal Boulders & Distant Channel Buoys
+        function populateCoastalRocks() {
+            const rockGeo = new THREE.DodecahedronGeometry(1, 0);
+            const rockMat = new THREE.MeshStandardMaterial({ color: 0x3b444b, roughness: 0.92, flatShading: true });
+            const rockCoords = [
+                [14, 14, 2.4], [-16, 15, 2.8], [18, -14, 3.1], [-19, -15, 2.6],
+                [8, -22, 3.5], [-10, -24, 2.9], [44, 11, 1.8], [56, -2, 2.1],
+                [-42, -13, 2.0], [-55, 1, 1.7], [84, 14, 3.2], [-82, -16, 3.4]
+            ];
+            rockCoords.forEach(([rx, rz, scale]) => {
+                const rock = new THREE.Mesh(rockGeo, rockMat);
+                const ry = getTerrainHeight(rx, rz);
+                rock.position.set(rx, ry + scale * 0.3, rz);
+                rock.scale.set(scale * 1.2, scale * 0.85, scale);
+                rock.rotation.set(Math.random(), Math.random(), Math.random());
+                rock.castShadow = true;
+                rock.receiveShadow = true;
+                scene.add(rock);
+            });
+        }
+        populateCoastalRocks();
+
+        // ==========================================
+        // 5. ANIMATED DYNAMIC OCEAN & TIDE SYSTEM
+        // ==========================================
+        const oceanGeo = new THREE.PlaneGeometry(520, 520, 72, 72);
+        oceanGeo.rotateX(-Math.PI / 2);
+        const oceanBasePos = Float32Array.from(oceanGeo.attributes.position.array);
+
+        const oceanMat = new THREE.MeshStandardMaterial({
+            color: 0x1c3b4d,
+            roughness: 0.28,
+            metalness: 0.35,
+            transparent: true,
+            opacity: 0.92,
+            flatShading: true
+        });
+        const oceanMesh = new THREE.Mesh(oceanGeo, oceanMat);
+        oceanMesh.receiveShadow = true;
+        scene.add(oceanMesh);
+
+        // Sea Spray Atmospheric Particles
+        const sprayCount = 350;
+        const sprayGeo = new THREE.BufferGeometry();
+        const sprayPositions = new Float32Array(sprayCount * 3);
+        for (let i = 0; i < sprayCount; i++) {
+            sprayPositions[i * 3] = (Math.random() - 0.5) * 180;
+            sprayPositions[i * 3 + 1] = Math.random() * 25 + 1;
+            sprayPositions[i * 3 + 2] = (Math.random() - 0.5) * 180;
+        }
+        sprayGeo.setAttribute('position', new THREE.BufferAttribute(sprayPositions, 3));
+        const sprayMat = new THREE.PointsMaterial({
+            color: 0xcbd5e1,
+            size: 0.25,
+            transparent: true,
+            opacity: 0.35
+        });
+        const sprayParticles = new THREE.Points(sprayGeo, sprayMat);
+        scene.add(sprayParticles);
+
+        // ==========================================
+        // 6. MASTER TIDE CLOCK & GAME STATE
+        // ==========================================
+        const gameState = {
+            started: false,
+            // Start at 06:15 AM (375 minutes). Tide cycle = 12 hours (720 mins).
+            // At 06:15 (375 mins), tide is falling into Low Tide so sandbars are explorable right away!
+            inGameMinutes: 6 * 60 + 15,
+            timeScale: 3.5, // 1 real second = 3.5 in-game minutes (relaxed cozy pace, or press T to jump +1 hr)
+            waterY: 1.1,
+            tideState: 'FALLING',
+            stamina: 100,
+            isZooming: false,
+            currentFOV: 65,
+            isRespawning: false,
+            discoveredLandmarks: new Set(),
+            activeRadio: null,
+            radioHideTimeout: null,
+            discoveredSandbarToast: false
+        };
+
+        // Compute Tide Level (Oscillates smoothly between 0.2m Low Tide and 4.2m High Tide)
+        function updateTideClock(dt) {
+            gameState.inGameMinutes = (gameState.inGameMinutes + dt * gameState.timeScale) % (24 * 60);
+
+            // 12-hour tidal cycle (720 minutes).
+            // Peak Low Tide at 07:30 (450 mins) and 19:30 (1170 mins).
+            // Peak High Tide at 01:30 (90 mins) and 13:30 (810 mins).
+            const cycleAngle = ((gameState.inGameMinutes - 90) / 720) * Math.PI * 2;
+            const normalizedTide = (Math.cos(cycleAngle) + 1) / 2; // 1.0 = High Tide, 0.0 = Low Tide
+            const prevWaterY = gameState.waterY;
+            gameState.waterY = 0.20 + normalizedTide * 4.0; // 0.20m to 4.20m
+
+            // Determine Tide State Label
+            const deltaY = gameState.waterY - prevWaterY;
+            if (normalizedTide < 0.22) {
+                gameState.tideState = 'LOW TIDE';
+            } else if (normalizedTide > 0.78) {
+                gameState.tideState = 'HIGH TIDE';
+            } else {
+                gameState.tideState = deltaY >= 0 ? 'RISING' : 'FALLING';
+            }
+
+            // Update HUD Pocket Watch & Barometer
+            const totalMins = Math.floor(gameState.inGameMinutes);
+            const hrs24 = Math.floor(totalMins / 60) % 24;
+            const mins = totalMins % 60;
+            const ampm = hrs24 >= 12 ? 'PM' : 'AM';
+            const hrs12 = hrs24 % 12 === 0 ? 12 : hrs24 % 12;
+            document.getElementById('hud-clock-text').textContent =
+                `${String(hrs12).padStart(2, '0')}:${String(mins).padStart(2, '0')} ${ampm}`;
+
+            const tideEl = document.getElementById('hud-tide-state');
+            tideEl.textContent = gameState.tideState;
+            tideEl.className = 'font-mono-retro font-bold ' + (
+                gameState.tideState === 'LOW TIDE' ? 'text-emerald-300' :
+                gameState.tideState === 'HIGH TIDE' ? 'text-rose-400' :
+                gameState.tideState === 'RISING' ? 'text-amber-300' : 'text-sky-300'
+            );
+
+            document.getElementById('hud-water-level').textContent = `${gameState.waterY.toFixed(2)}m`;
+            document.getElementById('hud-tide-bar').style.width = `${Math.round(normalizedTide * 100)}%`;
+
+            // Rotate SVG Watch Hands
+            const minDeg = (mins / 60) * 360;
+            const hourDeg = ((hrs12 + mins / 60) / 12) * 360;
+            document.getElementById('watch-min-hand').setAttribute('transform', `rotate(${minDeg} 50 50)`);
+            document.getElementById('watch-hour-hand').setAttribute('transform', `rotate(${hourDeg} 50 50)`);
+        }
+
+        function advanceTimeOneHour() {
+            gameState.inGameMinutes = (gameState.inGameMinutes + 60) % (24 * 60);
+            audioEngine.playRadioStaticBurst();
+        }
+        document.getElementById('btn-skip-time').addEventListener('click', advanceTimeOneHour);
+
+        // ==========================================
+        // 7. GROUNDED FIRST-PERSON CONTROLLER
+        // ==========================================
+        const player = {
+            position: new THREE.Vector3(0, 3.2, 26), // Start near South Dock overlooking island
+            velocity: new THREE.Vector3(),
+            yaw: Math.PI, // Facing North toward Lighthouse
+            pitch: 0.08,
+            eyeHeight: 1.72,
+            walkSpeed: 4.2,
+            briskSpeed: 6.8,
+            bobTimer: 0
+        };
+
+        const keys = {};
+        window.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            if (!gameState.started) return;
+
+            if (e.code === 'KeyB') setBinoculars(true);
+            if (e.code === 'KeyT') advanceTimeOneHour();
+            if (e.code === 'KeyE') handleInteraction();
+            if (e.code === 'Digit1' && gameState.activeRadio) selectRadioOption(0);
+            if (e.code === 'Digit2' && gameState.activeRadio) selectRadioOption(1);
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+            if (e.code === 'KeyB') setBinoculars(false);
+        });
+
+        // Mouse Look (Supports both PointerLock and Drag-Look fallback)
+        let isMouseDown = false;
+        window.addEventListener('mousedown', (e) => {
+            if (!gameState.started) return;
+            if (e.button === 2) {
+                setBinoculars(true);
+            } else if (e.button === 0) {
+                isMouseDown = true;
+                if (document.pointerLockElement !== renderer.domElement && renderer.domElement.requestPointerLock) {
+                    try { renderer.domElement.requestPointerLock(); } catch (_) {}
+                }
+            }
+        });
+
+        window.addEventListener('mouseup', (e) => {
+            if (e.button === 2) setBinoculars(false);
+            if (e.button === 0) isMouseDown = false;
+        });
+
+        window.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        window.addEventListener('mousemove', (e) => {
+            if (!gameState.started) return;
+            const locked = document.pointerLockElement === renderer.domElement;
+            if (locked || isMouseDown) {
+                const sensitivity = gameState.isZooming ? 0.0008 : 0.0022;
+                player.yaw -= e.movementX * sensitivity;
+                player.pitch -= e.movementY * sensitivity;
+                player.pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, player.pitch));
+            }
+        });
+
+        function setBinoculars(active) {
+            gameState.isZooming = active;
+            const overlay = document.getElementById('binocular-overlay');
+            const crosshair = document.getElementById('crosshair');
+            if (active) {
+                overlay.classList.remove('opacity-0');
+                crosshair.classList.add('opacity-0');
+            } else {
+                overlay.classList.add('opacity-0');
+                crosshair.classList.remove('opacity-0');
+            }
+        }
+
+        function updateBinocularRangefinder() {
+            if (!gameState.isZooming) return;
+            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            let bestTarget = null;
+            let bestDot = 0.96;
+
+            for (const target of binoTargets) {
+                const toTarget = target.position.clone().sub(camera.position);
+                const dist = toTarget.length();
+                toTarget.normalize();
+                const dot = forward.dot(toTarget);
+                if (dot > bestDot) {
+                    bestDot = dot;
+                    bestTarget = { label: target.label, dist: Math.round(dist) };
+                }
+            }
+
+            const rangeEl = document.getElementById('bino-rangefinder');
+            const labelEl = document.getElementById('bino-target-label');
+            if (bestTarget) {
+                rangeEl.textContent = `DIST: ${bestTarget.dist} m`;
+                labelEl.textContent = bestTarget.label;
+            } else {
+                rangeEl.textContent = `DIST: --- m`;
+                labelEl.textContent = `SCANNING HORIZON...`;
+            }
+        }
+
+        // ==========================================
+        // 8. RADIO DIALOGUE & INTERACTION SYSTEM
+        // ==========================================
+        function triggerRadioConversation(speaker, text, options) {
+            audioEngine.playRadioStaticBurst();
+            if (gameState.radioHideTimeout) clearTimeout(gameState.radioHideTimeout);
+
+            const container = document.getElementById('radio-container');
+            document.getElementById('radio-speaker').textContent = speaker;
+            document.getElementById('radio-dialogue-text').textContent = text;
+
+            const optWrap = document.getElementById('radio-options');
+            if (options && options.length === 2) {
+                optWrap.classList.remove('hidden');
+                document.getElementById('radio-opt-1-text').textContent = options[0].text;
+                document.getElementById('radio-opt-2-text').textContent = options[1].text;
+                gameState.activeRadio = { options };
+            } else {
+                optWrap.classList.add('hidden');
+                gameState.activeRadio = null;
+            }
+
+            container.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+            container.classList.add('pointer-events-auto');
+        }
+
+        function selectRadioOption(index) {
+            if (!gameState.activeRadio) return;
+            const chosen = gameState.activeRadio.options[index];
+            audioEngine.playRadioStaticBurst();
+
+            document.getElementById('radio-speaker').textContent = "CH-16 // CLARA (REPLY)";
+            document.getElementById('radio-dialogue-text').textContent = chosen.reply;
+            document.getElementById('radio-options').classList.add('hidden');
+            gameState.activeRadio = null;
+
+            gameState.radioHideTimeout = setTimeout(() => {
+                const container = document.getElementById('radio-container');
+                container.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+                container.classList.remove('pointer-events-auto');
+            }, 6500);
+        }
+
+        document.getElementById('radio-opt-1').addEventListener('click', () => selectRadioOption(0));
+        document.getElementById('radio-opt-2').addEventListener('click', () => selectRadioOption(1));
+
+        function markLandmarkFound(id, elementId) {
+            if (gameState.discoveredLandmarks.has(id)) return;
+            gameState.discoveredLandmarks.add(id);
+            const li = document.getElementById(elementId);
+            if (li) {
+                li.classList.remove('opacity-70');
+                li.classList.add('text-emerald-300');
+                li.querySelector('span').textContent = '[✓]';
+            }
+            document.getElementById('log-progress').textContent = `${gameState.discoveredLandmarks.size} / 4`;
+        }
+
+        let currentNearbyInteractable = null;
+
+        function checkNearbyInteractables() {
+            let found = null;
+            for (const obj of interactiveObjects) {
+                const dist = player.position.distanceTo(obj.position);
+                if (dist <= obj.radius) {
+                    found = obj;
+                    break;
+                }
+            }
+            currentNearbyInteractable = found;
+            const promptEl = document.getElementById('interact-prompt');
+            if (found) {
+                document.getElementById('interact-text').textContent = found.title;
+                promptEl.classList.remove('opacity-0');
+            } else {
+                promptEl.classList.add('opacity-0');
+            }
+        }
+
+        function handleInteraction() {
+            if (currentNearbyInteractable) {
+                currentNearbyInteractable.onInteract();
+            }
+        }
+
+        function triggerTideRespawn() {
+            if (gameState.isRespawning) return;
+            gameState.isRespawning = true;
+            const hazardOverlay = document.getElementById('tide-hazard-overlay');
+            hazardOverlay.classList.remove('opacity-0');
+
+            setTimeout(() => {
+                // Respawn safely at the South Lighthouse Dock
+                player.position.set(0, 3.3, 26);
+                player.yaw = Math.PI;
+                player.pitch = 0.05;
+                hazardOverlay.classList.add('opacity-0');
+                gameState.isRespawning = false;
+
+                triggerRadioConversation(
+                    "CH-16 // CLARA (COAST GUARD DISPATCH)",
+                    "\"Arthur! My tide monitor spiked—did you just get cut off on the sandbar?\"",
+                    [
+                        {
+                            text: "\"Misjudged the swell. Back on the dock, just soaked boots.\"",
+                            reply: "\"Watch that pocket watch! Above 2.1 meters, those sandbars are completely underwater.\""
+                        },
+                        {
+                            text: "\"I'm fine, Clara. Water came in faster than the chart predicted.\"",
+                            reply: "\"Winter spring tides don't mess around. Use [T] or wait for falling water before crossing again.\""
+                        }
+                    ]
+                );
+            }, 2200);
+        }
+
+        // ==========================================
+        // 9. MAIN SIMULATION LOOP
+        // ==========================================
+        const clock = new THREE.Clock();
+        let foghornTimer = 14;
+
+        function updatePlayerMovement(dt) {
+            if (!gameState.started || gameState.isRespawning) return;
+
+            const forward = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+            const right = new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw));
+
+            const moveDir = new THREE.Vector3();
+            if (keys['KeyW'] || keys['ArrowUp']) moveDir.add(forward);
+            if (keys['KeyS'] || keys['ArrowDown']) moveDir.sub(forward);
+            if (keys['KeyD'] || keys['ArrowRight']) moveDir.add(right);
+            if (keys['KeyA'] || keys['ArrowLeft']) moveDir.sub(right);
+
+            const isMoving = moveDir.lengthSq() > 0;
+            if (isMoving) moveDir.normalize();
+
+            // Brisk walk / sprint stamina handling
+            const wantsBrisk = (keys['ShiftLeft'] || keys['ShiftRight']) && isMoving && gameState.stamina > 5;
+            const speed = wantsBrisk ? player.briskSpeed : player.walkSpeed;
+
+            const staminaWrap = document.getElementById('stamina-wrapper');
+            if (wantsBrisk) {
+                gameState.stamina = Math.max(0, gameState.stamina - dt * 28);
+                staminaWrap.classList.remove('opacity-0');
+            } else {
+                gameState.stamina = Math.min(100, gameState.stamina + dt * 18);
+                if (gameState.stamina >= 99) staminaWrap.classList.add('opacity-0');
+            }
+            document.getElementById('stamina-bar').style.width = `${gameState.stamina}%`;
+
+            // Candidate X/Z movement
+            const nextX = player.position.x + moveDir.x * speed * dt;
+            const nextZ = player.position.z + moveDir.z * speed * dt;
+
+            // Check if walking on wooden dock platform (x in [-1.8, 1.8], z in [24, 37.5])
+            const onDock = (Math.abs(nextX) <= 1.85 && nextZ >= 24.0 && nextZ <= 37.8);
+            const terrainY = onDock ? 3.1 : getTerrainHeight(nextX, nextZ);
+
+            // Prevent walking into deep ocean abyss (> 1.15m below water surface)
+            const waterDepthAtNext = gameState.waterY - terrainY;
+            if (waterDepthAtNext < 1.15 && Math.abs(nextX) < 95 && Math.abs(nextZ) < 95) {
+                player.position.x = nextX;
+                player.position.z = nextZ;
+            }
+
+            // Grounded Height Interpolation + Subtle Footstep Head-Bob
+            const currentFootY = onDock ? 3.1 : getTerrainHeight(player.position.x, player.position.z);
+            let bobOffset = 0;
+
+            if (isMoving) {
+                const bobFreq = wantsBrisk ? 11.5 : 8.2;
+                const prevSin = Math.sin(player.bobTimer);
+                player.bobTimer += dt * bobFreq;
+                const currSin = Math.sin(player.bobTimer);
+                bobOffset = currSin * 0.055;
+
+                // Trigger footstep sound at bottom of stride
+                if (prevSin >= 0 && currSin < 0) {
+                    const surf = onDock ? 'wood' : (Math.abs(player.position.x) > 25 && currentFootY < 2.2 ? 'sand' : 'rock');
+                    audioEngine.playFootstep(surf);
+                }
+            } else {
+                player.bobTimer = 0;
+            }
+
+            const targetEyeY = currentFootY + player.eyeHeight + bobOffset;
+            player.position.y += (targetEyeY - player.position.y) * Math.min(1, dt * 14);
+
+            // Check if rising tide trapped the player on a low-lying sandbar
+            if (gameState.waterY - currentFootY > 1.25) {
+                triggerTideRespawn();
+            }
+
+            // First-time discovery prompt when stepping onto the East or West Sandbars
+            if (!gameState.discoveredSandbarToast && Math.abs(player.position.x) > 32 && Math.abs(player.position.x) < 62) {
+                gameState.discoveredSandbarToast = true;
+                triggerRadioConversation(
+                    "CH-16 // CLARA (COAST GUARD DISPATCH)",
+                    "\"Careful crossing that sandbar, Arthur. Keep one eye on your pocket watch so you make it back before high tide.\"",
+                    null
+                );
+                gameState.radioHideTimeout = setTimeout(() => {
+                    document.getElementById('radio-container').classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+                }, 6500);
+            }
+
+            // Apply Camera Transform & Smooth Binocular FOV Zoom
+            camera.position.copy(player.position);
+            const euler = new THREE.Euler(player.pitch, player.yaw, 0, 'YXZ');
+            camera.quaternion.setFromEuler(euler);
+
+            const targetFOV = gameState.isZooming ? 20 : 65;
+            if (Math.abs(camera.fov - targetFOV) > 0.05) {
+                camera.fov += (targetFOV - camera.fov) * Math.min(1, dt * 10);
+                camera.updateProjectionMatrix();
+            }
+        }
+
+        function animateOceanAndAtmosphere(elapsedTime, dt) {
+            // Rotate Lighthouse Fresnel Lens Beam
+            beamPivot.rotation.y += dt * 0.48;
+
+            // Update Ocean Height & Subtle Vertex Waves
+            oceanMesh.position.y = gameState.waterY;
+            const pos = oceanGeo.attributes.position;
+            for (let i = 0; i < pos.count; i++) {
+                const vx = oceanBasePos[i * 3];
+                const vz = oceanBasePos[i * 3 + 2];
+                const wave = Math.sin(vx * 0.09 + elapsedTime * 1.4) * 0.14 +
+                             Math.cos(vz * 0.08 + elapsedTime * 1.1) * 0.14;
+                pos.setY(i, wave);
+            }
+            pos.needsUpdate = true;
+
+            // Drift Sea Spray Particles in Coastal Breeze
+            const sprayArr = sprayGeo.attributes.position.array;
+            for (let i = 0; i < sprayCount; i++) {
+                sprayArr[i * 3] += dt * 2.4;
+                sprayArr[i * 3 + 1] += Math.sin(elapsedTime + i) * dt * 0.25;
+                if (sprayArr[i * 3] > 90) sprayArr[i * 3] = -90;
+            }
+            sprayGeo.attributes.position.needsUpdate = true;
+
+            // Occasional Mournful Offshore Foghorn
+            foghornTimer -= dt;
+            if (foghornTimer <= 0) {
+                audioEngine.playDistantFoghorn();
+                foghornTimer = 26 + Math.random() * 14;
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = Math.min(clock.getDelta(), 0.1);
+            const elapsed = clock.getElapsedTime();
+
+            if (gameState.started) {
+                updateTideClock(dt);
+                updatePlayerMovement(dt);
+                checkNearbyInteractables();
+                updateBinocularRangefinder();
+                audioEngine.updateAmbient(elapsed, player.position.y);
+            }
+
+            animateOceanAndAtmosphere(elapsed, dt);
+            renderer.render(scene, camera);
+        }
+
+        // ==========================================
+        // 10. INITIALIZATION & RESIZE HANDLERS
+        // ==========================================
+        document.getElementById('btn-start-game').addEventListener('click', () => {
+            audioEngine.init();
+            gameState.started = true;
+            document.getElementById('start-overlay').classList.add('hidden');
+
+            if (renderer.domElement.requestPointerLock) {
+                try { renderer.domElement.requestPointerLock(); } catch (_) {}
+            }
+
+            // Opening Radio Check-In from Clara (Just like Day 1 in Firewatch)
+            setTimeout(() => {
+                triggerRadioConversation(
+                    "CH-16 // CLARA (COAST GUARD DISPATCH)",
+                    "\"Gannet Rock, this is Station Rockland. Tide's dropping fast—if you want to inspect the outer sea stacks before noon, now's your window.\"",
+                    [
+                        {
+                            text: "\"Copy that, Clara. Heading up to check the lighthouse first.\"",
+                            reply: "\"Roger. Give me a shout on the walkie if anything strange washed up during last night's squall.\""
+                        },
+                        {
+                            text: "\"I see the East and West sandbars emerging now. Going for a walk.\"",
+                            reply: "\"Keep an eye on your pocket watch, Arthur. Don't let the Atlantic trap you out there.\""
+                        }
+                    ]
+                );
+            }, 900);
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.onload = function () {
+            animate();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+; Engine configuration file.
+config_version=5
+
+[application]
+config/name="Low Tide"
+config/features=PackedStringArray("4.4", "Forward Plus")
+
+[autoload]
+GameClock="*res://autoload/game_clock.gd"
+TideSystem="*res://autoload/tide_system.gd"
+
