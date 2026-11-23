@@ -1,0 +1,549 @@
+<title>Low Tide Store Page</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Reenie+Beanie&display=swap">
+<style>
+/* Layout concept: a harbourmaster's board. A dark slate field, fog-white type, and amber used only for the lamp and the one action on the page. */
+:root {
+  --deep: #0d151d;      /* Night Water, darkest */
+  --night: #162029;     /* Night Water */
+  --granite: #3a434a;   /* Wet Granite */
+  --slate: #526373;     /* Slate */
+  --sea: #7ea99b;       /* Seafoam */
+  --fog: #dde5e4;       /* Fog */
+  --lantern: #ffb84d;   /* Lantern */
+  --ember: #d9822b;
+  --muted: #9db0b3;     /* Fog pulled toward slate; 7:1 on Night Water */
+  --line: rgba(221, 229, 228, .13);
+  --panel: #1b2832;
+  --display: 'Gloock', 'Iowan Old Style', Georgia, serif;
+  --body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --hand: 'Reenie Beanie', 'Bradley Hand', cursive;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--night); color: var(--fog);
+  font: 400 16px/1.6 var(--body);
+  padding-block: 0 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1180px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--display); font-weight: 400; margin: 0; text-wrap: balance; line-height: 1.1; }
+h2 { font-size: clamp(1.7rem, 3.2vw, 2.3rem); }
+h3 { font-size: 1.3rem; }
+p { margin: 0; }
+a { color: var(--fog); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--lantern); outline-offset: 3px; }
+.eyebrow { font: 500 .72rem/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--sea); }
+.mono { font-family: var(--mono); }
+.muted { color: var(--muted); }
+
+/* top bar + tabs */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: rgba(13, 21, 29, .92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+  margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--deep); }
+.bar .wrap { display: flex; align-items: center; gap: 20px; min-height: 52px; flex-wrap: wrap; }
+.brandmini { display: flex; align-items: center; gap: 10px; font: 400 1.05rem var(--display); letter-spacing: .08em; text-decoration: none; }
+.brandmini svg { width: 34px; height: auto; }
+.tabs { display: flex; gap: 4px; margin-left: auto; }
+.tabs a { font: 500 .78rem var(--mono); letter-spacing: .1em; text-transform: uppercase; text-decoration: none; padding: 16px 12px 14px; color: var(--muted); border-bottom: 2px solid transparent; }
+.tabs a[aria-current="page"] { color: var(--fog); border-color: var(--lantern); }
+.tabs a:hover { color: var(--fog); }
+.draft { background: var(--deep); border-bottom: 1px solid var(--line); font: 400 .78rem/1.5 var(--mono); color: var(--muted);
+  margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 8px max(16px, env(safe-area-inset-left, 0px)); }
+.draft b { color: var(--lantern); font-weight: 500; }
+
+/* hero */
+.hero { position: relative; margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); background: var(--deep); overflow: hidden; }
+.hero canvas { display: block; width: 100%; aspect-ratio: 3840 / 1240; min-height: 300px; object-fit: cover; object-position: 74% 50%; }
+.hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(8, 13, 18, .78) 0%, rgba(8, 13, 18, .25) 45%, rgba(8, 13, 18, 0) 70%), linear-gradient(0deg, rgba(22, 32, 41, 1) 0%, rgba(22, 32, 41, 0) 22%); pointer-events: none; }
+.hero-copy { position: absolute; z-index: 2; left: max(16px, env(safe-area-inset-left, 0px)); bottom: clamp(22px, 5vw, 58px); right: 16px; }
+.hero-in { max-width: 1180px; margin: 0 auto; padding-inline: 0; }
+.hero-logo svg { width: clamp(250px, 40vw, 560px); height: auto; display: block; }
+.hero-copy .eyebrow { display: block; margin-bottom: 14px; }
+.hero-copy .tag { font: 400 clamp(1.1rem, 2.2vw, 1.6rem) var(--display); margin-top: 8px; color: var(--fog); }
+
+/* buy strip */
+.buy { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; padding: 20px 0 8px; }
+.btn { appearance: none; border: 0; cursor: pointer; font: 600 .95rem var(--body); letter-spacing: .02em; padding: 13px 22px; border-radius: 3px; background: var(--lantern); color: #1d1405; }
+.btn:hover { background: #ffc766; }
+.btn.on { background: transparent; color: var(--lantern); box-shadow: inset 0 0 0 1.5px var(--lantern); }
+.btn.ghost { background: transparent; color: var(--fog); box-shadow: inset 0 0 0 1px var(--line); font-weight: 500; }
+.btn.ghost:hover { box-shadow: inset 0 0 0 1px var(--muted); }
+.buy .meta { display: flex; gap: 22px; flex-wrap: wrap; font: 400 .8rem var(--mono); color: var(--muted); letter-spacing: .04em; }
+.buy .meta b { color: var(--fog); font-weight: 500; }
+
+/* store columns */
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 36px; padding-top: 22px; align-items: start; }
+.viewer canvas { width: 100%; height: auto; display: block; background: var(--deep); aspect-ratio: 16 / 9; }
+.viewer .caption { font: 400 .75rem var(--mono); color: var(--muted); padding: 8px 0 0; letter-spacing: .04em; }
+.thumbs { display: flex; gap: 8px; margin-top: 10px; }
+.thumbs button { flex: 1 1 0; min-width: 0; padding: 0; border: 0; background: var(--deep); cursor: pointer; opacity: .6; outline: 2px solid transparent; outline-offset: -2px; }
+.thumbs button[aria-pressed="true"] { opacity: 1; outline-color: var(--lantern); }
+.thumbs canvas { width: 100%; height: auto; display: block; aspect-ratio: 16 / 9; }
+.side .capsule { width: 100%; height: auto; display: block; aspect-ratio: 920 / 430; background: var(--deep); }
+.side .short { font-size: .95rem; line-height: 1.55; color: #c5d1d1; padding: 16px 0; }
+dl.facts { margin: 0; display: grid; grid-template-columns: 96px 1fr; gap: 6px 12px; font-size: .85rem; padding: 14px 0; border-top: 1px solid var(--line); }
+dl.facts dt { color: var(--muted); font: 400 .7rem/1.9 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+dl.facts dd { margin: 0; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 14px; border-top: 1px solid var(--line); }
+.tags span { font: 400 .78rem var(--body); background: rgba(82, 99, 115, .35); color: #c9d6d8; padding: 3px 10px; border-radius: 2px; }
+
+/* about */
+.about { padding-top: 56px; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 36px; }
+.about .lead h2 { margin-bottom: 18px; }
+.about .lead p { max-width: 62ch; color: #c5d1d1; }
+.feat { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 4px 20px; padding: 26px 0; border-top: 1px solid var(--line); }
+.feat svg { width: 52px; height: 52px; grid-row: span 2; }
+.feat h3 { margin-bottom: 6px; }
+.feat p { max-width: 60ch; color: #c5d1d1; }
+.feat svg * { stroke: var(--fog); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.feat svg .a { stroke: var(--lantern); }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
+.radio { padding: 18px 20px 20px; font-family: var(--mono); }
+.radio .hd { display: flex; justify-content: space-between; font-size: .68rem; letter-spacing: .16em; color: var(--sea); padding-bottom: 12px; border-bottom: 1px dashed var(--line); text-transform: uppercase; flex-wrap: wrap; gap: 6px; }
+.radio .who { color: var(--lantern); font-size: .72rem; letter-spacing: .14em; margin: 14px 0 4px; }
+.radio .line { color: var(--fog); font-size: .92rem; line-height: 1.55; }
+.radio .opt { display: grid; grid-template-columns: 26px 1fr; gap: 8px; font-size: .84rem; color: var(--muted); padding: 8px 0 0; }
+.radio .opt i { font-style: normal; color: var(--lantern); border: 1px solid var(--lantern); border-radius: 2px; text-align: center; line-height: 22px; height: 24px; font-size: .75rem; }
+.log { padding: 22px 24px; background: #d8d2c0; color: #2b2a24; border-radius: 3px; transform: rotate(-.6deg); }
+.log .d { font: 500 .68rem var(--mono); letter-spacing: .14em; color: #6b6656; text-transform: uppercase; }
+.log p { font: 400 1.5rem/1.15 var(--hand); margin-top: 8px; color: #25303a; }
+
+.chart { padding: 20px 20px 14px; margin-top: 12px; }
+.chart .scroll { overflow-x: auto; }
+.chart svg { min-width: 680px; width: 100%; height: auto; display: block; }
+.chart .key { display: flex; gap: 18px; flex-wrap: wrap; font: 400 .74rem var(--mono); color: var(--muted); margin-top: 8px; }
+.chart .key i { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px; }
+.not { display: flex; gap: 10px 26px; flex-wrap: wrap; padding: 22px 0 0; font: 500 .8rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.not span::before { content: "\2715"; color: var(--sea); margin-right: 8px; }
+
+/* shared section scaffolding */
+section.view { padding-top: 40px; }
+.sec { padding-top: 56px; }
+.sec > .hd { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; max-width: 70ch; }
+.sec > .hd p { color: #c5d1d1; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 20px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 22px; min-width: 0; }
+.stage { display: grid; place-items: center; padding: clamp(24px, 5vw, 56px); background: var(--deep); min-height: 220px; }
+.stage.light { background: var(--fog); }
+.stage svg { width: min(100%, 560px); height: auto; }
+.stage.tiny svg { width: 150px; }
+.caption { font: 400 .76rem/1.5 var(--mono); color: var(--muted); letter-spacing: .03em; margin-top: 10px; }
+
+.sw { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.sw > div { min-width: 0; }
+.sw .chip { height: 96px; border-radius: 3px; border: 1px solid var(--line); }
+.sw b { display: block; font: 400 1.05rem var(--display); margin-top: 8px; }
+.sw span { display: block; font: 400 .74rem/1.5 var(--mono); color: var(--muted); }
+.ratio { display: flex; height: 14px; margin-top: 18px; border-radius: 2px; overflow: hidden; border: 1px solid var(--line); }
+.ratio i { display: block; height: 100%; }
+.rule { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 4px 14px; padding: 16px 0; border-top: 1px solid var(--line); }
+.rule .n { font: 500 .8rem var(--mono); color: var(--lantern); padding-top: 4px; }
+.rule b { font: 400 1.2rem var(--display); }
+.rule p { grid-column: 2; color: #c5d1d1; max-width: 62ch; }
+.spec { display: grid; gap: 4px; }
+.spec .big { font: 400 clamp(2.4rem, 7vw, 4.4rem)/1 var(--display); }
+.vo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.vo > div { padding: 16px 18px; border-radius: 3px; border: 1px solid var(--line); }
+.vo .do { border-color: rgba(126, 169, 155, .5); }
+.vo .dont { opacity: .8; }
+.vo small { display: block; font: 500 .68rem var(--mono); letter-spacing: .16em; text-transform: uppercase; margin-bottom: 8px; }
+.vo .do small { color: var(--sea); }
+.vo .dont small { color: var(--ember); }
+.words { display: flex; flex-wrap: wrap; gap: 6px; }
+.words span { font: 400 .8rem var(--mono); padding: 3px 9px; border-radius: 2px; background: rgba(82, 99, 115, .3); }
+.words.x span { text-decoration: line-through; color: var(--muted); background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+@media (max-width: 560px) { .vo { grid-template-columns: 1fr; } }
+
+/* assets */
+.assets { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 22px; align-items: start; }
+.asset { min-width: 0; }
+.asset .frame { background: var(--deep); border: 1px solid var(--line); padding: 10px; display: grid; place-items: center; }
+.asset.span { grid-column: 1 / -1; }
+.asset canvas { max-width: 100%; height: auto; display: block; }
+.asset .nm { display: flex; justify-content: space-between; gap: 12px; margin-top: 10px; font: 500 .82rem var(--mono); flex-wrap: wrap; }
+.asset .nm span { color: var(--lantern); }
+.asset p { font-size: .82rem; color: var(--muted); margin-top: 4px; }
+.check { list-style: none; padding: 0; margin: 0; display: grid; gap: 0; }
+.check li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); font-size: .92rem; }
+.check li::before { content: ""; width: 12px; height: 12px; margin-top: 6px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--muted); }
+.check li.done::before { background: var(--sea); box-shadow: none; }
+.check small { display: block; color: var(--muted); font: 400 .78rem var(--mono); }
+.count { font: 500 .78rem var(--mono); color: var(--sea); }
+.view[hidden] { display: none !important; }
+@media (max-width: 560px) { .hide-s { display: none; } .hero canvas { min-height: 360px; } .tabs a { font-size: .68rem; letter-spacing: .06em; padding: 8px 8px 10px; } .tabs { overflow-x: auto; } .tabs a { white-space: nowrap; } }
+@media (max-width: 900px) { .cols, .about { grid-template-columns: minmax(0, 1fr); } .tabs { margin-left: 0; width: 100%; } .tabs a { padding: 8px 10px 10px; } .bar .wrap { gap: 0 20px; } }
+@media (prefers-reduced-motion: no-preference) { .btn { transition: background .15s; } .thumbs button { transition: opacity .15s; } }
+</style>
+
+<div class="bar"><div class="wrap">
+  <a class="brandmini" href="#store" aria-label="Low Tide"><span id="navmark"></span>LOW TIDE</a>
+  <nav class="tabs" aria-label="Views">
+    <a href="#store" data-tab="store">Store page</a>
+    <a href="#brand" data-tab="brand">Brand guide</a>
+    <a href="#assets" data-tab="assets">Steam asset kit</a>
+  </nav>
+</div></div>
+<div class="draft"><div class="wrap"><b>DRAFT</b> &nbsp;Store page layout for review. Art is painted from the game's own palette. Real screenshots and the trailer replace the key art once the build is capture-ready.</div></div>
+
+<!-- ================= STORE ================= -->
+<section class="view" id="view-store" style="padding-top:0">
+  <div class="hero">
+    <canvas id="heroCanvas" aria-label="Key art: Gannet Rock lighthouse at dusk, lamp lit, a figure on a sandbar at low tide"></canvas>
+    <div class="hero-copy"><div class="hero-in">
+      <span class="eyebrow">Winter 1998<span class="hide-s"> &middot; Gannet Rock Light Station, Maine</span></span>
+      <div class="hero-logo" id="heroLogo"></div>
+      <div class="tag">Mind the tide.</div>
+    </div></div>
+  </div>
+
+  <div class="wrap">
+    <div class="buy">
+      <button class="btn" id="wish" type="button" aria-pressed="false">Add to your wishlist</button>
+      <button class="btn ghost" type="button" id="follow" aria-pressed="false">Follow</button>
+      <div class="meta"><span>Coming soon &middot; <b>Date to be announced</b></span><span>Windows &middot; Steam Deck</span><span>Single player &middot; 2&ndash;3 hours</span></div>
+    </div>
+
+    <div class="cols">
+      <div class="viewer">
+        <canvas id="viewCanvas" width="1280" height="720" aria-label="Key art viewer"></canvas>
+        <div class="caption" id="viewCap"></div>
+        <div class="thumbs" id="thumbs"></div>
+      </div>
+      <aside class="side">
+        <canvas class="capsule" id="sideCapsule" aria-label="Low Tide header capsule"></canvas>
+        <p class="short" id="short">Winter, 1998. You are the lone winter keeper of Gannet Rock Light Station, off the coast of Maine. The tide decides where you can walk. The only other voice on the island is Clara, a Coast Guard dispatcher on a crackling VHF radio. Seven days. One secret the sea has kept for twenty-four years.</p>
+        <dl class="facts">
+          <dt>Release</dt><dd>To be announced</dd>
+          <dt>Developer</dt><dd class="muted">Studio name to confirm</dd>
+          <dt>Publisher</dt><dd class="muted">Studio name to confirm</dd>
+          <dt>Length</dt><dd>7 in-game days, about 2&ndash;3 hours</dd>
+        </dl>
+        <div class="tags" aria-label="Popular tags">
+          <span>Atmospheric</span><span>Exploration</span><span>Story Rich</span><span>Mystery</span><span>Cozy</span><span>First-Person</span><span>Narrative</span><span>Singleplayer</span>
+        </div>
+      </aside>
+    </div>
+
+    <div class="about">
+      <div>
+        <div class="lead">
+          <span class="eyebrow">About this game</span>
+          <h2 style="margin-top:12px">Be back before the water is.</h2>
+          <p style="margin-top:16px">January, 1998. The summer crew has gone and the supply boat will not return until spring. You are Arthur, the winter caretaker of Gannet Rock: wind the clockwork that turns the lens, light the lamp, log the weather, keep warm. The island is small, the sea is not, and a single radio ties you to the mainland.</p>
+        </div>
+
+        <div class="feat">
+          <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M4 40c6-6 10-6 14 0s8 6 14 0 10-6 14 0 10 6 14 0"/><path class="a" d="M4 52c6-6 10-6 14 0s8 6 14 0 10-6 14 0 10 6 14 0"/><path d="M32 6v22M24 14l8-8 8 8"/></svg>
+          <h3>Read the water</h3>
+          <p>The ocean is the level design. Sandbars to the East Stack and the West Echo Cave open at low water and close again once the tide passes 2.1 metres. Misjudge it and the swell carries you back to the dock, a little colder and 45 minutes poorer. There is no Game Over screen, only Clara having something to say about it.</p>
+        </div>
+        <div class="feat">
+          <svg viewBox="0 0 64 64" aria-hidden="true"><rect x="14" y="26" width="36" height="30" rx="3"/><path d="M42 26L50 6"/><circle class="a" cx="32" cy="36" r="5"/><path d="M20 47h24M20 51h24"/></svg>
+          <h3>Talk while you walk</h3>
+          <p>Clara's voice comes over VHF Channel 16 and the game never stops for it. Answer with 1 or 2 while you climb, look through the binoculars, or turn over a piece of driftwood. She notices where you are standing, what time it is, and which finds you choose to report or keep to yourself.</p>
+        </div>
+        <div class="feat">
+          <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="38" r="20"/><rect x="29" y="8" width="6" height="8" rx="1"/><circle cx="32" cy="38" r="2"/><path class="a" d="M32 38V24"/><path d="M32 38l9 5"/></svg>
+          <h3>A world without a HUD</h3>
+          <p>No minimap and no quest markers. You tell the time on a brass pocket watch, plan the day from a paper tide table, check the painted foot marks on the dock pilings, and find your way home by the lighthouse beam through the fog. Assist Mode brings back a simple readout if you want one.</p>
+        </div>
+        <div class="feat">
+          <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M20 52h24l-3-22H23z"/><path d="M24 30c0-6 3-9 8-9s8 3 8 9"/><path class="a" d="M32 8v8M20 14l5 5M44 14l-5 5"/><path d="M28 40h8"/></svg>
+          <h3>A warm room at the end of the day</h3>
+          <p>Brew coffee on the cast-iron stove, wind the weights, read the barometer, and light the lamp when the light goes. The cottage is small and loud with wind. The evening log and the evening call are where the day's finds turn into something you can feel.</p>
+        </div>
+        <div class="feat">
+          <svg viewBox="0 0 64 64" aria-hidden="true"><rect x="12" y="18" width="40" height="30" rx="3"/><circle cx="25" cy="33" r="6"/><circle cx="39" cy="33" r="6"/><path class="a" d="M25 33h14"/><path d="M18 48v6M46 48v6"/></svg>
+          <h3>A mystery with people in it</h3>
+          <p>A canister stamped PROJECT PELAGIC, 1974. A buoy that is still warm to the touch. Cassette tapes recorded by someone who wintered here long before you. There are no monsters, no combat and no jump scares. Three endings, one truth, and what you tell Clara decides how much of it she tells you.</p>
+        </div>
+        <div class="not"><span>No combat</span><span>No monsters</span><span>No minimap</span><span>No game over</span></div>
+      </div>
+
+      <aside style="display:grid;gap:20px;align-content:start;padding-top:34px">
+        <div class="panel radio" aria-label="Sample radio exchange">
+          <div class="hd"><span>VHF &middot; Ch 16</span><span>Station Rockland</span></div>
+          <div class="who">CLARA</div>
+          <div class="line">&ldquo;Gannet Rock, this is Station Rockland. Radio check. Tide's dropping fast; if you want the outer stacks before noon, now's your window.&rdquo;</div>
+          <div class="opt"><i>1</i><span>Copy, Clara. Lamp's steady, weights are wound. Heading out.</span></div>
+          <div class="opt"><i>2</i><span>Copy. I'll look around and radio if I find anything worth your time.</span></div>
+        </div>
+        <div class="log" aria-label="Sample logbook entry">
+          <div class="d">Logbook &middot; Day 2</div>
+          <p>West echo cave: red acoustic buoy in the arch. Battery pack still warm. Shouldn't be.</p>
+        </div>
+      </aside>
+    </div>
+
+    <div class="sec">
+      <div class="hd">
+        <span class="eyebrow">Seven days of tide</span>
+        <h2>The low moves 50 minutes later every day.</h2>
+        <p>Each day gets its own window. Day 4 is a storm and the bars stay shut. Day 5 is a spring low that reaches &minus;0.4 metres and uncovers somewhere that has been under water for years. This chart is drawn from the game's tide model.</p>
+      </div>
+      <div class="panel chart"><div class="scroll"><div id="tide"></div></div>
+        <div class="key"><span><i style="background:rgba(255,184,77,.35)"></i>Bars open (water under 2.1 m)</span><span><i style="background:rgba(82,99,115,.55)"></i>Water</span><span><i style="border-top:2px dashed #dde5e4;height:0;width:14px;vertical-align:3px"></i>2.1 m, bars close</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= BRAND ================= -->
+<section class="view" id="view-brand" hidden>
+  <div class="wrap">
+    <div class="hd" style="max-width:70ch;display:grid;gap:12px">
+      <span class="eyebrow">Brand guide</span>
+      <h2>A low sun on a flat sea.</h2>
+      <p class="muted">Low Tide is a quiet, cold, lamp-lit game about reading the water. The identity does the same thing. One warm point of light, a waterline, and the reflection that tells you the water is there.</p>
+    </div>
+
+    <div class="sec" style="padding-top:32px">
+      <div class="grid2">
+        <div class="card" style="grid-column:1/-1;padding:0"><div class="stage" id="logoMain" style="min-height:300px"></div></div>
+        <div class="card"><div class="stage light" id="logoInk"></div><p class="caption">Ink version for paper, press and light backgrounds. The sun goes to Ember so it holds on fog.</p></div>
+        <div class="card"><div class="stage tiny" id="logoMark"></div><p class="caption">The mark. A half sun on a waterline, also a lamp, also a watch face. Used for the Steam client icon and small spaces.</p></div>
+      </div>
+      <div class="grid2" style="margin-top:20px">
+        <div class="card"><h3>How it is built</h3>
+          <p class="muted" style="margin-top:10px">The word space in &ldquo;LOW TIDE&rdquo; is the sun. The letters stand on the waterline and their reflection falls below it in thin slices that drift and fade, the way a lamp breaks up on wet sand. The type is Gloock, a high-contrast serif with the weight of a painted sign. The wordmark is outlined, so it never depends on a font.</p></div>
+        <div class="card"><h3>Use</h3>
+          <p class="muted" style="margin-top:10px">Keep clear space equal to the height of the L on every side. Below 220 px wide, drop the reflection (<span class="mono">low-tide_wordmark_flat.svg</span>). Never recolour the sun, never put the logo on a busy bright area, and never stretch it. On key art, set the logo over dark water, not over the lamp.</p></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="hd"><span class="eyebrow">Colour</span><h2>Cool world, warm people.</h2><p>Slate, granite and seafoam make the island. Amber appears only where someone is: the lamp, a lit window, the pocket watch, the single button. If amber shows up on a rock, something is wrong.</p></div>
+      <div class="sw" id="swatches"></div>
+      <div class="ratio" id="ratio" aria-label="Colour proportions"></div>
+      <p class="caption">Proportion on a typical frame: about 5 percent amber, and never more than 10.</p>
+    </div>
+
+    <div class="sec">
+      <div class="hd"><span class="eyebrow">Type</span><h2>Three voices and one hand.</h2></div>
+      <div class="grid2">
+        <div class="card spec"><span class="eyebrow">Display &middot; Gloock</span><div class="big">Mind the tide.</div><p class="muted">Title, headings, taglines. Used sparingly and always large enough to see its contrast.</p></div>
+        <div class="card spec"><span class="eyebrow">Text &middot; IBM Plex Sans</span><p style="font-size:1.25rem;line-height:1.4">The east bar closes at a quarter past twelve. Take the glass with you.</p><p class="muted">Store copy, interface text, captions. Regular and medium only.</p></div>
+        <div class="card spec"><span class="eyebrow">Data &middot; IBM Plex Mono</span><p class="mono" style="font-size:1.1rem;line-height:1.5;letter-spacing:.04em">LOW 07:30 &nbsp;0.2 m<br>HIGH 13:42 &nbsp;4.2 m<br>BARS CLOSE &gt; 2.1 m</p><p class="muted">Anything the island measures: tide table, radio header, eyebrows. Tabular figures.</p></div>
+        <div class="card spec"><span class="eyebrow">Hand &middot; Reenie Beanie</span><p style="font:400 2rem/1.1 var(--hand);color:var(--fog)">Glass 30.1 and steady. Fog, then.</p><p class="muted">Arthur's logbook only. Never for marketing headlines.</p></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="hd"><span class="eyebrow">Voice</span><h2>Plain, dry, exact.</h2><p>Low Tide talks like a keeper writing a log. It gives the number, the time and the thing seen. It does not promise thrills. The tension is real enough that it never needs announcing.</p></div>
+      <div class="vo">
+        <div class="do"><small>Write like this</small>&ldquo;Low water at 10:42. The east bar closes at 12:15.&rdquo;</div>
+        <div class="dont"><small>Not like this</small>&ldquo;Race against the rising tide in a heart-pounding adventure!&rdquo;</div>
+        <div class="do"><small>Write like this</small>&ldquo;Careful crossing that bar, Arthur. Keep one eye on your pocket watch.&rdquo;</div>
+        <div class="dont"><small>Not like this</small>&ldquo;Uncover the shocking truth behind the lighthouse's dark past.&rdquo;</div>
+      </div>
+      <div class="grid2" style="margin-top:20px">
+        <div class="card"><span class="eyebrow">Words we use</span><div class="words" style="margin-top:12px"><span>keeper</span><span>the glass</span><span>the bar</span><span>low water</span><span>tide table</span><span>logbook</span><span>the lamp</span><span>channel 16</span></div></div>
+        <div class="card"><span class="eyebrow">Words we avoid</span><div class="words x" style="margin-top:12px"><span>epic</span><span>immersive</span><span>haunting</span><span>unravel</span><span>journey</span><span>race against time</span><span>survive</span></div></div>
+      </div>
+      <div class="card" style="margin-top:20px"><span class="eyebrow">Taglines</span>
+        <div style="display:grid;gap:12px;margin-top:14px">
+          <div><span class="big" style="font:400 clamp(1.8rem,4vw,2.6rem)/1.1 var(--display)">Mind the tide.</span> <span class="muted mono" style="font-size:.74rem">&nbsp;Primary. Capsules, hero, trailer end card.</span></div>
+          <div style="font:400 1.3rem var(--display)">One keeper. One radio. Seven tides. <span class="muted mono" style="font-size:.74rem;font-family:var(--mono)">&nbsp;Store copy, social.</span></div>
+          <div style="font:400 1.3rem var(--display)">The sea keeps the schedule. <span class="muted mono" style="font-size:.74rem;font-family:var(--mono)">&nbsp;Long form, press kit.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="hd"><span class="eyebrow">Art direction</span><h2>Five rules for every frame.</h2></div>
+      <div>
+        <div class="rule"><span class="n">1</span><b>Every frame has a waterline.</b><p>A horizon or a shoreline sits somewhere in the picture. It anchors the eye and carries the reflection motif.</p></div>
+        <div class="rule"><span class="n">2</span><b>Amber is for people.</b><p>The lamp, lit windows, the watch. Rocks, sand and sea stay cool. When in doubt, take amber out.</p></div>
+        <div class="rule"><span class="n">3</span><b>The lighthouse is the tallest thing.</b><p>It is the compass in the fog. Nothing else breaks its silhouette, and its beam is always visible in key art.</p></div>
+        <div class="rule"><span class="n">4</span><b>Fog hides, the lamp reveals.</b><p>Depth comes from stacked fog bands. Faceted, flat-shaded rock and a little grain keep it painterly instead of glossy.</p></div>
+        <div class="rule"><span class="n">5</span><b>Small figure, large place.</b><p>If Arthur appears, he is small, seen from behind, and doing something with his hands. Clara never appears. She is a voice.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ASSETS ================= -->
+<section class="view" id="view-assets" hidden>
+  <div class="wrap">
+    <div class="hd" style="max-width:70ch;display:grid;gap:12px">
+      <span class="eyebrow">Steam asset kit</span>
+      <h2>Every capsule at Steam's size.</h2>
+      <p class="muted">These previews are the real compositions. Full-resolution PNGs and vector logos are in <span class="mono">marketing/steam/assets</span> and <span class="mono">marketing/steam/logo</span>. Run <span class="mono">node export.mjs</span> in <span class="mono">marketing/steam</span> to regenerate them after changing the art.</p>
+    </div>
+    <div class="sec" style="padding-top:28px"><div class="assets" id="assetGrid"></div></div>
+
+    <div class="sec">
+      <div class="hd"><span class="eyebrow">Before the page goes live</span><h2>What is still needed.</h2></div>
+      <div class="grid2">
+        <ul class="check" id="checkA"></ul>
+        <div class="card">
+          <span class="eyebrow">Short description</span>
+          <p id="shortCopy" style="margin-top:12px;color:#c5d1d1"></p>
+          <p class="count" id="shortCount" style="margin-top:10px"></p>
+          <p class="caption">Steam shows the first 300 characters of the short description on the store page and in search.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="wordmark.js"></script>
+<script src="scene.js"></script>
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const P = LT.PALETTE;
+
+  /* ---- tabs (hash routing) ---- */
+  const views = ['store', 'brand', 'assets'];
+  function route() {
+    const h = (location.hash || '#store').slice(1);
+    const v = views.includes(h) ? h : 'store';
+    views.forEach((n) => { $('#view-' + n).hidden = n !== v; });
+    document.querySelectorAll('.tabs a').forEach((a) => { if (a.dataset.tab === v) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', route); route();
+
+  /* ---- logos ---- */
+  $('#navmark').innerHTML = LT.logoSVG({ layout: 'mark', id: 'nv', reflect: false, line: false });
+  $('#heroLogo').innerHTML = LT.logoSVG({ id: 'hl' });
+  $('#logoMain').innerHTML = LT.logoSVG({ id: 'lm' });
+  $('#logoInk').innerHTML = LT.logoSVG({ id: 'li', fill: P.night, sun1: P.ember, sun2: P.ember });
+  $('#logoMark').innerHTML = LT.logoSVG({ layout: 'mark', id: 'lk' });
+
+  /* ---- palette ---- */
+  const sw = [
+    ['Night Water', P.night, 'Ground. The sea at dusk, UI panels.', 52],
+    ['Slate', P.slate, 'Sky, distance, far water.', 20],
+    ['Wet Granite', P.granite, 'Rock, piers, shadows with body.', 14],
+    ['Seafoam', P.sea, 'Small accents, eyebrows, the wet edge.', 4],
+    ['Fog', P.fog, 'Type, the tower, the logo.', 5],
+    ['Lantern', P.lantern, 'The lamp, lit windows, the one button.', 4],
+    ['Ember', P.ember, 'Lantern in shadow, the ink logo.', 1],
+  ];
+  $('#swatches').innerHTML = sw.map(([n, c, d]) => `<div><div class="chip" style="background:${c}"></div><b>${n}</b><span>${c.toUpperCase()}</span><span>${d}</span></div>`).join('');
+  $('#ratio').innerHTML = sw.map(([n, c, d, w]) => `<i title="${n}" style="width:${w}%;background:${c}"></i>`).join('');
+
+  /* ---- art ---- */
+  function paint(canvas, w, h, opts) {
+    canvas.width = w; canvas.height = h;
+    LT.drawScene(canvas.getContext('2d'), w, h, opts);
+  }
+  const views16 = [
+    { name: 'Key art', cap: 'Key art. Gannet Rock at low water, lamp lit.', opts: { lx: 0.66, hz: 0.52, base: 0.74, lh: 0.58, barX: 0.4, pilX: 0.04, pilH: 0.6, figT: 0.4 } },
+    { name: 'The lamp', cap: 'Key art. The lantern gallery, 1998.', opts: { seed: 23, lx: 0.5, hz: 0.6, base: 1.0, lh: 0.9, barX: 0.3, pilX: 0.92, pilH: 0.45, fig: false } },
+    { name: 'The bar', cap: 'Key art. Crossing the east bar before the water makes.', opts: { seed: 5, lx: 0.74, hz: 0.38, base: 0.56, lh: 0.3, barX: 0.36, pilX: 0.04, pilH: 0.5, figT: 0.16, fogLow: 1.4 } },
+  ];
+  const vc = $('#viewCanvas'), thumbs = $('#thumbs');
+  function show(i) {
+    paint(vc, 1280, 720, views16[i].opts);
+    $('#viewCap').textContent = views16[i].cap;
+    thumbs.querySelectorAll('button').forEach((b, j) => b.setAttribute('aria-pressed', String(i === j)));
+  }
+  views16.forEach((v, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', v.name);
+    const c = document.createElement('canvas'); paint(c, 320, 180, v.opts); b.appendChild(c);
+    b.addEventListener('click', () => show(i)); thumbs.appendChild(b);
+  });
+  show(0);
+
+  /* ---- tide chart: a port of autoload/tide_system.gd ---- */
+  const HALF = 372.5, DAY = 1440, FIRST = 450, LOW = 0.2, HIGH = 4.2, LOWO = { 5: -0.4 }, STORM = { 4: 1 }, RAMP = 240, FLOOR = 2.5, CLOSE = 2.1;
+  const sstep = (x) => x * x * (3 - 2 * x), cl = (v, a, b) => Math.max(a, Math.min(b, v));
+  const extH = (k) => (k % 2 !== 0 ? HIGH : (LOWO[Math.floor((FIRST + HALF * k) / DAY) + 1] ?? LOW));
+  function stormW(m) { let w = 0; for (const d in STORM) { const s = DAY * (d - 1); w = Math.max(w, sstep(Math.min(cl((m - (s - RAMP)) / RAMP, 0, 1), cl(1 - (m - (s + DAY)) / RAMP, 0, 1))) * STORM[d]); } return w; }
+  function height(m) { const k = Math.floor((m - FIRST) / HALF), f = (m - (FIRST + HALF * k)) / HALF, s = (1 - Math.cos(f * Math.PI)) / 2; const h = extH(k) + (extH(k + 1) - extH(k)) * s; return h + (FLOOR + 0.4 * h - h) * stormW(m); }
+  function lowOfDay(day) { const st = DAY * (day - 1); let k = Math.ceil((st - FIRST) / HALF); if (k % 2 !== 0) k++; return FIRST + HALF * k - st; }
+  const hhmm = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(Math.round(m % 60)).padStart(2, '0');
+  const titles = ['First Watch', 'Grey Water', 'Wool', 'The Blow', 'Spring Low', 'Frost', 'Last Light'];
+  (function chart() {
+    const W = 1000, Hh = 320, L = 44, Rr = 12, T = 56, B = 52, ymin = -0.6, ymax = 4.6, total = 7 * DAY;
+    const X = (m) => L + (m / total) * (W - L - Rr), Y = (v) => T + (1 - (v - ymin) / (ymax - ymin)) * (Hh - T - B);
+    let pts = []; for (let m = 0; m <= total; m += 8) pts.push([X(m), Y(height(m))]);
+    const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('');
+    const water = line + `L${X(total)} ${Y(ymin)}L${X(0)} ${Y(ymin)}Z`;
+    const air = line + `L${X(total)} ${T - 10}L${X(0)} ${T - 10}Z`;
+    let bg = '', fg = '';
+    for (let d = 0; d < 7; d++) {
+      const x0 = X(d * DAY), x1 = X((d + 1) * DAY);
+      if (d % 2) bg += `<rect x="${x0}" y="${T - 10}" width="${x1 - x0}" height="${Hh - T - B + 10}" fill="rgba(221,229,228,.035)"/>`;
+      fg += `<text x="${x0 + 8}" y="22" fill="#dde5e4" font-family="Gloock,serif" font-size="15">${d + 1} &#183; ${titles[d]}</text>`;
+      fg += `<text x="${x0 + 8}" y="${Hh - 28}" fill="#9db0b3" font-family="IBM Plex Mono,monospace" font-size="11">first low ${hhmm(lowOfDay(d + 1))}</text>`;
+    }
+    [0, 1, 2, 3, 4].forEach((v) => {
+      bg += `<line x1="${L}" x2="${W - Rr}" y1="${Y(v)}" y2="${Y(v)}" stroke="rgba(221,229,228,.07)"/>`;
+      fg += `<text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end" fill="#9db0b3" font-family="IBM Plex Mono,monospace" font-size="11">${v} m</text>`;
+    });
+    const spring = DAY * 4 + lowOfDay(5);
+    fg += `<text x="${X(4 * DAY) + 8}" y="${Hh - 8}" fill="#ffb84d" font-family="IBM Plex Mono,monospace" font-size="11">spring low &#8722;0.4 m</text>`;
+    fg += `<line x1="${X(spring)}" x2="${X(spring)}" y1="${Y(-0.4) + 3}" y2="${Hh - 20}" stroke="#ffb84d" stroke-opacity=".5" stroke-dasharray="2 3"/>`;
+    fg += `<text x="${X(3 * DAY) + 8}" y="${Y(1.1)}" fill="#dde5e4" font-family="IBM Plex Mono,monospace" font-size="11">storm: bars shut all day</text>`;
+    $('#tide').innerHTML = `<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Seven-day tide chart from the game's tide model"><defs><clipPath id="tc"><path d="${air}"/></clipPath></defs>
+      ${bg}
+      <path d="${water}" fill="rgba(82,99,115,.5)"/>
+      <rect x="${L}" y="${Y(CLOSE)}" width="${W - L - Rr}" height="${Hh - B - Y(CLOSE)}" fill="rgba(255,184,77,.34)" clip-path="url(#tc)"/>
+      <line x1="${L}" x2="${W - Rr}" y1="${Y(CLOSE)}" y2="${Y(CLOSE)}" stroke="#dde5e4" stroke-opacity=".7" stroke-dasharray="5 5"/>
+      <path d="${line}" fill="none" stroke="#dde5e4" stroke-width="1.8"/>
+      ${fg}</svg>`;
+  })();
+
+  /* ---- store buttons (mock state) ---- */
+  const wish = $('#wish');
+  wish.addEventListener('click', () => { const on = wish.getAttribute('aria-pressed') !== 'true'; wish.setAttribute('aria-pressed', String(on)); wish.classList.toggle('on', on); wish.textContent = on ? 'On your wishlist' : 'Add to your wishlist'; });
+  const fol = $('#follow');
+  fol.addEventListener('click', () => { const on = fol.getAttribute('aria-pressed') !== 'true'; fol.setAttribute('aria-pressed', String(on)); fol.textContent = on ? 'Following' : 'Follow'; });
+
+  /* ---- short description ---- */
+  const sd = $('#short').textContent.trim();
+  $('#shortCopy').textContent = sd;
+  $('#shortCount').textContent = sd.length + ' of 300 characters';
+  $('#checkA').innerHTML = [
+    [1, 'Capsule art at all Steam sizes', 'Header, small, main, vertical, library capsule, library hero, page background, logo, icon.'],
+    [1, 'Short description under 300 characters', sd.length + ' characters.'],
+    [1, 'About text and tags', 'Drafted on the Store page tab.'],
+    [0, 'Five or more real screenshots, 1920 x 1080', 'Capture from the Godot build: tests/screenshot.gd, or in-game.'],
+    [0, 'Trailer', 'Open on the lamp, end on the tagline and logo.'],
+    [0, 'Developer and publisher names', 'Placeholders on the page until confirmed.'],
+    [0, 'Release date and price', 'Not decided. Page says To be announced.'],
+    [0, 'Content survey and age rating answers', 'Likely none: no combat, no gore, no strong language to date.'],
+  ].map(([d, t, s]) => `<li class="${d ? 'done' : ''}"><div>${t}<small>${s}</small></div></li>`).join('');
+
+  /* ---- rendered assets ---- */
+  const kinds = [
+    ['header_capsule', 'Header capsule', '920 x 430', 'Top of the store page and most-seen. Logo must read at 460 px.'],
+    ['small_capsule', 'Small capsule', '462 x 174', 'Search results and lists. Logo only, no tagline.'],
+    ['main_capsule', 'Main capsule', '1232 x 706', 'Featured spots and the store front page.'],
+    ['vertical_capsule', 'Vertical capsule', '748 x 896', 'Steam Deck and big-picture shelves.'],
+    ['library_capsule', 'Library capsule', '600 x 900', 'Library grid. Same composition as the vertical capsule.'],
+    ['community_icon', 'Community icon', '184 x 184', 'Community hub and the Steam client. The mark on Night Water.'],
+    ['logo_transparent', 'Library logo', '1280 x 720, transparent', 'Steam overlays this on the library hero. Fog-white on transparent.'],
+    ['page_background', 'Page background', '1438 x 810', 'Seen only at the edges of the store page. No text. Fades to Night Water.'],
+    ['key_art', 'Key art', '1920 x 1080', 'Press, social, and Steam screenshot slot 1 until captures exist. No text.'],
+    ['library_hero', 'Library hero', '3840 x 1240', 'Top of the Library page. No text: Steam places the logo over it at lower left.', true],
+  ];
+  const grid = $('#assetGrid');
+  kinds.forEach(([k, name, dims, note, span]) => {
+    const d = document.createElement('div'); d.className = 'asset' + (span ? ' span' : '');
+    d.innerHTML = `<div class="frame" style="${k === 'logo_transparent' ? 'background:var(--night)' : ''}"><canvas></canvas></div><div class="nm"><b style="font-weight:500">${name}</b><span>${dims}</span></div><p>${note} <span class="mono">assets/${k}.png</span></p>`;
+    grid.appendChild(d);
+    const c = d.querySelector('canvas'); const A = LT.ASSETS[k];
+    const target = span ? 1100 : Math.min(A.w, 560); d._k = k; d._s = Math.min(1, target / A.w); d._c = c;
+  });
+  LT.renderAsset($('#heroCanvas'), 'library_hero', 0.5);
+  async function renderAll() {
+    try { await Promise.all([document.fonts.load('400 40px Gloock'), document.fonts.load('500 20px "IBM Plex Mono"')]); } catch (e) {}
+    // header capsule on the store page, then the kit
+    await LT.renderAsset($('#sideCapsule'), 'header_capsule', 0.5);
+    for (const d of grid.children) await LT.renderAsset(d._c, d._k, d._s);
+  }
+  renderAll();
+})();
+</script>
