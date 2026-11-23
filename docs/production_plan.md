@@ -125,7 +125,7 @@ Replace the placeholder default font with something different and fresh. Decisio
 
 ## 6. Remaining open questions (defaults assumed unless you say otherwise)
 - Arthur's backstory: the widowed-teacher default above.
-- Character names Walt, June and "Station Rockland" are placeholders. Station Rockland is a real USCG station, so keep it or invent one?
+- Character names Walt, June and "Station Penobscot" are placeholders. (Resolved: renamed to the fictional "Station Penobscot".)
 - Should Clara ever appear in person? Default: no, only the ending's boat light, which respects the two-person cast.
 - Music composer or sourcing is TBD. Default: stings only, added in M7.
 - Is there a team or deadline? Default: solo or small team, no fixed date.

@@ -14,10 +14,12 @@ var flag_day: Dictionary = {}         # flag -> day it was set
 var reaction_last: Dictionary = {}    # reaction id -> abs minute last played
 var zone := "cottage"                 # where Arthur is (set by Main)
 var location := "cottage"
+var ending := ""                      # "a" | "b" | "c" once an ending has begun
 
 func reset() -> void:
 	discovered.clear(); discovered_day.clear(); flags.clear(); logbook.clear()
 	items.clear(); flag_day.clear(); reaction_last.clear()
+	ending = ""
 	trust = 0
 
 func discover(id: String) -> bool:

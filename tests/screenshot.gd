@@ -89,6 +89,41 @@ func _run() -> void:
 	await _shoot("21_lane_between_poles", "outdoors", Vector3(eye2.x, Tt.height(eye2.x, eye2.y) + 0.1, eye2.y), atan2(-cd.x, -cd.y), 0.0)
 	var sp2: Vector2 = ca - cd * 3.0 + Vector2(cd.y, -cd.x) * 3.5
 	await _shoot("22_causeway_sign_board", "outdoors", Vector3(sp2.x, Tt.height(sp2.x, sp2.y - 9.0) + 0.1, sp2.y - 9.0), PI, 0.18)
+	# M6: journal scroll + ending scene + end card
+	st.reset()
+	for tid in ["tape_1", "tape_2", "tape_3", "tape_4", "tape_5", "tape_6"]:
+		st.give_item(tid)
+		st.set_flag("heard_" + tid)
+	await _shoot("23_journal_six_tapes", "cottage", main.interiors.spawn["cottage"], 0.6, -0.05)
+	main.hud._journal_page = 2
+	main.hud._render_journal()
+	await _wait(6)
+	await _snap(out, "23_journal_six_tapes")
+	main.hud._modal_scroll.scroll_vertical = 520
+	await _wait(3)
+	await _snap(out, "24_journal_scrolled")
+	main.hud.close_modal()
+	st.reset()
+	root.get_node("DayDirector").begin_day(7)
+	root.get_node("DayDirector").lamp_lit = true
+	st.set_flag("clara_admitted")
+	main.ending_reload = false
+	main.hud._card.modulate.a = 0.0
+	Engine.time_scale = 6.0
+	main.player.locked = false
+	main.start_ending("a")
+	var t_end := Time.get_ticks_msec()
+	while not main._boat_arrived and Time.get_ticks_msec() - t_end < 40000:
+		if main._boat != null and main._boat.position.distance_to(main._boat_target) < 40.0 and not FileAccess.file_exists("/tmp/_shot25"):
+			await _snap(out, "25_ending_boat_light_binoculars")
+			var f := FileAccess.open("/tmp/_shot25", FileAccess.WRITE); f.close()
+		await process_frame
+	await _wait(10)
+	await _snap(out, "26_ending_boat_arrived")
+	await create_timer(3.5).timeout
+	await _wait(10)
+	await _snap(out, "27_ending_card_a")
+	Engine.time_scale = 1.0
 	quit(0)
 
 func _shoot(shot: String, loc: String, pos: Vector3, yaw: float, pitch: float) -> void:

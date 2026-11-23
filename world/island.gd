@@ -282,6 +282,14 @@ func _build_cave() -> void:
 	var cave_it := _interactable("seacave", "Check the buoy's hatch", Vector3(-72.5, 6.5, -8), 6.0, "seacave")
 	cave_it.give_item = "tape_1"
 	cave_it.visible_fn = func(): return not GameState.has_item("tape_1")
+	# West buoy service hatch: Clara's own tape (tape 6), from day 6.
+	_mesh(g, _box(Vector3(0.5, 0.35, 0.3)), _mat(Color("2e3438"), 0.5, 0.6), Vector3(1.5, 0.5, 1.3))
+	var service := _interactable("buoy_service", "Check the buoy's service hatch", Vector3(-72.5, 6.2, -6.7), 2.4, "")
+	service.give_item = "tape_6"
+	service.visible_fn = func(): return GameClock.day >= 6 and not GameState.has_item("tape_6")
+	var hydro := Hydrophone.new()
+	hydro.position = Vector3(-72.5, 6.7, -8.0)
+	add_child(hydro)
 	_bino_target("WEST SEA STACK // ECHO SEA CAVE", Vector3(-74, 9, -8))
 
 func _build_rocks() -> void:
@@ -323,6 +331,12 @@ func _build_cove() -> void:
 	var it := _interactable("cable", "Inspect the cable and the hut", hut_pos + Vector3(0, 1.3, 2.6), 3.2, "cable")
 	it.give_item = "cable_tag"
 	it.visible_fn = func(): return not GameState.has_item("cable_tag")
+	# Biscuit tin on a crate beside the hut: Tom Dunmore's boat log (tape 5).
+	_mesh(self, _box(Vector3(0.9, 0.7, 0.9)), _mat(Color("5c4938"), 0.9), hut_pos + Vector3(-2.7, 0.35, 0.8))
+	_mesh(self, _box(Vector3(0.4, 0.2, 0.3)), _mat(Color("8f2d2d"), 0.5, 0.4), hut_pos + Vector3(-2.7, 0.8, 0.8))
+	var tin := _interactable("tin", "Open the biscuit tin", hut_pos + Vector3(-2.7, 1.2, 0.8), 1.8, "")
+	tin.give_item = "tape_5"
+	tin.visible_fn = func(): return GameState.has_flag("heard_tape_4") and not GameState.has_item("tape_5")
 	_bino_target("NORTH COVE // CABLE LANDING", Vector3(-17, 5, -52))
 
 # --- south reef: cable vault ---------------------------------------------

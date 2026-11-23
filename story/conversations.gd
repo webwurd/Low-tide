@@ -62,7 +62,7 @@ static func tape(id: String) -> Dictionary:
 const DATA := {
 	"morning_d1": {
 		"id": "morning_d1", "speaker": SPEAKER, "priority": 2,
-		"text": "Gannet Rock, this is Station Rockland. Tide's dropping fast. If you want to inspect the outer sea stacks before noon, now's your window.",
+		"text": "Gannet Rock, this is Station Penobscot. Tide's dropping fast. If you want to inspect the outer sea stacks before noon, now's your window.",
 		"options": [
 			{"text": "Copy that, Clara. Heading up to check the lighthouse first.",
 			 "reply": "Roger. Give me a shout if anything strange washed up during last night's squall.", "trust": 1},

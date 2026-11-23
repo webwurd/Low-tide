@@ -35,3 +35,21 @@ func load_game() -> String:
 func delete_save() -> void:
 	if has_save():
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+## Endings seen across playthroughs (kept even when a run's save is deleted).
+var endings_path := "user://lowtide_endings.json"
+
+func endings_seen() -> Array:
+	if not FileAccess.file_exists(endings_path):
+		return []
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(endings_path))
+	return parsed if typeof(parsed) == TYPE_ARRAY else []
+
+func record_ending(kind: String) -> void:
+	var seen := endings_seen()
+	if not seen.has(kind):
+		seen.append(kind)
+		seen.sort()
+		var f := FileAccess.open(endings_path, FileAccess.WRITE)
+		if f:
+			f.store_string(JSON.stringify(seen))

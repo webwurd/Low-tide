@@ -78,7 +78,6 @@ func _finish() -> void:
 	active = false
 	awaiting_choice = false
 	current = {}
-	hidden.emit()
 	var nxt := _pending_next
 	_pending_next = ""
 	if nxt != "":
@@ -86,4 +85,6 @@ func _finish() -> void:
 	while _queue.size() > 0 and _queue[0].is_empty():
 		_queue.pop_front()
 	if _queue.size() > 0:
-		_show.call_deferred(_queue.pop_front())
+		_show.call_deferred(_queue.pop_front())    # a follow-up replaces the panel; no hide in between
+	else:
+		hidden.emit()

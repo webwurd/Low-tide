@@ -22,6 +22,19 @@ var _busy := false
 var _sweeping := false
 var _elapsed := 0.0
 var _forced_home_done := false
+var ending_kind := ""
+var ending_reload := true          # tests turn this off
+var _boat: Node3D
+var _boat_target := Vector3.ZERO
+var _boat_speed := 2.4
+var _boat_arrived := false
+var _boat_player: AudioStreamPlayer3D
+
+const ENDINGS := {
+	"a": {"name": "THE RIGHT ADDRESS", "body": "Ruth Whitcomb answered in eleven days. She asked first for June's recorder, and then, quietly, for the tapes. They were played at her kitchen table in Providence, and later at a small hearing nobody expected anyone to attend. The Navy's schedule for the fourth of November, 1974, was never entered in any record. Now it is. So is the name of the Coast Guard boatswain who said one hour."},
+	"b": {"name": "LEFT QUIET", "body": "By dawn the buoy's battery had gone flat, and the ping on the south reef stopped for the first time in twenty-four years. The tapes went back into the lamp-room locker, where Walt had left them for whoever came next. Arthur took the relief boat home to a house he could finally walk through. On sixteen, in the mornings, Clara still says good morning to the rock."},
+	"c": {"name": "ON THE RECORD", "body": "The report went to the Coast Guard with Arthur's signature on it: thorough, accurate, and dated the seventh. It reopened nothing for June, and it ended Clara's career at Station Penobscot. She did not answer on sixteen again. The beam turned all that winter for no one, and the relief boat, when it came, found the radio switched off."},
+}
 
 func _ready() -> void:
 	_build_environment()
@@ -43,6 +56,8 @@ func _ready() -> void:
 	hud.new_game_pressed.connect(new_game)
 	hud.continue_pressed.connect(continue_game)
 	_wire_interactables()
+	RadioSystem.hidden.connect(_on_radio_hidden)
+	hud.ending_closed.connect(_on_ending_closed)
 	DayDirector.week_ended.connect(func(): hud.show_card("ONE WEEK ON GANNET ROCK", "End of the current build. Story content arrives in M6.", 6.0))
 	_place("cottage", interiors.spawn["cottage"], 0.0)
 	if autostart:
@@ -180,7 +195,7 @@ func _on_radio_desk() -> void:
 			D.complete_ritual("checkin")
 			RadioSystem.play(Conversations.get_conv(D.data().morning_conv))
 	elif D.phase == D.Phase.EVENING:
-		if D.evening_call_done:
+		if D.evening_call_done and not D.final_pending():
 			GameState.note("Already spoke with Clara tonight.")
 		elif not D.lamp_lit or not D.log_written:
 			GameState.note("Lamp and log first, then I'll call Clara.")
@@ -362,7 +377,7 @@ func _process(delta: float) -> void:
 	if not started:
 		GameClock.paused = true
 		return
-	GameClock.paused = location != "outdoors"
+	GameClock.paused = location != "outdoors" or ending_kind != ""
 	if location == "outdoors":
 		var pp := player.global_position
 		GameState.zone = Terrain.zone_at(pp.x, pp.z, pp.y)
@@ -376,6 +391,7 @@ func _process(delta: float) -> void:
 	if Input.is_action_just_pressed("pause"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_check_day_events()
+	_update_ending_scene(delta)
 
 func _check_day_events() -> void:
 	if location != "outdoors" or _busy:
@@ -409,3 +425,141 @@ func _on_swept() -> void:
 	player.locked = false
 	_sweeping = false
 	RadioSystem.play(Conversations.get_conv("swept"))
+
+# --- endings -----------------------------------------------------------------
+
+func _on_radio_hidden() -> void:
+	if ending_kind != "":
+		return
+	for k in ["a", "b", "c"]:
+		if GameState.has_flag("ending_" + k):
+			start_ending(k)
+			return
+
+## Dawn on the pier. A and B end on the relief boat's light seen through the
+## binoculars; C ends on the sweeping beam and static.
+func start_ending(kind: String) -> void:
+	if ending_kind != "":
+		return
+	ending_kind = kind
+	GameState.ending = kind
+	_busy = true
+	player.locked = true
+	if kind == "b":
+		GameState.set_flag("buoy_off")
+	hud.fade_out(1.6)
+	await get_tree().create_timer(2.0).timeout
+	GameClock.set_time(7, 410.0)                       # first light
+	TideSystem.refresh()
+	_place("outdoors", Vector3(0.0, Terrain.PIER_TOP + 0.05, 31.0), PI)
+	player.binoculars = false
+	hud.fade_in(1.8)
+	await get_tree().create_timer(3.5).timeout
+	RadioSystem.play(Conversations.get_conv("ending_%s_radio" % kind))
+	if kind == "c":
+		await get_tree().create_timer(6.0).timeout
+	else:
+		_spawn_boat()
+		player.binoculars = true
+		while not _boat_arrived:
+			await get_tree().process_frame
+		await get_tree().create_timer(2.0).timeout
+	_show_ending_card(kind)
+
+func _spawn_boat() -> void:
+	_boat = Node3D.new()
+	_boat.position = Vector3(62.0, 0.3, 150.0)
+	_boat_target = Vector3(6.0, 0.3, 58.0)
+	add_child(_boat)
+	var hull := MeshInstance3D.new()
+	var hb := BoxMesh.new(); hb.size = Vector3(2.6, 1.0, 7.0)
+	hull.mesh = hb
+	var hm := StandardMaterial3D.new(); hm.albedo_color = Color("2a3138")
+	hull.material_override = hm
+	_boat.add_child(hull)
+	var cabin := MeshInstance3D.new()
+	var cb := BoxMesh.new(); cb.size = Vector3(1.8, 1.2, 2.2)
+	cabin.mesh = cb
+	cabin.material_override = hm
+	cabin.position = Vector3(0, 1.0, 0.6)
+	_boat.add_child(cabin)
+	var lamp := MeshInstance3D.new()          # white masthead light, visible through fog
+	var sph := SphereMesh.new(); sph.radius = 0.35; sph.height = 0.7
+	lamp.mesh = sph
+	var lm := StandardMaterial3D.new()
+	lm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	lm.albedo_color = Color(1.0, 0.97, 0.85)
+	lm.disable_fog = true
+	lamp.material_override = lm
+	lamp.position = Vector3(0, 2.4, 0.4)
+	_boat.add_child(lamp)
+	var omni := OmniLight3D.new()
+	omni.light_color = Color(1.0, 0.95, 0.8)
+	omni.light_energy = 3.0
+	omni.omni_range = 30.0
+	omni.position = lamp.position
+	_boat.add_child(omni)
+	_boat_player = AudioStreamPlayer3D.new()
+	_boat_player.stream = AudioDirector.boat_engine_stream()
+	_boat_player.unit_size = 20.0
+	_boat_player.max_distance = 300.0
+	_boat_player.volume_db = -4.0
+	_boat.add_child(_boat_player)
+	_boat_player.play()
+	_boat.look_at(_boat_target + Vector3(0, 0, 0))
+	_boat.rotate_y(PI)         # bow (local -z in look_at) forward
+	_boat.set_meta("label", "RELIEF BOAT // FIRST LIGHT")
+	_boat.add_to_group("bino_target")
+	_boat_arrived = false
+
+func _update_ending_scene(delta: float) -> void:
+	if ending_kind == "":
+		return
+	if ending_kind == "c":
+		# Look up at the beam from the pier.
+		player.yaw = lerp_angle(player.yaw, 0.0, minf(1.0, delta * 1.5))
+		player.pitch = lerpf(player.pitch, 0.45, minf(1.0, delta * 1.5))
+	elif _boat != null:
+		var to := _boat_target - _boat.position
+		to.y = 0.0                              # the boat rides the water; judge arrival in the plane
+		if to.length() > 1.0:
+			_boat.position += to.normalized() * _boat_speed * delta
+		else:
+			_boat_arrived = true
+		_boat.position.y = TideSystem.current_height + 0.25 + sin(Time.get_ticks_msec() * 0.0015) * 0.1
+		var eye := player.global_position + Vector3(0, Player.EYE, 0)
+		var dir := (_boat.global_position + Vector3(0, 2.4, 0) - eye)
+		var want_yaw := atan2(-dir.x, -dir.z)
+		var want_pitch := asin(clampf(dir.y / maxf(dir.length(), 0.001), -1.0, 1.0))
+		player.yaw = lerp_angle(player.yaw, want_yaw, minf(1.0, delta * 2.0))
+		player.pitch = lerpf(player.pitch, want_pitch, minf(1.0, delta * 2.0))
+		player.bino_label = "RELIEF BOAT // FIRST LIGHT"
+		player.bino_dist = int(dir.length())
+	player.rotation.y = player.yaw
+	player.cam.rotation.x = player.pitch
+	var want_fov := Player.FOV_BINO if player.binoculars else Player.FOV_NORMAL
+	player.cam.fov = lerpf(player.cam.fov, want_fov, minf(1.0, delta * 3.0))
+
+func _ending_body(kind: String) -> String:
+	var text: String = ENDINGS[kind]["body"]
+	if kind == "a":
+		if GameState.has_flag("clara_admitted"):
+			text += " Clara's statement sits beside Arthur's. She signed it Dunmore."
+		elif GameState.has_flag("clara_partial"):
+			text += " Clara never wrote back, but her father's log was in the envelope."
+		else:
+			text += " Clara's name is nowhere in the file. Neither of you mentions it."
+	return text
+
+func _show_ending_card(kind: String) -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	SaveSystem.record_ending(kind)
+	SaveSystem.delete_save()
+	hud.show_ending(kind, ENDINGS[kind]["name"], _ending_body(kind))
+
+func _on_ending_closed() -> void:
+	RadioSystem.dismiss()
+	GameState.reset()
+	DayDirector.begin_day(1)
+	if ending_reload:
+		get_tree().reload_current_scene()

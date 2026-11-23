@@ -287,8 +287,15 @@ func _run() -> void:
 	var ended := [false]
 	director.week_ended.connect(func(): ended[0] = true)
 	await _use(main, "bed")
+	await create_timer(1.2).timeout
+	ok(not ended[0] and clock.day == 7, "day 7: cannot sleep before choosing what to do about the tapes")
+	state.set_flag("ending_a")
+	await _use(main, "bed")
 	await create_timer(1.6).timeout
-	ok(ended[0] and clock.day == 7, "sleeping on day 7 ends the week without a day 8")
+	ok(ended[0] and clock.day == 7, "sleeping on day 7 after an ending is chosen ends the week without a day 8")
+	state.clear_flag("ending_a")
+	main.ending_kind = ""
+	main.ending_reload = false
 
 	await create_timer(1.5).timeout     # let the day-7 sleep sequence finish unlocking Arthur
 	_reset_radio(radio)
@@ -594,6 +601,146 @@ func _run() -> void:
 		ok(catalog[nm].loop_mode == AudioStreamWAV.LOOP_FORWARD, "%s is a looping stream" % nm)
 		ok(st2["wrap_jump"] <= st2["mean_step"] * 6.0 + 0.002, "%s loop seam has no click (jump %.4f vs mean step %.4f)" % [nm, st2["wrap_jump"], st2["mean_step"]])
 
+	print("== M6: trust simulation (whole week through the real radio code)")
+	await create_timer(1.5).timeout
+	react.auto = false
+	var sim_honest: Dictionary = await _sim_play("honest")
+	var sim_bad: Dictionary = await _sim_play("dishonest")
+	var sim_mix3: Dictionary = await _sim_play("mixed3")
+	var sim_mix2: Dictionary = await _sim_play("mixed2")
+	print("  trust: honest %d/%d  dishonest %d/%d  mixed3 %d/%d  mixed2 %d/%d  (day6 eve / final)" % [sim_honest["t6"], sim_honest["t7"], sim_bad["t6"], sim_bad["t7"], sim_mix3["t6"], sim_mix3["t7"], sim_mix2["t6"], sim_mix2["t7"]])
+	ok(sim_honest["admitted"] and sim_honest["offered"] == ["ending_a", "ending_b"] and sim_honest["ending"] == "b", "honest week: Clara admits everything; A and B offered; reaches ending B")
+	ok(sim_bad["stone"] and not sim_bad["admitted"] and sim_bad["offered"] == ["ending_a", "ending_c"] and sim_bad["ending"] == "c", "dishonest week: Clara stonewalls; A and C offered; reaches ending C")
+	ok(sim_mix3["partial"] and not sim_mix3["admitted"] and sim_mix3["offered"] == ["ending_a", "ending_c"], "one dishonest answer in three loses the full confession (partial)")
+	ok(sim_mix2["partial"] and sim_mix2["ending"] != "", "an even mix still reaches an ending via the partial route")
+	ok(sim_honest["t6"] >= 16 and sim_honest["t6"] - 12 >= 4, "honest play clears the high-trust threshold (12) with margin (%d)" % sim_honest["t6"])
+	ok(sim_bad["t6"] < 3, "dishonest play lands below the mid-trust threshold (%d)" % sim_bad["t6"])
+	for sim in [sim_honest, sim_bad, sim_mix3, sim_mix2]:
+		ok(sim["ending"] != "", "no dead ends: every policy reaches an ending (%s)" % sim["ending"])
+	ok(not (sim_honest["offered"].has("ending_c")) and not (sim_bad["offered"].has("ending_b")), "B only at high trust; C never offered to a fully trusting Arthur")
+
+	print("== M6: tapes, pickups, reactions, journal")
+	state.reset()
+	director.begin_day(1)
+	_reset_radio(radio)
+	var floor_it = _find_it("floorboard")
+	var locker_it = _find_it("locker")
+	var tin_it = _find_it("tin")
+	var svc_it = _find_it("buoy_service")
+	ok(not floor_it.is_available() and not locker_it.is_available() and not tin_it.is_available() and not svc_it.is_available(), "day 1: no late-game pickups are available")
+	clock.set_time(3, 600.0)
+	ok(floor_it.is_available() and not locker_it.is_available(), "day 3: the loose floorboard opens, the locker does not")
+	clock.set_time(4, 600.0)
+	ok(locker_it.is_available() and not tin_it.is_available(), "day 4: the lantern locker opens; the cove tin still needs tape 4 heard")
+	state.set_flag("heard_tape_4")
+	ok(tin_it.is_available() and not svc_it.is_available(), "tin opens once Walt's last tape is heard; the service hatch needs day 6")
+	clock.set_time(6, 600.0)
+	ok(svc_it.is_available(), "day 6: the buoy service hatch opens")
+	state.give_item("tape_3"); state.give_item("tape_6")
+	ok(not floor_it.is_available() and not svc_it.is_available(), "taken pickups disappear")
+
+	var Conv3 = load("res://story/conversations.gd")
+	var want := {"tape_3": "Ruth", "tape_4": "Wickenden", "tape_5": "I said one hour", "tape_6": "Dad"}
+	for tid in want:
+		var txt := ""
+		for l in Conv3.tape(tid).get("lines", []):
+			txt += String(l["text"]) + " "
+		ok(txt.contains(want[tid]), "%s transcript carries its story beat ('%s')" % [tid, want[tid]])
+	tapes.speed = 80.0
+	main._place("cottage", main.interiors.spawn["cottage"], 0.0)
+	state.reset()
+	for tid in ["tape_1", "tape_2", "tape_3", "tape_4", "tape_5", "tape_6"]:
+		tapes.play(tid)
+		await create_timer(1.8).timeout
+	ok(["tape_1", "tape_2", "tape_3", "tape_4", "tape_5", "tape_6"].all(func(t): return state.has_flag("heard_" + t)), "all six tapes play through and are marked heard")
+
+	var hidden_count := [0]
+	var hid_cb := func(): hidden_count[0] += 1
+	radio.hidden.connect(hid_cb)
+	_reset_radio(radio)
+	hidden_count[0] = 0
+	radio.play({"id": "t", "speaker": "X", "priority": 2, "text": "a", "options": [{"text": "x", "reply": "r", "next": "end_c", "trust": 0}]})
+	radio.choose(0)
+	radio.dismiss()
+	await _frames(2)
+	ok(radio.active and radio.current.get("id", "") == "end_c" and hidden_count[0] == 0, "a chained follow-up replaces the panel without hiding it in between")
+	radio.dismiss()
+	ok(hidden_count[0] == 1, "the panel hides exactly once, after the last line")
+	radio.hidden.disconnect(hid_cb)
+
+	state.reset()
+	clock.set_time(4, 740.0)
+	state.location = "cottage"
+	ok(react.tick() == "r_storm_midday", "Clara's storm-day midday call reaches Arthur indoors")
+	radio.dismiss()
+	ok(react.tick() == "", "...and only once")
+	state.location = "cottage"
+	clock.set_time(3, 740.0)
+	state.reset()
+	ok(react.tick() == "", "...and not on other days")
+
+	state.reset()
+	for tid in ["tape_1", "tape_2", "tape_3", "tape_4", "tape_5", "tape_6"]:
+		state.give_item(tid)
+		state.set_flag("heard_" + tid)
+	main.hud._journal_page = 2
+	main.hud._render_journal()
+	await _frames(4)
+	var vbar = main.hud._modal_scroll.get_v_scroll_bar()
+	ok(vbar.max_value > main.hud._modal_scroll.size.y + 50.0, "journal tapes page scrolls when six transcripts are heard (content %.0f > view %.0f)" % [vbar.max_value, main.hud._modal_scroll.size.y])
+	main.hud.close_modal()
+	var json_text := FileAccess.get_file_as_string("res://dialogue/dialogue.json")
+	ok(not json_text.contains("Rockland"), "the real station name 'Rockland' is gone from the script")
+	ok(json_text.contains("Station Penobscot"), "...replaced by the fictional Station Penobscot")
+
+	print("== M6: ending scenes")
+	var save2 := root.get_node("SaveSystem")
+	save2.endings_path = "user://test_endings.json"
+	if FileAccess.file_exists(save2.endings_path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(save2.endings_path))
+	main.ending_reload = false
+	Engine.time_scale = 6.0
+	for kind in ["a", "b", "c"]:
+		state.reset()
+		director.begin_day(7)
+		if kind == "a": state.set_flag("clara_admitted")
+		main.ending_kind = ""
+		main._boat = null
+		main._boat_arrived = false
+		main._busy = false
+		main.player.locked = false
+		_reset_radio(radio)
+		save2.path = "user://test_save.json"
+		save2.save_game("cottage")
+		main.start_ending(kind)
+		var t_wait := Time.get_ticks_msec()
+		while not main.hud._ending_panel.visible and (Time.get_ticks_msec() - t_wait) < 60000:
+			await process_frame
+		ok(main.hud._ending_panel.visible and main.hud._ending_name.text == main.ENDINGS[kind]["name"], "ending %s: end card shows '%s'" % [kind.to_upper(), main.ENDINGS[kind]["name"]])
+		ok(main.location == "outdoors" and main.player.global_position.distance_to(Vector3(0, Terr.PIER_TOP, 31.0)) < 3.0, "ending %s: Arthur stands on the pier at dawn" % kind.to_upper())
+		if kind == "c":
+			ok(main._boat == null and not main.player.binoculars, "ending C: no boat, no binoculars: just the beam and static")
+		else:
+			ok(main._boat != null and main._boat_arrived and main.player.binoculars and main.player.bino_label.contains("RELIEF BOAT"), "ending %s: relief boat arrives and is seen through the binoculars (%s)" % [kind.to_upper(), main.player.bino_label])
+		ok(save2.endings_seen().has(kind) and not save2.has_save(), "ending %s is recorded and the run's save is removed" % kind.to_upper())
+		if kind == "b":
+			ok(state.has_flag("buoy_off"), "ending B switches the buoy off")
+			var hydros := get_nodes_in_group("hydrophone")
+			ok(hydros.size() == 1 and not hydros[0].is_live(), "ending B silences the hydrophone ping")
+		if kind == "a":
+			ok(main._ending_body("a").contains("Dunmore"), "ending A epilogue reflects Clara's full admission")
+		if main._boat != null:
+			main._boat.remove_from_group("bino_target")
+			main._boat.queue_free()
+		main.hud._ending_panel.visible = false
+		main.hud._ending_open = false
+		main.player.binoculars = false
+	Engine.time_scale = 1.0
+	ok(save2.endings_seen() == ["a", "b", "c"], "all three endings recorded across runs")
+	main._on_ending_closed()
+	ok(clock.day == 1 and state.discovered.is_empty() and state.ending == "", "closing the end card resets the game to a fresh Day 1")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(save2.endings_path))
+
 	print("\n%d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -653,6 +800,91 @@ func _walk(main, pts: Array, max_s := 60.0) -> bool:
 	Input.action_release("move_forward")
 	p.swept.disconnect(cb)
 	return reached
+
+func _find_it(id: String):
+	for n in get_nodes_in_group("interactable"):
+		if n.id == id:
+			return n
+	return null
+
+## ---- trust simulation (plays the real radio code day by day) ----
+func _sim_play(policy: String) -> Dictionary:
+	var state := root.get_node("GameState")
+	var director := root.get_node("DayDirector")
+	var Conv = load("res://story/conversations.gd")
+	state.reset()
+	var n := [0]
+	var t6 := 0
+	var offered: Array = []
+	for day in range(1, 8):
+		director.begin_day(day)
+		for step in _sim_script(day):
+			if step.has("give"): state.give_item(step["give"])
+			if step.has("flag"): state.set_flag(step["flag"])
+			if step.has("conv"):
+				if step["conv"] == "evening_d6":
+					t6 = state.trust
+				if step["conv"] == "evening_d7":
+					for o in Conv.get_conv("evening_d7")["options"]:
+						offered.append(String(o["set"][0]) if o.has("set") else "?")
+				await _sim_say(step["conv"], policy, n)
+	var ending := ""
+	for k in ["a", "b", "c"]:
+		if state.has_flag("ending_" + k): ending = k
+	return {"t6": t6, "t7": state.trust, "admitted": state.has_flag("clara_admitted"), "partial": state.has_flag("clara_partial"),
+		"stone": state.has_flag("clara_stonewalled"), "offered": offered, "ending": ending}
+
+func _sim_script(day: int) -> Array:
+	match day:
+		1: return [{"conv": "morning_d1"}, {"give": "canister"}, {"conv": "shipwreck"}, {"give": "tape_1"}, {"conv": "seacave"}, {"conv": "evening_d1"}]
+		2: return [{"conv": "morning_d2"}, {"flag": "heard_tape_1"}, {"conv": "evening_d2"}]
+		3: return [{"conv": "morning_d3"}, {"give": "cable_tag"}, {"conv": "cable"}, {"give": "tape_3"}, {"flag": "heard_tape_3"}, {"conv": "evening_d3"}]
+		4: return [{"conv": "morning_d4"}, {"conv": "midday_d4"}, {"give": "tape_4"}, {"flag": "heard_tape_4"}, {"conv": "evening_d4"}]
+		5: return [{"conv": "morning_d5"}, {"give": "tape_2"}, {"conv": "vault"}, {"flag": "heard_tape_2"}, {"conv": "evening_d5"}]
+		6: return [{"give": "tape_5"}, {"flag": "heard_tape_5"}, {"give": "tape_6"}, {"flag": "heard_tape_6"}, {"conv": "morning_d6"}, {"conv": "evening_d6"}]
+		_: return [{"conv": "morning_d7"}, {"conv": "evening_d7"}]
+
+func _sim_say(id: String, policy: String, n: Array) -> void:
+	var radio := root.get_node("RadioSystem")
+	var Conv = load("res://story/conversations.gd")
+	radio._queue.clear()
+	radio._pending_next = ""
+	if radio.active:
+		radio.dismiss()
+	radio._queue.clear()
+	var conv: Dictionary = Conv.get_conv(id)
+	if conv.is_empty():
+		return
+	radio.play(conv)
+	for guard in 6:
+		if not radio.active:
+			break
+		var opts: Array = radio.current.get("options", [])
+		if opts.size() > 0 and radio.awaiting_choice:
+			radio.choose(_sim_pick(opts, policy, n))
+		radio.dismiss()
+		await process_frame
+
+func _sim_pick(opts: Array, policy: String, n: Array) -> int:
+	n[0] += 1
+	for i in opts.size():
+		var sets: Array = opts[i].get("set", [])
+		if sets.has("ending_a") or sets.has("ending_b") or sets.has("ending_c"):
+			var want := "ending_b" if policy == "honest" else ("ending_c" if policy == "dishonest" else "ending_a")
+			for j in opts.size():
+				if opts[j].get("set", []).has(want):
+					return j
+			return 0
+	var best := 0
+	var worst := 0
+	for i in opts.size():
+		if int(opts[i].get("trust", 0)) > int(opts[best].get("trust", 0)): best = i
+		if int(opts[i].get("trust", 0)) < int(opts[worst].get("trust", 0)): worst = i
+	match policy:
+		"honest": return best
+		"dishonest": return worst
+		"mixed3": return worst if n[0] % 3 == 0 else best
+		_: return worst if n[0] % 2 == 0 else best
 
 ## Peak / RMS / NaN / loop-seam statistics for a 16-bit mono AudioStreamWAV.
 func _audio_stats(stream) -> Dictionary:

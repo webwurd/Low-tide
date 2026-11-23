@@ -50,6 +50,16 @@ var _tut_back: Button
 var _title_panel: PanelContainer
 var _continue_btn: Button
 var modal_open := false
+var _modal_scroll: ScrollContainer
+signal ending_closed
+var _ending_panel: ColorRect
+var _ending_title: Label
+var _ending_name: Label
+var _ending_body: Label
+var _ending_hint: Label
+var _ending_open := false
+var _ending_opened_at := 0.0
+var _endings_label: Label
 var _journal_page := -1          # -1 = not a journal modal; 0 log, 1 satchel, 2 tapes
 var _tape_panel: PanelContainer
 var _tape_title: Label
@@ -67,6 +77,7 @@ func _ready() -> void:
 	_build_modal()
 	_build_tape_panel()
 	_build_card()
+	_build_ending_card()
 	_build_tutorial()
 	_build_title()
 	GameState.note_posted.connect(show_note)
@@ -248,7 +259,12 @@ func _build_title() -> void:
 		_title.visible = false
 		continue_pressed.emit())
 	_continue_btn.visible = SaveSystem.has_save()
-	for n in [t, sub, body, b_new, _continue_btn]:
+	_endings_label = _label("", 12, Color("9aa7b0"))
+	_endings_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var seen: Array = SaveSystem.endings_seen()
+	if seen.size() > 0:
+		_endings_label.text = "Endings found: " + ", ".join(seen.map(func(k): return String(k).to_upper()))
+	for n in [t, sub, body, b_new, _continue_btn, _endings_label]:
 		v.add_child(n)
 
 # --- setup / tutorial (shown before Arthur steps onto the island) -------
@@ -387,14 +403,19 @@ func _build_modal() -> void:
 	_modal_body = _label("", 17, Color("2b2418"))
 	_modal_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_modal_body.custom_minimum_size = Vector2(640, 0)
+	_modal_scroll = ScrollContainer.new()
+	_modal_scroll.custom_minimum_size = Vector2(660, 340)
+	_modal_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_modal_scroll.add_child(_modal_body)
 	v.add_child(_modal_title)
-	v.add_child(_modal_body)
-	v.add_child(_label("[E / Tab / Esc] close", 12, Color("6a5a3a")))
+	v.add_child(_modal_scroll)
+	v.add_child(_label("[E / Tab / Esc] close     [W / S or right stick] scroll", 12, Color("6a5a3a")))
 
 func _open_modal(title: String, body: String) -> void:
 	_modal_title.text = title
 	_modal_body.text = body
 	_modal.visible = true
+	_modal_scroll.scroll_vertical = 0
 	modal_open = true
 	_modal_frame = Engine.get_process_frames()
 	player.ui_lock = true
@@ -417,6 +438,43 @@ func show_tide_table(day: int, extremes: Array) -> void:
 	lines.append("")
 	lines.append("Sandbars close above 2.1 m.")
 	_open_modal("TIDE TABLE   -   Day %d" % day, "\n".join(lines))
+
+func _build_ending_card() -> void:
+	_ending_panel = ColorRect.new()
+	_ending_panel.color = Color(0.02, 0.03, 0.04, 1.0)
+	_full(_ending_panel)
+	_ending_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	_ending_panel.modulate.a = 0.0
+	_ending_panel.visible = false
+	_ending_panel.z_index = 8
+	add_child(_ending_panel)
+	var c := CenterContainer.new()
+	_full(c)
+	_ending_panel.add_child(c)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 14)
+	v.custom_minimum_size = Vector2(680, 0)
+	c.add_child(v)
+	_ending_title = _label("LOW TIDE", 20, Color("9aa7b0"))
+	_ending_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_ending_name = _label("", 38, Color.WHITE)
+	_ending_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_ending_body = _label("", 17, Color("d8dde2"))
+	_ending_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_ending_body.custom_minimum_size = Vector2(680, 0)
+	_ending_hint = _label("[E]  return to title", 13, AMBER)
+	_ending_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	for n in [_ending_title, _ending_name, _ending_body, _ending_hint]:
+		v.add_child(n)
+
+func show_ending(letter: String, ending_name: String, body: String) -> void:
+	_ending_title.text = "LOW TIDE   -   ENDING %s" % letter.to_upper()
+	_ending_name.text = ending_name
+	_ending_body.text = body
+	_ending_panel.visible = true
+	create_tween().tween_property(_ending_panel, "modulate:a", 1.0, 2.0)
+	_ending_open = true
+	_ending_opened_at = Time.get_ticks_msec() / 1000.0
 
 func _build_tape_panel() -> void:
 	_tape_panel = PanelContainer.new()
@@ -524,6 +582,13 @@ func _process(delta: float) -> void:
 		elif Input.is_action_just_pressed("move_left"):
 			_journal_page = (_journal_page + 2) % 3
 			_render_journal()
+	if modal_open:
+		var dir := Input.get_axis("move_forward", "move_back") + Input.get_axis("look_up", "look_down")
+		if dir != 0.0:
+			_modal_scroll.scroll_vertical += int(clampf(dir, -1.0, 1.0) * 700.0 * delta)
+	if _ending_open and Time.get_ticks_msec() / 1000.0 - _ending_opened_at > 2.5 and Input.is_action_just_pressed("interact"):
+		_ending_open = false
+		ending_closed.emit()
 	_hold_bar.visible = player.hold_progress > 0.0
 	_hold_bar.value = player.hold_progress
 	if _note_t > 0.0:

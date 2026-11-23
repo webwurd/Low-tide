@@ -2,7 +2,7 @@
  "convs": {
   "morning_d1": [
    {
-    "text": "Gannet Rock, this is Station Rockland. Radio check. Tide's dropping fast; if you want the outer stacks before noon, now's your window.",
+    "text": "Gannet Rock, this is Station Penobscot. Radio check. Tide's dropping fast; if you want the outer stacks before noon, now's your window.",
     "priority": 2,
     "speaker": "clara",
     "options": [
@@ -540,6 +540,602 @@
      }
     ]
    }
+  ],
+  "morning_d3": [
+   {
+    "text": "Morning, Arthur. Fog's down to the waterline, so keep your ears open. One bell strike is north, two is east, three is south, four is west. You know I worry.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "I'll steer by the bells.",
+      "reply": "Good. Don't trust the beam in this. Trust your ears.",
+      "trust": 1
+     },
+     {
+      "text": "You worry a lot, for a dispatcher.",
+      "reply": "It's the job. And... other things.",
+      "trust": 1
+     }
+    ],
+    "when": [
+     "trust>=3"
+    ]
+   },
+   {
+    "text": "Morning. Dense fog. Bells: one strike north, two east, three south, four west. Don't go out blind.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Understood.",
+      "reply": "Good.",
+      "trust": 0
+     },
+     {
+      "text": "I'll go where I like.",
+      "reply": "Then go carefully.",
+      "trust": -1
+     }
+    ]
+   }
+  ],
+  "react_fog_bells": [
+   {
+    "text": "In this soup, find the bell before you trust your feet. Two strikes is the east buoy. You'd be crossing toward it.",
+    "priority": 0,
+    "speaker": "clara",
+    "options": []
+   }
+  ],
+  "morning_d4": [
+   {
+    "text": "Gale warning's up, Arthur, and the bars are done for the day. Stay by the stove. I'll be on sixteen all day if you want company.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Then I'll want company.",
+      "reply": "Good. I'll call you at noon.",
+      "trust": 1
+     },
+     {
+      "text": "I could still check the tower.",
+      "reply": "On the summit, in daylight, with a rope. Not otherwise.",
+      "trust": 0
+     }
+    ],
+    "when": [
+     "trust>=4"
+    ]
+   },
+   {
+    "text": "Gale warning's up. Bars are done for the day. Stay near the stove and keep the lamp trimmed.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Understood. I'll sit tight.",
+      "reply": "Good.",
+      "trust": 1
+     },
+     {
+      "text": "I could still check the tower.",
+      "reply": "On the summit, in daylight, with a rope. Not otherwise.",
+      "trust": 0
+     }
+    ]
+   }
+  ],
+  "midday_d4": [
+   {
+    "text": "Arthur, you still with me? The line's crackling. Anyone else would be climbing the walls by now.",
+    "priority": 1,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Snug. The lamp's trimmed and the stove's roaring.",
+      "reply": "Good. I'll keep the line open.",
+      "trust": 0
+     },
+     {
+      "text": "It's too quiet in here. Talk to me.",
+      "reply": "...All right. Ask me anything. I'm not going anywhere in this weather either.",
+      "trust": 1
+     }
+    ]
+   }
+  ],
+  "evening_d4": [
+   {
+    "text": "Long day. Storms make people talk, don't they? My father worked the Pelagic boats, Arthur. Tom Dunmore. He never said much about 1974.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Tell me about him.",
+      "reply": "He'd come home smelling of diesel and salt and sit in the dark with the radio on. After '74 he stopped going out. Said the sea owed him something.",
+      "trust": 2,
+      "set": [
+       "clara_shared_father"
+      ],
+      "next": "d4_why_post"
+     },
+     {
+      "text": "Why are you telling me now?",
+      "reply": "Because it's blowing a gale and I'm tired of keeping it all inside.",
+      "trust": 1,
+      "set": [
+       "clara_shared_father"
+      ],
+      "next": "d4_why_post"
+     }
+    ],
+    "when": [
+     "trust>=6"
+    ]
+   },
+   {
+    "text": "Long day. Storms make people talk. My father worked the Pelagic boats. That's all I'll say tonight.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Thank you for telling me.",
+      "reply": "...Goodnight, Arthur.",
+      "trust": 1
+     },
+     {
+      "text": "Pelagic. The canister. You knew.",
+      "reply": "Not tonight, Arthur. Please.",
+      "trust": 0
+     }
+    ],
+    "when": [
+     "trust>=1"
+    ]
+   },
+   {
+    "text": "Long day. Get some sleep.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Goodnight, Clara.",
+      "reply": "Goodnight.",
+      "trust": 0
+     },
+     {
+      "text": "You're not telling me something.",
+      "reply": "Goodnight, Arthur.",
+      "trust": -1
+     }
+    ]
+   }
+  ],
+  "d4_why_post": [
+   {
+    "text": "And you? Why would a man take a winter post alone, at the far end of the line?",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "My wife, Maren, died in the autumn. I couldn't stay in the house.",
+      "reply": "...I'm sorry, Arthur. I didn't know. Thank you for telling me.",
+      "trust": 2,
+      "set": [
+       "told_clara_wife"
+      ]
+     },
+     {
+      "text": "I like the quiet.",
+      "reply": "Mm. That's not an answer, but it'll do.",
+      "trust": 0
+     }
+    ]
+   }
+  ],
+  "morning_d5": [
+   {
+    "text": "Clear as glass. The tables say this is the lowest water of the winter, Arthur. My father used to say the reef opens once a decade.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Then the south reef will be open.",
+      "reply": "For a couple of hours at best. Watch the clock like it owes you money.",
+      "trust": 0
+     },
+     {
+      "text": "You sound nervous.",
+      "reply": "I sound careful. There's a difference.",
+      "trust": 1
+     }
+    ],
+    "when": [
+     "flag:clara_shared_father"
+    ]
+   },
+   {
+    "text": "Clear as glass. Spring low today, the lowest water of the winter. The south reef will uncover.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Then I'll take a look.",
+      "reply": "Watch the clock. Keep between the poles.",
+      "trust": 0
+     },
+     {
+      "text": "Is there a reason you keep warning me?",
+      "reply": "Habit.",
+      "trust": 0
+     }
+    ]
+   }
+  ],
+  "morning_d6": [
+   {
+    "text": "Cold one. Arthur, I owe you a straight conversation. Tonight, when the lamp's lit. I wanted you to know I mean it.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "I'll be listening.",
+      "reply": "Good.",
+      "trust": 1
+     },
+     {
+      "text": "I think I already know.",
+      "reply": "Then you know why it's hard.",
+      "trust": 0
+     }
+    ],
+    "when": [
+     "trust>=12"
+    ]
+   },
+   {
+    "text": "Cold one. I'll try to answer what you ask tonight. I can't promise more than that.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "That's enough.",
+      "reply": "...Thank you.",
+      "trust": 1
+     },
+     {
+      "text": "Try harder.",
+      "reply": "I'll try.",
+      "trust": 0
+     }
+    ],
+    "when": [
+     "trust>=3"
+    ]
+   },
+   {
+    "text": "Cold. Don't expect much of me tonight. You've given me reasons not to.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "I know. I'm sorry.",
+      "reply": "...Mm.",
+      "trust": 1
+     },
+     {
+      "text": "You've given me reasons too.",
+      "reply": "Fair.",
+      "trust": -1
+     }
+    ]
+   }
+  ],
+  "evening_d6": [
+   {
+    "text": "All right, Arthur. You've earned this. My father piloted the boat that took June Haskell to the reef. He told the Navy the tide table said one hour. They said two. He waited offshore with his engine running and watched the water come over the bar. I've kept that buoy alive ever since. I tell myself the ping is her recorder.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "It was grief, Clara. Not duty.",
+      "reply": "...Yes. It was.",
+      "trust": 2,
+      "set": [
+       "clara_admitted"
+      ]
+     },
+     {
+      "text": "You should have told me on day one.",
+      "reply": "I know. I couldn't.",
+      "trust": 0,
+      "set": [
+       "clara_admitted"
+      ]
+     }
+    ],
+    "when": [
+     "trust>=12"
+    ]
+   },
+   {
+    "text": "Arthur, I can tell you some of it. My father was on the boats. There was an accident in '74, and the Navy buried it. I keep the buoy running because... because I can't stop.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Who was June, Clara?",
+      "reply": "...June Haskell. Walt's wife. Read the tapes. You'll hear the rest.",
+      "trust": 1,
+      "set": [
+       "clara_partial"
+      ]
+     },
+     {
+      "text": "That's not the whole story.",
+      "reply": "No. It isn't.",
+      "trust": 0,
+      "set": [
+       "clara_partial"
+      ]
+     }
+    ],
+    "when": [
+     "trust>=3"
+    ]
+   },
+   {
+    "text": "I don't have anything to say tonight, Arthur. You've kept things from me. I'll keep a few from you.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "I found your recording in the west buoy, Clara.",
+      "reply": "...You had no right. Fine. My father piloted the boat. That's all I'll say.",
+      "trust": 1,
+      "set": [
+       "clara_partial"
+      ],
+      "when": [
+       "has:tape_6"
+      ]
+     },
+     {
+      "text": "Then we're done talking tonight.",
+      "reply": "Goodnight.",
+      "trust": -1,
+      "set": [
+       "clara_stonewalled"
+      ]
+     }
+    ]
+   }
+  ],
+  "morning_d7": [
+   {
+    "text": "Last morning of your watch, Arthur. I wanted to hear your voice before the relief boat.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Hearing yours, too.",
+      "reply": "Then we're square.",
+      "trust": 1
+     },
+     {
+      "text": "Let's finish what we started.",
+      "reply": "Alright. Whatever you decide, I'll abide by it.",
+      "trust": 0
+     }
+    ],
+    "when": [
+     "flag:clara_admitted"
+    ]
+   },
+   {
+    "text": "Last morning. The relief boat is due at first light tomorrow. I hope you've made up your mind.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Nearly.",
+      "reply": "Good.",
+      "trust": 0
+     },
+     {
+      "text": "Not yet.",
+      "reply": "Then think carefully.",
+      "trust": 0
+     }
+    ],
+    "when": [
+     "flag:clara_partial"
+    ]
+   },
+   {
+    "text": "Last day. Relief boat's due at first light.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "I know.",
+      "reply": "...",
+      "trust": 0
+     },
+     {
+      "text": "Clara, are we all right?",
+      "reply": "I don't know, Arthur.",
+      "trust": 0
+     }
+    ]
+   }
+  ],
+  "evening_d7": [
+   {
+    "text": "Light's on. The relief boat's due at first light, Arthur. You hold June's tapes, and Walt's, and my father's. Whatever you decide, I'll abide by it.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Send them to June's sister, Ruth Whitcomb, in Providence. She should hear them.",
+      "reply": "...Yes. I'll write the cover letter myself.",
+      "trust": 0,
+      "set": [
+       "ending_a"
+      ],
+      "next": "end_a_high"
+     },
+     {
+      "text": "Let the past lie. We let the buoy go quiet, and keep this between us.",
+      "reply": "...Then I'll cut the supply tonight. Thank you, Arthur.",
+      "trust": 0,
+      "set": [
+       "ending_b"
+      ],
+      "next": "end_b"
+     }
+    ],
+    "when": [
+     "flag:clara_admitted"
+    ]
+   },
+   {
+    "text": "Light's on. The relief boat's due at first light. You know enough to decide. What will you do?",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Send the tapes to June's family. Ruth Whitcomb, in Providence.",
+      "reply": "Do what you must. I'll sign whatever you need.",
+      "trust": 0,
+      "set": [
+       "ending_a"
+      ],
+      "next": "end_a_mid"
+     },
+     {
+      "text": "I'm filing a report with the Coast Guard, Clara. About the buoy, and about 1974.",
+      "reply": "...I understand.",
+      "trust": 0,
+      "set": [
+       "ending_c"
+      ],
+      "next": "end_c"
+     }
+    ],
+    "when": [
+     "flag:clara_partial"
+    ]
+   },
+   {
+    "text": "Light's on. The relief boat's due at first light. I suppose you've decided.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "I'm sending the tapes to June's family anyway.",
+      "reply": "Then do it. I won't stop you.",
+      "trust": 0,
+      "set": [
+       "ending_a"
+      ],
+      "next": "end_a_low"
+     },
+     {
+      "text": "I'm filing a report, Clara.",
+      "reply": "...",
+      "trust": 0,
+      "set": [
+       "ending_c"
+      ],
+      "next": "end_c"
+     }
+    ]
+   }
+  ],
+  "end_a_high": [
+   {
+    "text": "Goodnight, Arthur. And thank you, for all of it. I'll see you off at the boat.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": []
+   }
+  ],
+  "end_a_mid": [
+   {
+    "text": "Goodnight, Arthur. I'll be on sixteen at first light.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": []
+   }
+  ],
+  "end_a_low": [
+   {
+    "text": "Goodnight.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": []
+   }
+  ],
+  "end_b": [
+   {
+    "text": "Supply's cut at my end. The buoy will go quiet by morning. Goodnight, Arthur.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": []
+   }
+  ],
+  "end_c": [
+   {
+    "text": "Goodnight, Arthur.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": []
+   }
+  ],
+  "ending_a_radio": [
+   {
+    "text": "I have the relief boat on my board, Arthur. Wave to them for me. And thank you.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [],
+    "when": [
+     "flag:clara_admitted"
+    ]
+   },
+   {
+    "text": "The relief boat's on my board. Safe home, Arthur.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [],
+    "when": [
+     "flag:clara_partial"
+    ]
+   },
+   {
+    "text": "Relief boat's on the board. Safe home.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": []
+   }
+  ],
+  "ending_b_radio": [
+   {
+    "text": "It's gone quiet, Arthur. I can't hear the ping any more. It's so quiet. I have the relief boat on my board.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": []
+   }
+  ],
+  "ending_c_radio": [
+   {
+    "text": "Only static on sixteen. No one answers.",
+    "priority": 2,
+    "speaker": "arthur",
+    "options": []
+   }
   ]
  },
  "reactions": [
@@ -623,6 +1219,25 @@
    ],
    "conv": "react_bar_rising",
    "cooldown": 120
+  },
+  {
+   "id": "r_storm_midday",
+   "when": [
+    "day==4",
+    "time>=720"
+   ],
+   "conv": "midday_d4",
+   "once": true,
+   "anywhere": true
+  },
+  {
+   "id": "r_fog_bells",
+   "when": [
+    "day==3",
+    "zone:east_bar,west_bar,north_bar"
+   ],
+   "conv": "react_fog_bells",
+   "once": true
   }
  ],
  "tapes": {
@@ -693,6 +1308,138 @@
     {
      "t": 46,
      "text": "[The hatch clangs. Static.]"
+    }
+   ]
+  },
+  "tape_3": {
+   "title": "TAPE 3  -  WALT, OCTOBER 1977",
+   "lines": [
+    {
+     "t": 0,
+     "text": "[Click. A kettle somewhere behind him. The wind is down.]"
+    },
+    {
+     "t": 3,
+     "text": "June. Three years, give or take a week. A man came on the Tuesday boat with a briefcase. Commander something. Very polite."
+    },
+    {
+     "t": 11,
+     "text": "He had a settlement. Four pages, and a fifth for my signature. A pension, and a letter saying the Navy regrets, and one line at the bottom about not discussing the matter."
+    },
+    {
+     "t": 21,
+     "text": "I asked him what I'd be not discussing. He said the schedule. I said, what schedule? He said it was classified."
+    },
+    {
+     "t": 29,
+     "text": "So there was a schedule. I said, your schedule said two hours at the reef. The table says one. Tom Dunmore, who ferried her out, said one. He said Tom was mistaken."
+    },
+    {
+     "t": 40,
+     "text": "I didn't sign. I'll tell Ruth when I write. Her sister wrote again last week. I haven't answered. I don't know what to say to a woman who loved you as much as I did."
+    },
+    {
+     "t": 52,
+     "text": "[A long breath.] Goodnight, June. [Click.]"
+    }
+   ]
+  },
+  "tape_4": {
+   "title": "TAPE 4  -  WALT, MARCH 1979 (LAST)",
+   "lines": [
+    {
+     "t": 0,
+     "text": "[Click. The tape wanders a little. A door bangs in the draught.]"
+    },
+    {
+     "t": 3,
+     "text": "Whoever you are, you've found the locker. Good. The lamp's easy once you know her. Wind the weights before you've had your coffee and she'll never let you down."
+    },
+    {
+     "t": 12,
+     "text": "I'm leaving the rock tomorrow. It's been five winters. June would say that's four too many."
+    },
+    {
+     "t": 19,
+     "text": "There are tapes. They're all addressed to her, and they're all in the same order I made them, so listen in order. If you decide to do something with them, take them to Ruth Whitcomb. Wickenden Street, Providence. She was June's sister. She's the only one who ever asked."
+    },
+    {
+     "t": 32,
+     "text": "Tom Dunmore left something in the cove hut for me, years ago. A tin, on a crate. I never could bring myself to play it. If you have a stronger stomach than I do, it's yours."
+    },
+    {
+     "t": 44,
+     "text": "The buoy in the cave is still ticking. I don't know who feeds it. Leave it be. Maybe someone needs it more than I did."
+    },
+    {
+     "t": 53,
+     "text": "[Click.]"
+    }
+   ]
+  },
+  "tape_5": {
+   "title": "TAPE 5  -  BOATSWAIN T. DUNMORE, BOAT LOG",
+   "lines": [
+    {
+     "t": 0,
+     "text": "[Click. Engine idling. Gulls. A man clears his throat.]"
+    },
+    {
+     "t": 3,
+     "text": "Boat log, Coast Guard, Gannet Rock run. Fourth of November, nineteen seventy-four. Oh-five-forty. Landed the Pelagic party at the south reef causeway. Mrs. Haskell, one technician, Lieutenant Hayes."
+    },
+    {
+     "t": 14,
+     "text": "I told the lieutenant the table gave one hour of low water. He said the Navy's schedule gave two. I said the table's the table, sir. He said, noted."
+    },
+    {
+     "t": 24,
+     "text": "Oh-six-fifty. The technician came off the reef. Mrs. Haskell stayed to finish the splice. Lieutenant Hayes said she had her time."
+    },
+    {
+     "t": 33,
+     "text": "Oh-seven-ten. Water's coming over the bar. I'm holding station off the reef with the engine running. I can see her light at the hatch."
+    },
+    {
+     "t": 42,
+     "text": "[His voice drops.] I'm hailing the hatch. Oh God. I can't get in over the bar. The swell's too heavy."
+    },
+    {
+     "t": 52,
+     "text": "[A pause. The engine.] This isn't going in the report. I'll say it here instead, for whoever finds it. I said one hour."
+    },
+    {
+     "t": 62,
+     "text": "[Click.]"
+    }
+   ]
+  },
+  "tape_6": {
+   "title": "TAPE 6  -  CLARA, OCTOBER 1997",
+   "lines": [
+    {
+     "t": 0,
+     "text": "[Click. Wind in a cave. Metal on stone. A woman's voice, close to the microphone.]"
+    },
+    {
+     "t": 4,
+     "text": "Dad. It's me. I'm in the cave again. I've swapped the battery. It's good for another winter, if the cold holds."
+    },
+    {
+     "t": 12,
+     "text": "I know what you'd say. You'd say leave it. You'd say the sea doesn't owe us anything."
+    },
+    {
+     "t": 19,
+     "text": "The hydrophone picks up a ping every fourteen seconds, from the reef. I tell myself it's her recorder. I know it isn't. The recorder's been dead since before I could read. It's the splice transponder, doing what it was built to do."
+    },
+    {
+     "t": 33,
+     "text": "But if I stop listening, Dad, then nobody is. Somebody has to be listening."
+    },
+    {
+     "t": 41,
+     "text": "[A breath.] I miss you. [Click.]"
     }
    ]
   }
