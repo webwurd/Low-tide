@@ -416,8 +416,182 @@ func _run() -> void:
 	ok(state.has_item("tape_1") and state.has_flag("withheld_canister") and state.trust == -2 and state.flag_day.has("withheld_canister"), "satchel, flags and flag days survive save/load")
 	save.delete_save()
 
+	print("== M5: island blockout, tides and surfaces")
+	_reset_radio(radio)
+	state.reset()
+	director.begin_day(1)
+	# crest heights along each route
+	var north_h := _route_heights(Terr, [Terr.NORTH_A, Terr.NORTH_B, Terr.COVE_C])
+	var south_h := _route_heights(Terr, [Terr.SOUTH_A, Terr.SOUTH_B, Terr.VAULT_C])
+	ok(north_h.max() > 0.9 and north_h.max() < 1.5, "north cove shelf stands ~1.2 m (max %.2f)" % north_h.max())
+	ok(south_h.min() > -1.15 and south_h.min() < -0.85, "south reef bar crest is ~-1.0 m (lowest on route %.2f)" % south_h.min())
+	# tidal windows: deepest water over the route's highest-needed point = water - lowest ground on the route past the island shore
+	var north_low: float = _route_min(Terr, [Terr.NORTH_B, Terr.COVE_C, Terr.NORTH_A.lerp(Terr.NORTH_B, 0.4)])
+	ok(0.2 - north_low < 0.95, "north cove is walkable at an ordinary low (0.2 m)")
+	ok(3.0 - north_low > 0.95, "north cove is cut off at 3.0 m")
+	var south_min: float = south_h.min()
+	ok(0.2 - south_min > tide.SWEPT_DEPTH, "south reef is NOT walkable at an ordinary low (depth %.2f)" % (0.2 - south_min))
+	ok(-0.4 - south_min < tide.SWEPT_DEPTH, "south reef IS walkable at the day-5 spring low (depth %.2f)" % (-0.4 - south_min))
+	# Walkable minutes (absolute) over the whole week: all must sit inside the day-5 spring lows.
+	var open_mins: Array = []
+	for m in range(0, 1440 * 7):
+		if tide.water_height_abs(float(m)) - south_min < tide.SWEPT_DEPTH:
+			open_mins.append(m)
+	var outside := 0
+	var daytime := 0
+	for m in open_mins:
+		var near_a: bool = absf(m - (1440 * 4 + tide.low_minute_of_day(5))) <= 80.0
+		var near_b: bool = absf(m - (1440 * 4 + tide.low_minute_of_day(5) + 745.0)) <= 80.0
+		if not (near_a or near_b):
+			outside += 1
+		if near_a:
+			daytime += 1
+	ok(open_mins.size() > 0 and outside == 0, "south reef opens only around the two day-5 spring lows (%d min total, %d stray)" % [open_mins.size(), outside])
+	ok(daytime > 45 and daytime < 140, "daytime spring-low window is %d min" % daytime)
+
+	ok(Terr.surface_at(0.0, 20.0, Terr.PIER_TOP) == "wood", "surface: pier is wood")
+	ok(Terr.surface_at(Terr.VAULT_C.x, Terr.VAULT_C.y, 0.5) == "concrete", "surface: vault pad is concrete")
+	ok(Terr.surface_at(Terr.COVE_C.x, Terr.COVE_C.y, 1.2) == "gravel", "surface: cove is gravel")
+	ok(Terr.surface_at(45.0, 4.0, 1.6) == "sand", "surface: east bar is sand")
+	ok(Terr.surface_at(10.0, 8.0, 1.8) == "wet", "surface: intertidal rock is wet (%s)" % Terr.surface_at(10.0, 8.0, 1.8))
+	ok(Terr.surface_at(0.0, -4.0, 10.2) == "rock", "surface: summit is rock")
+	ok(Terr.zone_at(Terr.VAULT_C.x, Terr.VAULT_C.y, 0.5) == "south_reef", "zone: south reef")
+	ok(Terr.zone_at(15.0, 40.0, -1.0) == "south_bar", "zone: south bar")
+	ok(Terr.zone_at(Terr.COVE_C.x, Terr.COVE_C.y, 1.2) == "north_cove", "zone: north cove")
+	ok(Terr.zone_at(-10.0, -34.0, 0.9) == "north_bar", "zone: north bar")
+
+	var buoys := get_nodes_in_group("bell_buoy")
+	var strikes: Array = []
+	var pitches: Dictionary = {}
+	for b in buoys:
+		strikes.append(b.strikes)
+		pitches[b.pitch] = true
+	strikes.sort()
+	ok(buoys.size() == 4 and strikes == [1, 2, 3, 4] and pitches.size() == 4, "four bell buoys with 1-4 strikes and distinct pitches")
+	var bearings_ok := true
+	for b in buoys:
+		var pos: Vector3 = b.global_position
+		var want: Vector3 = [Vector3(0, 0, -1), Vector3(1, 0, 0), Vector3(0, 0, 1), Vector3(-1, 0, 0)][b.strikes - 1]
+		if pos.normalized().dot(want) < 0.6:
+			bearings_ok = false
+	ok(bearings_ok, "buoy strike counts match compass points (1 N, 2 E, 3 S, 4 W)")
+
+	print("== M5: walking every route with the real physics")
+	clock.set_time(1, 450.0)         # day 1, low water 0.2 m
+	clock.time_scale = 0.0           # freeze the tide while walking
+	Engine.time_scale = 4.0
+	var east_ok: bool = await _walk(main, [Vector3(18, 0, 4), _bar(25, true), _bar(45, true), _bar(65, true), Vector3(74, 0, 8)])
+	ok(east_ok, "walk: east bar to the wreck stack at low water")
+	var west_ok: bool = await _walk(main, [Vector3(-18, 0, -4), _bar(-30, false), _bar(-50, false), _bar(-66, false), Vector3(-71, 0, -8)])
+	ok(west_ok, "walk: west bar to the echo cave at low water")
+	var cove_ok: bool = await _walk(main, [Vector3(Terr.NORTH_A.x, 0, Terr.NORTH_A.y), Vector3(-10, 0, -34), Vector3(Terr.NORTH_B.x, 0, Terr.NORTH_B.y), Vector3(Terr.COVE_C.x, 0, Terr.COVE_C.y + 3.0)])
+	ok(cove_ok and state.zone == "north_cove", "walk: north bar to the cove at low water (zone %s)" % state.zone)
+	_reset_radio(radio)
+
+	clock.set_time(1, 450.0)         # ordinary low: vault must be out of reach
+	var vault_low: bool = await _walk(main, [Vector3(Terr.SOUTH_A.x, 0, Terr.SOUTH_A.y), Vector3(15, 0, 38), Vector3(Terr.SOUTH_B.x, 0, Terr.SOUTH_B.y), Vector3(Terr.VAULT_C.x, 0, Terr.VAULT_C.y - 2.0)])
+	ok(not vault_low, "walk: the vault is out of reach at an ordinary low (Arthur is swept)")
+	await create_timer(1.2).timeout
+	await create_timer(1.6).timeout
+	_reset_radio(radio)
+	clock.set_time(5, tide.low_minute_of_day(5))    # the spring low
+	tide.refresh()
+	var vault_spring: bool = await _walk(main, [Vector3(Terr.SOUTH_A.x, 0, Terr.SOUTH_A.y), Vector3(15, 0, 38), Vector3(Terr.SOUTH_B.x, 0, Terr.SOUTH_B.y), Vector3(Terr.VAULT_C.x, 0, Terr.VAULT_C.y - 2.0)], 90.0)
+	ok(vault_spring and state.zone == "south_reef", "walk: the vault pad IS reachable at the day-5 spring low (zone %s)" % state.zone)
+	Engine.time_scale = 1.0
+	clock.time_scale = 1.0
+
+	print("== M5: cove and vault content")
+	_reset_radio(radio)
+	state.reset()
+	state.zone = "north_cove"
+	main._place("outdoors", Vector3(Terr.COVE_C.x, Terr.height(Terr.COVE_C.x, Terr.COVE_C.y) + 0.1, Terr.COVE_C.y + 1.0), 0.0)
+	await _frames(15)
+	ok(react.tick() == "r_north_cove_first", "Clara greets the north cove")
+	radio.dismiss()
+	await _use(main, "cable")
+	ok(state.has_item("cable_tag") and state.discovered.has("cable"), "the cable tag goes in the satchel")
+	radio.choose(0)
+	ok(state.has_flag("reported_cable"), "reporting the cable sets the flag")
+	_reset_radio(radio)
+	main._place("outdoors", Vector3(Terr.VAULT_C.x, Terr.height(Terr.VAULT_C.x, Terr.VAULT_C.y) + 0.1, Terr.VAULT_C.y - 2.0), 0.0)
+	await _frames(15)
+	await _use(main, "vault")
+	ok(state.has_item("tape_2") and state.discovered.has("vault"), "June's cassette comes out of the vault")
+	_reset_radio(radio)
+	state.give_item("tape_1")
+	tapes.speed = 40.0
+	main._place("cottage", main.interiors.spawn["cottage"], 0.0)
+	await _frames(10)
+	await _use(main, "cassette_player")
+	await _frames(3)
+	ok(tapes.playing and tapes.current == "tape_1", "cassette player plays tape 1 first")
+	await create_timer(2.5).timeout
+	ok(state.has_flag("heard_tape_1"), "tape 1 marked heard")
+	await _use(main, "cassette_player")
+	await create_timer(2.5).timeout
+	ok(state.has_flag("heard_tape_2"), "...then tape 2 (June's recording)")
+	state.reset(); state.give_item("tape_2"); state.set_flag("reported_vault")
+	var Conv2 = load("res://story/conversations.gd")
+	ok(Conv2.get_conv("evening_d5")["text"].contains("You brought it up"), "evening_d5 reacts to a reported vault")
+
 	print("\n%d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)
+
+## Terrain heights sampled along a polyline of Vector2 points (every metre).
+func _route_heights(Terr, pts: Array) -> Array:
+	var out: Array = []
+	for i in range(pts.size() - 1):
+		var a: Vector2 = pts[i]
+		var b: Vector2 = pts[i + 1]
+		var n := int(a.distance_to(b))
+		for k in n + 1:
+			var q: Vector2 = a.lerp(b, float(k) / maxf(n, 1))
+			out.append(Terr.height(q.x, q.y))
+	return out
+
+func _route_min(Terr, pts: Array) -> float:
+	var m := 99.0
+	for q in pts:
+		m = minf(m, Terr.height(q.x, q.y))
+	return m
+
+## A point on the east/west bar centre line.
+func _bar(x: float, east: bool) -> Vector3:
+	if east:
+		return Vector3(x, 0, 4.0 + sin((x - 25.0) * 0.07) * 3.5)
+	return Vector3(x, 0, -6.0 + cos((x + 25.0) * 0.08) * 3.0)
+
+## Walk Arthur through waypoints with the real controller. Returns false if swept or stuck.
+func _walk(main, pts: Array, max_s := 60.0) -> bool:
+	var Terr = load("res://world/terrain.gd")
+	var p = main.player
+	var swept := [false]
+	var cb := func(): swept[0] = true
+	p.swept.connect(cb)
+	var first: Vector3 = pts[0]
+	main._place("outdoors", Vector3(first.x, Terr.height(first.x, first.z) + 0.2, first.z), 0.0)
+	await _frames(10)
+	var t_start := Time.get_ticks_msec()
+	var reached := true
+	for i in range(1, pts.size()):
+		var target: Vector3 = pts[i]
+		while true:
+			var here := Vector2(p.global_position.x, p.global_position.z)
+			var to := Vector2(target.x, target.z) - here
+			if to.length() < 2.0:
+				break
+			if swept[0] or (Time.get_ticks_msec() - t_start) / 1000.0 > max_s:
+				reached = false
+				break
+			p.yaw = atan2(-to.x, -to.y)
+			Input.action_press("move_forward")
+			await process_frame
+		if not reached:
+			break
+	Input.action_release("move_forward")
+	p.swept.disconnect(cb)
+	return reached
 
 func _reset_radio(radio) -> void:
 	radio._queue.clear()

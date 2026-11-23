@@ -95,9 +95,15 @@ Arthur's backstory is still open. My default: a recently widowed schoolteacher t
 | **M2: Godot greybox parity** | Port the prototype: terrain bake, ocean shader, tide-table TideSystem, player, binoculars, pocket watch, Assist HUD, radio panel (placeholder lines), 4 landmarks, swept-respawn, procedural audio, gamepad. | Prototype loop playable in Godot on PC and Deck. GUT tests pass for tide math and depth bands. |
 | **M3: Day structure and interiors** ✅ | DayDirector, Morning/Expedition/Evening, cottage and tower interiors, rituals, wait anchors, save/load, 7 day tables, day/night + weather lighting, **controls tutorial in New Watch setup**. | Day 1→2 loop works end to end with autosave. |
 | **M4: Narrative systems** ✅ | Data-driven dialogue (`dialogue/dialogue.json`: variants, `when` conditions, trust/flags, chained replies) instead of the Dialogue Manager addon (its repo is outside this session's GitHub scope), satchel, cassette player, 3-page journal (log / satchel / tapes), zone-aware reactive lines. | Day 1 + Day 2 scripted with report/withhold branching. |
-| **M5: Full island blockout and weather** | North cove, south reef vault, fog-density weather states, storm day, buoy bells, surface materials. | All locations reachable under the correct tides. |
+| **M5: Full island blockout and weather** ✅ | North cove (cable hut + armored cable), south reef cable vault (Day 5 spring low only), 4 bell buoys (1 N / 2 E / 3 S / 4 W strikes) for fog navigation, morning mist + per-day fog, gravel/concrete/wet/sand/rock surfaces. | All locations reachable under the correct tides (verified by walking them with the real controller). |
 | **M6: Content** | Write and implement Days 1–7, 4–6 tapes, and 3 endings. | Full playthrough on all 3 ending paths. |
 | **M7: Art, audio, settings and ship** | Stylized art pass, **typography** (see below), music stings, **Settings menu** (see below), pause menu with "replay controls tutorial", accessibility (subtitle size, hold→toggle), Deck perf (≥40 fps at 800p), Steam build. | Release candidate. |
+
+### M5 design notes
+- Day 5 has **two** spring lows (about 10:50 and 23:55). The reef is walkable for ~133 game minutes around the daytime one; the late one falls after Arthur is sent home at 21:00.
+- The vault bar crest is -1.0 m; at the spring low (-0.4 m) the water is knee deep (0.6x speed). Lateral tolerance is about 1.7 m from the bar centreline, past which Arthur is swept.
+- Cassette player plays unheard tapes in story order, not pickup order.
+- Tape 2 (June's recording) and the cable/vault conversations are draft text for M6.
 
 ### M7 Settings menu (requested; reachable from the title screen and the pause menu)
 - **Graphics:** quality presets (Low / Medium / High / Deck), resolution, window mode, vsync, FPS cap, render scale, shadow quality and distance, fog quality, MSAA/FXAA, ocean detail, Compatibility-renderer fallback for older GPUs.

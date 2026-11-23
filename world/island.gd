@@ -24,6 +24,9 @@ func build() -> void:
 	_build_wreck()
 	_build_cave()
 	_build_rocks()
+	_build_cove()
+	_build_vault()
+	_build_buoys()
 
 func _process(delta: float) -> void:
 	if beam_pivot and beam_spinning:
@@ -296,3 +299,62 @@ func _build_rocks() -> void:
 		var mi := _mesh(self, sphere, rock_mat, Vector3(c[0], y + s * 0.3, c[1]),
 			Vector3(rng.randf() * 3.0, rng.randf() * 3.0, rng.randf() * 3.0))
 		mi.scale = Vector3(s * 1.2, s * 0.85, s)
+
+# --- north cove: cable hut + armored cable ------------------------------
+
+func _build_cove() -> void:
+	var hut_pos := Vector3(-13.5, Terrain.height(-13.5, -50.0), -50.0)
+	var g := Node3D.new()
+	g.position = hut_pos
+	add_child(g)
+	_mesh(g, _box(Vector3(3.2, 2.4, 2.8)), _mat(Color("5d655f"), 0.9), Vector3(0, 1.2, 0))
+	_mesh(g, _box(Vector3(3.6, 0.2, 3.2)), _mat(Color("3b3f42"), 0.8), Vector3(0, 2.5, 0))
+	_mesh(g, _box(Vector3(0.9, 1.7, 0.1)), _mat(Color("2b2f33"), 0.5, 0.4), Vector3(0, 0.9, 1.42))
+	_solid(g, _box_shape(Vector3(3.2, 2.4, 2.8)), Vector3(0, 1.2, 0))
+	# The cable runs from the hut toward the open sea, hugging the seabed.
+	var dir := Vector2(0.35, -0.94).normalized()
+	var cable_mat := _mat(Color("1d2024"), 0.5, 0.6)
+	var pos2 := Vector2(hut_pos.x, hut_pos.z) + dir * 2.0
+	for i in 26:
+		var y := maxf(Terrain.height(pos2.x, pos2.y), -3.8) + 0.12
+		var seg := _mesh(self, _box(Vector3(0.28, 0.28, 2.1)), cable_mat, Vector3(pos2.x, y, pos2.y), Vector3(0, atan2(dir.x, dir.y), 0))
+		seg.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		pos2 += dir * 2.0
+	var it := _interactable("cable", "Inspect the cable and the hut", hut_pos + Vector3(0, 1.3, 2.6), 3.2, "cable")
+	it.give_item = "cable_tag"
+	it.visible_fn = func(): return not GameState.has_item("cable_tag")
+	_bino_target("NORTH COVE // CABLE LANDING", Vector3(-17, 5, -52))
+
+# --- south reef: cable vault ---------------------------------------------
+
+func _build_vault() -> void:
+	var c := Terrain.VAULT_C
+	var base_y := Terrain.height(c.x, c.y)
+	var disc := CylinderMesh.new()
+	disc.top_radius = 4.0; disc.bottom_radius = 4.0; disc.height = 0.12; disc.radial_segments = 16
+	_mesh(self, disc, _mat(Color("8a8d8f"), 0.95), Vector3(c.x, base_y + 0.04, c.y))
+	var hatch := _cyl(1.0, 1.0, 0.25, 12)
+	_mesh(self, hatch, _mat(Color("2e3438"), 0.5, 0.7), Vector3(c.x, base_y + 0.15, c.y))
+	for a in [0.0, 2.1, 4.2]:
+		_mesh(self, _cyl(0.12, 0.12, 1.2, 6), _mat(Color("3b3f42"), 0.6, 0.6),
+			Vector3(c.x + cos(a) * 3.3, base_y + 0.6, c.y + sin(a) * 3.3))
+	var it := _interactable("vault", "Open the hatch and look inside", Vector3(c.x - 1.6, base_y + 1.3, c.y - 1.2), 3.0, "vault")
+	it.give_item = "tape_2"
+	it.visible_fn = func(): return not GameState.has_item("tape_2")
+	_bino_target("SOUTH REEF // CABLE VAULT", Vector3(c.x, 3, c.y))
+
+# --- bell buoys (navigate by ear: 1 N, 2 E, 3 S, 4 W) ---------------------
+
+func _build_buoys() -> void:
+	var defs := [
+		["BELL BUOY (1) NORTH", 1, 440.0, Vector3(10, 0, -88)],
+		["BELL BUOY (2) EAST", 2, 523.0, Vector3(92, 0, -34)],
+		["BELL BUOY (3) SOUTH", 3, 349.0, Vector3(-26, 0, 90)],
+		["BELL BUOY (4) WEST", 4, 392.0, Vector3(-92, 0, 30)],
+	]
+	for d in defs:
+		var b := BellBuoy.new()
+		b.label = d[0]; b.strikes = d[1]; b.pitch = d[2]
+		b.position = d[3]
+		add_child(b)
+		_bino_target(d[0], d[3] + Vector3(0, 2, 0))

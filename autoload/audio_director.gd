@@ -29,6 +29,9 @@ func _ready() -> void:
 	_variants["wood"] = [_step_wood(), _step_wood(), _step_wood()]
 	_variants["sand"] = [_step_sand(), _step_sand(), _step_sand()]
 	_variants["rock"] = [_step_rock(), _step_rock(), _step_rock()]
+	_variants["gravel"] = [_thud(210.0, 90.0, 0.09, "saw", 1400.0, 0.7, 0.9), _thud(210.0, 90.0, 0.09, "saw", 1400.0, 0.7, 0.9), _thud(210.0, 90.0, 0.09, "saw", 1400.0, 0.7, 0.9)]
+	_variants["concrete"] = [_thud(160.0, 100.0, 0.07, "triangle", 1800.0, 0.9, 0.1), _thud(160.0, 100.0, 0.07, "triangle", 1800.0, 0.9, 0.1)]
+	_variants["wet"] = [_thud(120.0, 60.0, 0.12, "sine", 500.0, 0.9, 0.7), _thud(120.0, 60.0, 0.12, "sine", 500.0, 0.9, 0.7)]
 	_variants["splash"] = [_splash(), _splash()]
 	_variants["squelch"] = [_squelch()]
 	_variants["foghorn"] = [_foghorn()]
@@ -73,6 +76,27 @@ func play_sfx(sfx_name: String, volume_db := 0.0, pitch := 1.0) -> void:
 			p.pitch_scale = pitch
 			p.play()
 			return
+
+var _bells: Dictionary = {}
+
+## Bell-buoy strike: inharmonic partials with long decay. Cached per pitch.
+func bell_stream(freq: float) -> AudioStreamWAV:
+	if _bells.has(freq):
+		return _bells[freq]
+	var n := int(RATE * 3.2)
+	var out := PackedFloat32Array()
+	out.resize(n)
+	var ratios := [1.0, 2.76, 5.4]
+	var amps := [1.0, 0.5, 0.25]
+	var decays := [1.1, 1.8, 3.0]
+	for i in n:
+		var t := float(i) / RATE
+		var v := 0.0
+		for k in 3:
+			v += sin(TAU * freq * ratios[k] * t) * amps[k] * exp(-decays[k] * t)
+		out[i] = v * 0.35 * minf(1.0, t * 200.0)
+	_bells[freq] = _wav(out)
+	return _bells[freq]
 
 func play_footstep(surface: String, brisk := false, wet := false) -> void:
 	var pitch := 0.92 + _rng.randf() * 0.16

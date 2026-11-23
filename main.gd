@@ -190,15 +190,20 @@ func _on_radio_desk() -> void:
 	else:
 		GameState.note("Nothing to report yet.")
 
-## Next unheard tape in the satchel, else the most recent tape, else "".
+## Lowest-numbered unheard tape in the satchel (story order, not pickup order);
+## if all are heard, the highest-numbered one for replay; "" if none.
 func _next_tape() -> String:
-	var last := ""
+	var ids: Array = []
 	for id in GameState.items:
 		if String(id).begins_with("tape_"):
-			if not TapePlayer.is_heard(id):
-				return id
-			last = id
-	return last
+			ids.append(String(id))
+	if ids.is_empty():
+		return ""
+	ids.sort()
+	for id in ids:
+		if not TapePlayer.is_heard(id):
+			return id
+	return ids[ids.size() - 1]
 
 func _on_cassette() -> void:
 	var id := _next_tape()
@@ -337,7 +342,7 @@ func _apply_lighting() -> void:
 	var d := clampf(_daylight() * dd.light_scale, 0.0, 1.0)
 	var fog_col := NIGHT_FOG.lerp(dd.fog_tint, d)
 	env.fog_enabled = true
-	env.fog_density = dd.fog_density
+	env.fog_density = dd.fog_density * lerpf(1.5, 1.0, smoothstep(390.0, 660.0, GameClock.minute_of_day))   # morning mist burns off
 	env.fog_light_color = fog_col
 	env.background_color = fog_col
 	env.ambient_light_color = Color("6f84a6").lerp(Color("9fb4c7"), d)

@@ -5,6 +5,8 @@ const LINES := {
 	"lighthouse": "Climbed the tower. Lens turns smooth on its weights.",
 	"cottage": "Stove draws well. Found 1970s oceanography logs on the shelf.",
 	"shipwreck": "East stack: old trawler wreck. Canister stamped PROJECT PELAGIC 1974 wedged in the hull.",
+	"cable": "North cove: an armored cable runs from a stone hut out under the sea. Brass tag: PELAGIC ARRAY 2.",
+	"vault": "South reef at the spring low: a flooded cable vault. A field recorder wedged behind the ladder, initials J.H.",
 	"seacave": "West echo cave: red acoustic buoy in the arch. Battery pack still warm. Shouldn't be.",
 }
 
@@ -14,6 +16,11 @@ const FLAG_LINES := {
 	"reported_buoy": "Told Clara the buoy was warm.",
 	"withheld_buoy": "Kept the buoy to myself.",
 	"heard_tape_1": "Played the cassette from the buoy: Walt, talking to his wife June, a year after she was lost.",
+	"reported_cable": "Told Clara about the cable and its tag.",
+	"withheld_cable": "Kept the cable to myself.",
+	"reported_vault": "Told Clara about the vault and the recorder.",
+	"withheld_vault": "Told Clara there was nothing in the vault.",
+	"heard_tape_2": "Played the field recorder from the vault: June, her last recording.",
 	"told_clara_june": "Told Clara what Walt said about June.",
 	"lied_about_tape": "Lied to Clara about the tape.",
 }

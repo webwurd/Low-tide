@@ -332,6 +332,214 @@
      }
     ]
    }
+  ],
+  "cable": [
+   {
+    "text": "North cove? That's the old cable landing. The charts show a line coming ashore there. What's it look like?",
+    "priority": 1,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "An armored cable running straight into the sea. Brass tag: PELAGIC, ARRAY 2, USN.",
+      "reply": "...Then the charts weren't wrong. Leave the hut alone, Arthur, and don't touch the splice.",
+      "trust": 1,
+      "set": [
+       "reported_cable"
+      ]
+     },
+     {
+      "text": "Just rocks and kelp.",
+      "reply": "All right. Mind the tide on the way back.",
+      "trust": -1,
+      "set": [
+       "withheld_cable"
+      ]
+     }
+    ]
+   }
+  ],
+  "vault": [
+   {
+    "text": "The reef is open? I can hear the water around you. What's down there?",
+    "priority": 1,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "A cable vault. Salt-crusted hatch, and a field recorder wedged behind the ladder. Initials: J.H.",
+      "reply": "...Bring it up. Please. Then get off the reef.",
+      "trust": 2,
+      "set": [
+       "reported_vault"
+      ]
+     },
+     {
+      "text": "Nothing. Just flooded concrete.",
+      "reply": "Then come home.",
+      "trust": -2,
+      "set": [
+       "withheld_vault"
+      ]
+     }
+    ]
+   }
+  ],
+  "react_north_cove_first": [
+   {
+    "text": "North cove. Careful on the shingle; it's slick, and the water floods that bar before the others.",
+    "priority": 0,
+    "speaker": "clara",
+    "options": []
+   }
+  ],
+  "react_south_reef_first": [
+   {
+    "text": "The reef! I never thought the water dropped that far. You have an hour at best, Arthur.",
+    "priority": 1,
+    "speaker": "clara",
+    "options": []
+   }
+  ],
+  "react_reef_closing": [
+   {
+    "text": "The water's turned on the reef. Get off it. Now.",
+    "priority": 1,
+    "speaker": "clara",
+    "options": []
+   }
+  ],
+  "evening_d3": [
+   {
+    "text": "You found the north landing and you told me. I won't forget that, Arthur.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "What was Array 2?",
+      "reply": "...Another night. I promise.",
+      "trust": 1
+     },
+     {
+      "text": "Just doing the job.",
+      "reply": "Then the job's in good hands.",
+      "trust": 1
+     }
+    ],
+    "when": [
+     "has:cable_tag",
+     "flag:reported_cable"
+    ]
+   },
+   {
+    "text": "You were in the north cove a long time. Is there something you'd like to say?",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "There's a cable, and a brass tag. PELAGIC ARRAY 2. I should have said.",
+      "reply": "Yes. You should have. Thank you.",
+      "trust": 2,
+      "set": [
+       "reported_cable"
+      ],
+      "clear": [
+       "withheld_cable"
+      ]
+     },
+     {
+      "text": "No.",
+      "reply": "All right.",
+      "trust": -1
+     }
+    ],
+    "when": [
+     "has:cable_tag",
+     "flag:withheld_cable"
+    ]
+   },
+   {
+    "text": "Found anything in the north cove? The old charts show a cable there.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Haven't made it up there yet.",
+      "reply": "Fog's thick today. Wait for a clear low.",
+      "trust": 0
+     },
+     {
+      "text": "Nothing worth reporting.",
+      "reply": "Alright, Arthur.",
+      "trust": -1
+     }
+    ]
+   }
+  ],
+  "evening_d5": [
+   {
+    "text": "You brought it up. Thank you, Arthur. I couldn't have gone down there.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Whose voice is on it?",
+      "reply": "...Play it tonight. Then I'll answer anything you ask.",
+      "trust": 1
+     },
+     {
+      "text": "June was careful. She wasn't careless.",
+      "reply": "No. She wasn't.",
+      "trust": 1
+     }
+    ],
+    "when": [
+     "has:tape_2",
+     "flag:reported_vault"
+    ]
+   },
+   {
+    "text": "You were on the reef longer than the table allowed. What did you find?",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "A recorder. A cassette, initials J.H. I'm sorry I said nothing.",
+      "reply": "Thank you for telling me now.",
+      "trust": 2,
+      "set": [
+       "reported_vault"
+      ],
+      "clear": [
+       "withheld_vault"
+      ]
+     },
+     {
+      "text": "Nothing, Clara.",
+      "reply": "...All right.",
+      "trust": -2
+     }
+    ],
+    "when": [
+     "has:tape_2",
+     "flag:withheld_vault"
+    ]
+   },
+   {
+    "text": "You didn't make the reef today? That low won't come again this winter.",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "I'll try tomorrow.",
+      "reply": "It will be gone by then.",
+      "trust": 0
+     },
+     {
+      "text": "It wasn't worth the risk.",
+      "reply": "Maybe not.",
+      "trust": 0
+     }
+    ]
+   }
   ]
  },
  "reactions": [
@@ -379,6 +587,42 @@
    ],
    "conv": "react_west_withheld",
    "once": true
+  },
+  {
+   "id": "r_north_cove_first",
+   "when": [
+    "zone:north_cove"
+   ],
+   "conv": "react_north_cove_first",
+   "once": true
+  },
+  {
+   "id": "r_south_reef_first",
+   "when": [
+    "zone:south_reef"
+   ],
+   "conv": "react_south_reef_first",
+   "once": true
+  },
+  {
+   "id": "r_reef_closing",
+   "when": [
+    "zone:south_bar,south_reef",
+    "tide>=-0.05",
+    "tide:rising"
+   ],
+   "conv": "react_reef_closing",
+   "cooldown": 30
+  },
+  {
+   "id": "r_north_rising",
+   "when": [
+    "zone:north_bar,north_cove",
+    "tide>=1.2",
+    "tide:rising"
+   ],
+   "conv": "react_bar_rising",
+   "cooldown": 120
   }
  ],
  "tapes": {
@@ -416,6 +660,39 @@
     {
      "t": 45,
      "text": "[Click.]"
+    }
+   ]
+  },
+  "tape_2": {
+   "title": "TAPE 2  -  J. HASKELL, NOVEMBER 1974",
+   "lines": [
+    {
+     "t": 0,
+     "text": "[Click. Rushing water. A metal hatch clangs. Breathing.]"
+    },
+    {
+     "t": 3,
+     "text": "Field recorder, J. Haskell, November the fourth. Cable vault, south reef. Splice number two has been dropping signal for a week, and the Navy wants it fixed before the weather turns."
+    },
+    {
+     "t": 13,
+     "text": "The tide table says I have an hour of low water. The Navy's schedule says two. I'm going with the table. Walt, if you're listening to this over your coffee, I know, I know."
+    },
+    {
+     "t": 24,
+     "text": "It's cold down here. The hatch seal's salt-crusted solid. The whole vault smells of iron and old rope."
+    },
+    {
+     "t": 33,
+     "text": "[Water against the hatch.] That's... earlier than the table said. Well. I'll finish the splice and be out before it matters."
+    },
+    {
+     "t": 41,
+     "text": "If this recorder ever ends up on someone else's shelf: tell Walt, the left pocket. He'll know."
+    },
+    {
+     "t": 46,
+     "text": "[The hatch clangs. Static.]"
     }
    ]
   }

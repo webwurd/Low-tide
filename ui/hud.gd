@@ -301,6 +301,7 @@ func _build_tutorial() -> void:
 		{"title": "3 / 3   A day on Gannet Rock", "rows": [], "text":
 			"MORNING   Brew the coffee, read the barometer and the tide table, wind the clockwork weights in the lighthouse, then check in with Clara on the radio. Time stands still while you are indoors.\n\n" +
 			"EXPEDITION   Step outside and the clock runs: one game minute per second. Sandbars appear at low water and drown above two metres. Watch the pocket watch and the painted tide marks on the pier pilings. If the sea catches you, you lose time, not the game.\n\n" +
+			"IN FOG   Bell buoys ring around the island: 1 strike is north, 2 east, 3 south, 4 west. Walk toward the sound and keep the beam behind you.\n\n" +
 			"EVENING   Light the lamp in the lantern room, write the log at the cottage desk, call Clara, and turn in. Sitting in the armchair or on the lantern bench lets you wait for the tide."},
 	]
 
@@ -554,8 +555,12 @@ func refresh_log() -> void:
 	_refresh_log()
 
 func _refresh_log() -> void:
-	var names := {"lighthouse": "Lantern Tower", "cottage": "Cottage", "shipwreck": "East Stack Wreck", "seacave": "Echo Cave"}
-	var lines := ["Gannet Rock Log  %d / 4" % GameState.discovered.size()]
+	var names := {"lighthouse": "Lantern Tower", "cottage": "Cottage", "shipwreck": "East Stack Wreck", "seacave": "Echo Cave", "cable": "North Cove Cable", "vault": "Reef Cable Vault"}
+	var found := 0
+	for id in names:
+		if GameState.discovered.has(id):
+			found += 1
+	var lines := ["Gannet Rock Log  %d / %d" % [found, names.size()]]
 	for id in names:
 		lines.append(("[x] " if GameState.discovered.has(id) else "[ ] ") + names[id])
 	_assist_log.text = "\n".join(lines)

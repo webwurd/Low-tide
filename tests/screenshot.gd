@@ -68,6 +68,16 @@ func _run() -> void:
 	main.hud._tape_panel.visible = true
 	await _wait(4)
 	await _snap(out, "15_tape_playing")
+	# M5 locations
+	var Terr2 = load("res://world/terrain.gd")
+	clock.set_time(1, 450.0)
+	await _shoot("16_north_cove", "outdoors", Vector3(-10.5, Terr2.height(-10.5, -38.0) + 0.1, -38.0), 0.6435, 0.0)
+	clock.set_time(5, 6410.0 - 1440.0 * 4)
+	await _shoot("17_south_reef_spring_low", "outdoors", Vector3(16.0, Terr2.height(16.0, 50.0) + 0.1, 50.0), -2.94, 0.0)
+	clock.set_time(3, 540.0)
+	await _shoot("18_dense_fog_day3", "outdoors", main.island.spawn_point, -PI / 2.0, 0.0)
+	clock.set_time(2, 640.0)
+	await _shoot("19_day2_overcast_buoy", "outdoors", main.island.spawn_point, -2.6, 0.02)
 	quit(0)
 
 func _shoot(shot: String, loc: String, pos: Vector3, yaw: float, pitch: float) -> void:
