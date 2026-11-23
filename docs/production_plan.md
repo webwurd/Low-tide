@@ -113,7 +113,7 @@ Arthur's backstory is still open. My default: a recently widowed schoolteacher t
 ---
 
 ## 7. Verification
-- **Unit tests (GUT, headless):** tide interpolation against the tide tables, threshold events at 2.1m, depth-band classification, clock rollover and day advance, dialogue condition evaluation, save/load round-trip. Run with `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests`.
+- **Unit + smoke tests (custom headless runner `tests/run_tests.gd`; GUT's repo is outside this session's GitHub scope):** tide interpolation against the tide tables, threshold events at 2.1m, depth-band classification, clock rollover and day advance, dialogue condition evaluation, save/load round-trip. Run with `godot --headless -s tests/run_tests.gd` (non-zero exit on failure). Screenshots: `xvfb-run -a godot --rendering-method gl_compatibility -s tests/screenshot.gd -- <outdir>`.
 - **CI:** a GitHub Actions workflow using a Godot 4.4 headless container to run GUT and a Linux export smoke build.
 - **Playtest checklist per milestone:** cross the East bar at low tide and get swept on the rising tide (fade, dock, Clara line, −45 min); binocular rangefinder labels; dialogue while walking; gamepad-only full loop; Assist toggle; Deck framerate via Godot's monitor overlay.
 - **In this container:** install the Godot 4.4 headless Linux binary (if the network allows it) to run tests and a headless scene-load smoke test. Visual checks need your machine or a Deck.
