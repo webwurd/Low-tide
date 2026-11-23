@@ -101,9 +101,12 @@ Arthur's backstory is still open. My default: a recently widowed schoolteacher t
 
 ### M5 design notes
 - Day 5 has **two** spring lows (about 10:50 and 23:55). The reef is walkable for ~133 game minutes around the daytime one; the late one falls after Arthur is sent home at 21:00.
-- The vault bar crest is -1.0 m; at the spring low (-0.4 m) the water is knee deep (0.6x speed). Lateral tolerance is about 1.7 m from the bar centreline, past which Arthur is swept.
+- The vault bar crest is -1.0 m; at the spring low (-0.4 m) the water is knee deep (0.6x speed). The causeway lane is **dead level out to exactly 2 m** from the centreline, then slopes 1:1 into the trench, so Arthur is safe within 2 m and swept from about 2.4 m. A sign post and 14 orange-tipped lane-edge poles (at +/-2 m) mark it. Terrain mesh resolution was raised to 0.7 m cells (was 1.17 m) so the lane is honoured by the physical mesh.
 - Cassette player plays unheard tapes in story order, not pickup order.
 - Tape 2 (June's recording) and the cable/vault conversations are draft text for M6.
+
+### Audio
+No audio asset files exist; everything is synthesised (`autoload/audio_director.gd`). See `docs/audio_checklist.md` for what to listen to and `tools/export_audio.gd` to render every sound to WAV. Automated sanity checks cover clipping, silence, NaN and loop-seam clicks.
 
 ### M7 Settings menu (requested; reachable from the title screen and the pause menu)
 - **Graphics:** quality presets (Low / Medium / High / Deck), resolution, window mode, vsync, FPS cap, render scale, shadow quality and distance, fog quality, MSAA/FXAA, ocean detail, Compatibility-renderer fallback for older GPUs.

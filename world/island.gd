@@ -338,6 +338,7 @@ func _build_vault() -> void:
 	for a in [0.0, 2.1, 4.2]:
 		_mesh(self, _cyl(0.12, 0.12, 1.2, 6), _mat(Color("3b3f42"), 0.6, 0.6),
 			Vector3(c.x + cos(a) * 3.3, base_y + 0.6, c.y + sin(a) * 3.3))
+	_build_reef_markers()
 	var it := _interactable("vault", "Open the hatch and look inside", Vector3(c.x - 1.6, base_y + 1.3, c.y - 1.2), 3.0, "vault")
 	it.give_item = "tape_2"
 	it.visible_fn = func(): return not GameState.has_item("tape_2")
@@ -358,3 +359,48 @@ func _build_buoys() -> void:
 		b.position = d[3]
 		add_child(b)
 		_bino_target(d[0], d[3] + Vector3(0, 2, 0))
+
+## Sign post + lane-edge poles for the south causeway, so the 2 m safe lane
+## is readable on the day the water drops.
+func _build_reef_markers() -> void:
+	var a := Terrain.SOUTH_A
+	var d := (Terrain.SOUTH_B - a).normalized()
+	var n := Vector2(d.y, -d.x)                 # perpendicular to the lane
+	var wood := _mat(Color("5c4938"), 0.9)
+	var white := _mat(Color("d8d4c8"), 0.8)
+	var orange := _mat(Color("e8742a"), 0.6)
+	var half := Terrain.LANE_HALF_WIDTH
+	var s := 4.0
+	while s <= 34.0:
+		for side in [-1.0, 1.0]:
+			var q: Vector2 = a + d * s + n * half * side
+			var pole := Node3D.new()
+			pole.position = Vector3(q.x, -1.0, q.y)
+			pole.add_to_group("reef_pole")
+			add_child(pole)
+			var shaft := _mesh(pole, _cyl(0.07, 0.07, 2.6, 6), white, Vector3(0, 1.3, 0))
+			shaft.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			_mesh(pole, _cyl(0.1, 0.1, 0.5, 6), orange, Vector3(0, 2.35, 0))
+		s += 5.0
+	# Sign: tall enough that its board stays above the 4.2 m high tide.
+	var sp: Vector2 = a - d * 3.0 + n * 3.5
+	var base_y := maxf(Terrain.height(sp.x, sp.y), -1.0)
+	var post_h := 4.2 - base_y + 3.0
+	var sign_node := Node3D.new()
+	sign_node.position = Vector3(sp.x, base_y, sp.y)
+	sign_node.add_to_group("reef_sign_board")
+	sign_node.set_meta("board_y", base_y + post_h - 0.6)
+	add_child(sign_node)
+	_mesh(sign_node, _cyl(0.12, 0.14, post_h, 6), wood, Vector3(0, post_h / 2.0, 0))
+	_mesh(sign_node, _box(Vector3(4.2, 1.8, 0.12)), _mat(Color("c9c2ac"), 0.9), Vector3(0, post_h - 0.6, -0.2))   # board stands proud of the post
+	var text := Label3D.new()
+	text.text = "CAUSEWAY\nSPRING LOW WATER ONLY\nKEEP BETWEEN THE POLES"
+	text.font_size = 56
+	text.pixel_size = 0.0052
+	text.modulate = Color("2b2418")
+	text.outline_size = 0
+	text.position = Vector3(0, post_h - 0.6, -0.28)
+	text.rotation.y = PI               # faces north, toward Arthur coming off the island
+	sign_node.add_child(text)
+	var it := _interactable("reef_sign", "Read the sign", Vector3(sp.x, base_y + 1.5, sp.y), 3.5, "")
+	it.used.connect(func(): GameState.note("Painted board: CAUSEWAY. SPRING LOW WATER ONLY. KEEP BETWEEN THE POLES."))

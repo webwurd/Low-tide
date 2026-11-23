@@ -78,6 +78,17 @@ func _run() -> void:
 	await _shoot("18_dense_fog_day3", "outdoors", main.island.spawn_point, -PI / 2.0, 0.0)
 	clock.set_time(2, 640.0)
 	await _shoot("19_day2_overcast_buoy", "outdoors", main.island.spawn_point, -2.6, 0.02)
+	# A1: causeway sign + lane poles at the spring low (looking south down the lane)
+	var Tt = load("res://world/terrain.gd")
+	var ca: Vector2 = Tt.SOUTH_A
+	var cd: Vector2 = (Tt.SOUTH_B - ca).normalized()
+	var eye: Vector2 = ca - cd * 6.0
+	clock.set_time(5, 6410.0 - 1440.0 * 4)
+	await _shoot("20_causeway_sign_and_poles", "outdoors", Vector3(eye.x, Tt.height(eye.x, eye.y) + 0.1, eye.y), atan2(-cd.x, -cd.y), 0.05)
+	var eye2: Vector2 = ca + cd * 4.0
+	await _shoot("21_lane_between_poles", "outdoors", Vector3(eye2.x, Tt.height(eye2.x, eye2.y) + 0.1, eye2.y), atan2(-cd.x, -cd.y), 0.0)
+	var sp2: Vector2 = ca - cd * 3.0 + Vector2(cd.y, -cd.x) * 3.5
+	await _shoot("22_causeway_sign_board", "outdoors", Vector3(sp2.x, Tt.height(sp2.x, sp2.y - 9.0) + 0.1, sp2.y - 9.0), PI, 0.18)
 	quit(0)
 
 func _shoot(shot: String, loc: String, pos: Vector3, yaw: float, pitch: float) -> void:

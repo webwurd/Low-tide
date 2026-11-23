@@ -21,6 +21,7 @@ const COVE_C := Vector2(-17.0, -52.0)
 const SOUTH_A := Vector2(12.0, 20.0)
 const SOUTH_B := Vector2(18.0, 56.0)
 const VAULT_C := Vector2(18.0, 62.0)
+const LANE_HALF_WIDTH := 2.0
 
 static func _seg_dist(p: Vector2, a: Vector2, b: Vector2) -> float:
 	var ab := b - a
@@ -92,11 +93,17 @@ static func height(x: float, z: float) -> float:
 	# South reef bar + vault pad
 	var h_south := -4.0
 	var dr := _seg_dist(p, SOUTH_A, SOUTH_B)
-	if dr < 4.5:
-		h_south = -3.0 + cos(dr / 4.5 * (PI / 2.0)) * 2.0
+	if dr < LANE_HALF_WIDTH + 2.0:
+		# Dead-level lane (-1.0 m) out to LANE_HALF_WIDTH, then a 1:1 slope
+		# into the trench. A planar slope survives the 0.7 m terrain mesh
+		# exactly (a sharp cliff does not). Safe at the -0.4 m spring low out
+		# to 2 m; swept from roughly 2.4 m.
+		h_south = -1.0 - 2.0 * clampf((dr - LANE_HALF_WIDTH) / 2.0, 0.0, 1.0)
 	var dv := p.distance_to(VAULT_C)
-	if dv < 9.0:
-		h_south = maxf(h_south, lerpf(0.5, -3.0, smoothstep(6.0, 9.0, dv)))
+	if dv < 10.0:
+		# Linear ramp (~30 deg) from the lane up onto the pad; a steeper
+		# smoothstep here exceeded the controller's slope limit.
+		h_south = maxf(h_south, lerpf(0.5, -3.0, clampf((dv - 4.0) / 6.0, 0.0, 1.0)))
 
 	var best := maxf(maxf(maxf(h_main, h_east_bar), maxf(h_east_stack, h_west_bar)), h_west_stack)
 	return maxf(best, maxf(h_north, h_south))
@@ -142,7 +149,7 @@ static func color_for(h: float, x: float, z := 0.0) -> Color:
 	return granite.lerp(moss, minf(1.0, (h - 7.5) / 3.0))
 
 ## Builds the flat-shaded terrain ArrayMesh (per-face colour).
-static func build_mesh(size := 210.0, seg := 180) -> ArrayMesh:
+static func build_mesh(size := 210.0, seg := 300) -> ArrayMesh:   # 0.7 m cells so the 2 m causeway lane is honoured by the physical mesh
 	var step := size / seg
 	var half := size / 2.0
 	var n := seg + 1

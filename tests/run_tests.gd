@@ -501,6 +501,48 @@ func _run() -> void:
 	Engine.time_scale = 1.0
 	clock.time_scale = 1.0
 
+	print("== A1: 2 m causeway lane + markers")
+	var lane_a: Vector2 = Terr.SOUTH_A
+	var lane_d: Vector2 = (Terr.SOUTH_B - lane_a).normalized()
+	var lane_n := Vector2(lane_d.y, -lane_d.x)
+	clock.time_scale = 0.0
+	Engine.time_scale = 4.0
+	for off in [1.8, -1.8]:
+		_reset_radio(radio)
+		clock.set_time(5, tide.low_minute_of_day(5))
+		tide.refresh()
+		var pts: Array = []
+		for sdist in [0.0, 10.0, 20.0, 30.0, 36.0]:
+			var q: Vector2 = lane_a + lane_d * sdist + lane_n * off
+			pts.append(Vector3(q.x, 0, q.y))
+		pts.append(Vector3(Terr.VAULT_C.x, 0, Terr.VAULT_C.y - 2.0))
+		var lane_ok: bool = await _walk(main, pts, 90.0)
+		ok(lane_ok, "walk: reef lane reachable at %.1f m off the centreline" % off)
+		await _settle(main)
+	_reset_radio(radio)
+	clock.set_time(5, tide.low_minute_of_day(5))
+	tide.refresh()
+	var bad_pts: Array = []
+	for sdist in [0.0, 10.0, 20.0, 30.0, 36.0]:
+		var q2: Vector2 = lane_a + lane_d * sdist + lane_n * 3.0
+		bad_pts.append(Vector3(q2.x, 0, q2.y))
+	var lane_bad: bool = await _walk(main, bad_pts, 60.0)
+	ok(not lane_bad, "walk: 3.0 m off the centreline Arthur is swept")
+	await _settle(main)
+	_reset_radio(radio)
+	Engine.time_scale = 1.0
+	clock.time_scale = 1.0
+	var lane_mid: Vector2 = lane_a + lane_d * 20.0
+	near(Terr.height(lane_mid.x, lane_mid.y), -1.0, 0.01, "lane centre is -1.0 m")
+	var edge2: Vector2 = lane_mid + lane_n * 2.0
+	near(Terr.height(edge2.x, edge2.y), -1.0, 0.01, "lane is still dead level at exactly 2.0 m")
+	var edge24: Vector2 = lane_mid + lane_n * 2.45
+	ok(-0.4 - Terr.height(edge24.x, edge24.y) > tide.SWEPT_DEPTH, "ground at 2.45 m is deep enough to sweep Arthur at the spring low")
+	ok(get_nodes_in_group("reef_pole").size() == 14, "14 lane-edge poles are placed")
+	ok(get_nodes_in_group("reef_sign_board").size() == 1, "the causeway sign is placed")
+	var sign_top: float = get_nodes_in_group("reef_sign_board")[0].get_meta("board_y")
+	ok(sign_top > 4.2 + 0.5, "sign board stays above the 4.2 m high tide")
+
 	print("== M5: cove and vault content")
 	_reset_radio(radio)
 	state.reset()
@@ -534,6 +576,23 @@ func _run() -> void:
 	state.reset(); state.give_item("tape_2"); state.set_flag("reported_vault")
 	var Conv2 = load("res://story/conversations.gd")
 	ok(Conv2.get_conv("evening_d5")["text"].contains("You brought it up"), "evening_d5 reacts to a reported vault")
+
+	print("== A2: audio catalog sanity")
+	var catalog: Dictionary = root.get_node("AudioDirector").catalog()
+	ok(catalog.size() >= 28, "audio catalog lists %d sounds" % catalog.size())
+	var loops := ["surf_bed", "wind_bed", "tape_hiss", "boat_engine"]
+	var all_sane := true
+	for nm in catalog:
+		var st := _audio_stats(catalog[nm])
+		var sane: bool = st["rms"] > 0.003 and st["peak"] < 0.99 and not st["nan"] and st["seconds"] > 0.05
+		if not sane:
+			all_sane = false
+			printerr("  FAIL: audio '%s' stats %s" % [nm, st])
+	ok(all_sane, "every catalogued sound is audible, unclipped and finite")
+	for nm in loops:
+		var st2 := _audio_stats(catalog[nm])
+		ok(catalog[nm].loop_mode == AudioStreamWAV.LOOP_FORWARD, "%s is a looping stream" % nm)
+		ok(st2["wrap_jump"] <= st2["mean_step"] * 6.0 + 0.002, "%s loop seam has no click (jump %.4f vs mean step %.4f)" % [nm, st2["wrap_jump"], st2["mean_step"]])
 
 	print("\n%d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)
@@ -594,6 +653,37 @@ func _walk(main, pts: Array, max_s := 60.0) -> bool:
 	Input.action_release("move_forward")
 	p.swept.disconnect(cb)
 	return reached
+
+## Peak / RMS / NaN / loop-seam statistics for a 16-bit mono AudioStreamWAV.
+func _audio_stats(stream) -> Dictionary:
+	var data: PackedByteArray = stream.data
+	var n := data.size() / 2
+	var peak := 0.0
+	var sum_sq := 0.0
+	var step_sum := 0.0
+	var prev := 0.0
+	var first := 0.0
+	var last := 0.0
+	for i in n:
+		var v := float(data.decode_s16(i * 2)) / 32768.0
+		if i == 0:
+			first = v
+		else:
+			step_sum += absf(v - prev)
+		peak = maxf(peak, absf(v))
+		sum_sq += v * v
+		prev = v
+		last = v
+	return {"peak": peak, "rms": sqrt(sum_sq / maxf(n, 1)), "nan": is_nan(sum_sq), "seconds": float(n) / stream.mix_rate,
+		"mean_step": step_sum / maxf(n - 1, 1), "wrap_jump": absf(first - last)}
+
+## Wait out any sweep/respawn sequence so the next walk starts clean.
+func _settle(main) -> void:
+	for i in 400:
+		if not main._sweeping and not main.player.locked and not main._busy:
+			return
+		await process_frame
+	await process_frame
 
 func _reset_radio(radio) -> void:
 	radio._queue.clear()
