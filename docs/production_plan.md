@@ -97,7 +97,7 @@ Arthur's backstory is still open. My default: a recently widowed schoolteacher t
 | **M4: Narrative systems** ✅ | Data-driven dialogue (`dialogue/dialogue.json`: variants, `when` conditions, trust/flags, chained replies) instead of the Dialogue Manager addon (its repo is outside this session's GitHub scope), satchel, cassette player, 3-page journal (log / satchel / tapes), zone-aware reactive lines. | Day 1 + Day 2 scripted with report/withhold branching. |
 | **M5: Full island blockout and weather** | North cove, south reef vault, fog-density weather states, storm day, buoy bells, surface materials. | All locations reachable under the correct tides. |
 | **M6: Content** | Write and implement Days 1–7, 4–6 tapes, and 3 endings. | Full playthrough on all 3 ending paths. |
-| **M7: Art, audio, settings and ship** | Stylized art pass, music stings, **Settings menu** (see below), pause menu with "replay controls tutorial", accessibility (subtitle size, hold→toggle), Deck perf (≥40 fps at 800p), Steam build. | Release candidate. |
+| **M7: Art, audio, settings and ship** | Stylized art pass, **typography** (see below), music stings, **Settings menu** (see below), pause menu with "replay controls tutorial", accessibility (subtitle size, hold→toggle), Deck perf (≥40 fps at 800p), Steam build. | Release candidate. |
 
 ### M7 Settings menu (requested; reachable from the title screen and the pause menu)
 - **Graphics:** quality presets (Low / Medium / High / Deck), resolution, window mode, vsync, FPS cap, render scale, shadow quality and distance, fog quality, MSAA/FXAA, ocean detail, Compatibility-renderer fallback for older GPUs.
@@ -106,6 +106,9 @@ Arthur's backstory is still open. My default: a recently widowed schoolteacher t
 - **Controls:** rebinding for keyboard/mouse and gamepad, look sensitivity (separate for binoculars), invert Y, stick deadzone, hold-vs-toggle for binoculars/watch/interact-hold.
 - **Accessibility:** Assist HUD default on/off, reduce head-bob, reduce screen shake/fade durations.
 - Persisted to `user://settings.cfg` through the existing `Settings` autoload. The controls tutorial shown in New Watch setup (M3) can be replayed from here.
+
+### M7 Typography (requested)
+Replace the placeholder default font with something different and fresh. Decision deferred; requirements, a text-surface inventory and an in-engine test plan are in `docs/typography.md`. Includes moving UI styling into one `Theme` resource.
 
 **Next session (on approval):** scaffold the Godot project on `claude/tender-brahmagupta-k7oa6r`, commit `docs/` (amended bible, this plan, narrative outline, tide tables), archive the prototype in `reference/`, then start M2.
 
