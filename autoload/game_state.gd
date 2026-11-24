@@ -46,6 +46,12 @@ func give_item(id: String) -> void:
 		items.append(id)
 		note("Added to satchel: " + Items.title(id))
 
+## Arthur carries the binoculars from the start but isn't told to use them until
+## Clara's first radio check-in (flag set by Main). Saves from before the gate
+## unlock them once Day 1 is over.
+func binoculars_ready() -> bool:
+	return has_flag("binoculars_ready") or GameClock.day > 1
+
 func has_flag(flag_name: String) -> bool:
 	return flags.get(flag_name, false)
 

@@ -17,6 +17,7 @@ var _card: VBoxContainer
 var _lines: Label
 var _choices: VBoxContainer
 var _caption: Label
+var _scrim: Control
 var _radio: PanelContainer
 var _radio_who: Label
 var _radio_line: Label
@@ -60,15 +61,38 @@ func _ready() -> void:
 	_choices = VBoxContainer.new()
 	_choices.add_theme_constant_override("separation", 4)
 	_card.add_child(_choices)
+	# Crossing caption: large, semi-bold, outlined and on a dark scrim, so it reads over
+	# bright water and dark sky alike.
+	var scrim := TextureRect.new()
+	var sg := Gradient.new()
+	sg.offsets = PackedFloat32Array([0.0, 1.0])
+	sg.colors = PackedColorArray([Color(0.02, 0.03, 0.05, 0.0), Color(0.02, 0.03, 0.05, 0.78)])
+	var sgt := GradientTexture2D.new()
+	sgt.gradient = sg
+	sgt.fill_from = Vector2(0, 0)
+	sgt.fill_to = Vector2(0, 1)
+	scrim.texture = sgt
+	scrim.stretch_mode = TextureRect.STRETCH_SCALE
+	scrim.anchor_left = 0.0
+	scrim.anchor_right = 1.0
+	scrim.anchor_top = 1.0
+	scrim.anchor_bottom = 1.0
+	scrim.offset_top = -230.0
+	scrim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(scrim)
+	_scrim = scrim
 	_caption = Label.new()
 	_caption.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	_caption.position = Vector2(72, -96)
-	_caption.add_theme_font_override("font", UiTheme.title_font(500, 2))
-	_caption.add_theme_font_size_override("font_size", 22)
-	_caption.add_theme_color_override("font_color", Color(0.95, 0.91, 0.82, 0.9))
-	_caption.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	_caption.position = Vector2(72, -110)
+	_caption.add_theme_font_override("font", UiTheme.title_font(600))
+	_caption.add_theme_font_size_override("font_size", 32)
+	_caption.add_theme_color_override("font_color", Color(0.98, 0.95, 0.88, 1.0))
+	_caption.add_theme_color_override("font_outline_color", Color(0.02, 0.03, 0.05, 0.9))
+	_caption.add_theme_constant_override("outline_size", 6)
+	_caption.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.7))
 	_caption.add_theme_constant_override("shadow_offset_y", 2)
 	_caption.modulate.a = 0.0
+	_scrim.modulate.a = 0.0
 	add_child(_caption)
 	_radio = PanelContainer.new()
 	_radio.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
@@ -92,8 +116,10 @@ func _ready() -> void:
 	_skip.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	_skip.position = Vector2(-260, -48)
 	_skip.text = "Hold Esc / B to skip"
-	_skip.add_theme_font_size_override("font_size", 12)
-	_skip.add_theme_color_override("font_color", Color(0.9, 0.88, 0.8, 0.4))
+	_skip.add_theme_font_size_override("font_size", 15)
+	_skip.add_theme_color_override("font_color", Color(0.95, 0.92, 0.85, 0.85))
+	_skip.add_theme_color_override("font_outline_color", Color(0.02, 0.03, 0.05, 0.9))
+	_skip.add_theme_constant_override("outline_size", 4)
 	add_child(_skip)
 	visible = false
 
@@ -122,6 +148,7 @@ func _next() -> void:
 		var tw := create_tween()
 		tw.tween_interval(0.8)
 		tw.tween_property(_caption, "modulate:a", 1.0 if _caption.text != "" else 0.0, 1.0)
+		tw.parallel().tween_property(_scrim, "modulate:a", 1.0 if _caption.text != "" else 0.0, 1.0)
 		_shot_left = b.get("seconds", 6.0)
 		shot_requested.emit(int(b["shot"]), _shot_left)
 	elif b.has("radio"):
@@ -137,6 +164,7 @@ func _next() -> void:
 func _show_text(b: Dictionary) -> void:
 	_shot_left = 0.0
 	create_tween().tween_property(_caption, "modulate:a", 0.0, 0.5)
+	create_tween().tween_property(_scrim, "modulate:a", 0.0, 0.5)
 	create_tween().tween_property(_shade, "color:a", 0.86, 1.0)
 	_lines.text = "\n\n".join(PackedStringArray(b["text"]))
 	_lines.visible_characters = 0
