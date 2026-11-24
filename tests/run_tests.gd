@@ -1278,6 +1278,34 @@ func _run() -> void:
 	main.hud.apply_text_scale()
 	main.hud._radio.visible = false
 
+	print("== playtest 1: setup tutorial")
+	var hud = main.hud
+	hud._open_tutorial()
+	await _frames(2)
+	ok(hud._tut.visible and hud._tut_idx == 0 and not hud._tut_next.visible, "tutorial opens on the 'how are you playing' choice")
+	ok(TutorialData.pages_for("kb")[0]["rows"][1].size() == 2 and TutorialData.pages_for("pad")[0]["rows"][1].size() == 2, "per-device tutorial pages carry one controls column")
+	hud._tut_pick("pad")
+	await _frames(3)
+	var tut_text := ""
+	for ch in hud._tut_body.get_children():
+		for l in ch.get_children():
+			if l is Label:
+				tut_text += (l as Label).text + "|"
+	ok(hud._tut_idx == 1 and "Left stick" in tut_text and not ("W A S D" in tut_text), "gamepad choice shows only gamepad controls (%s)" % tut_text.left(60))
+	ok(hud._tut_next.custom_minimum_size.x >= 240.0 and hud._tut_next.custom_minimum_size.y >= 48.0 and hud._tut_next.visible, "the Next button is large and visible")
+	var tut_esc := InputEventAction.new()
+	tut_esc.action = "ui_cancel"
+	tut_esc.pressed = true
+	hud._unhandled_input(tut_esc)
+	ok(hud._tut_idx == 0, "Esc / B steps back to the choice, so there is always a way out")
+	hud._tut_pick("kb")
+	for _i in 2:
+		hud._tut_go(hud._tut_idx + 1)
+	await _frames(2)
+	ok(hud._tut_next.text == "Step into the cottage" and hud._tut.visible, "the last tutorial page offers 'Step into the cottage'")
+	hud._tut.visible = false
+	hud._title.visible = false
+
 	print("\n%d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)
 
