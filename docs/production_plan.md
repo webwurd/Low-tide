@@ -93,11 +93,32 @@ Arthur's backstory is still open. My default: a recently widowed schoolteacher t
 | # | Goal | Exit criteria |
 |---|---|---|
 | **M2: Godot greybox parity** | Port the prototype: terrain bake, ocean shader, tide-table TideSystem, player, binoculars, pocket watch, Assist HUD, radio panel (placeholder lines), 4 landmarks, swept-respawn, procedural audio, gamepad. | Prototype loop playable in Godot on PC and Deck. GUT tests pass for tide math and depth bands. |
-| **M3: Day structure and interiors** | DayDirector, Morning/Expedition/Evening, cottage and tower interiors, rituals, wait anchors, save/load, the 7 DayData tables. | Day 1→2 loop works end to end with autosave. |
-| **M4: Narrative systems** | Dialogue Manager integration with conditions, trust/flags, satchel, cassette player, logbook UI, location-aware reactive lines. | One full day scripted with branching reports and withholds. |
-| **M5: Full island blockout and weather** | North cove, south reef vault, fog-density weather states, storm day, buoy bells, surface materials. | All locations reachable under the correct tides. |
+| **M3: Day structure and interiors** ✅ | DayDirector, Morning/Expedition/Evening, cottage and tower interiors, rituals, wait anchors, save/load, 7 day tables, day/night + weather lighting, **controls tutorial in New Watch setup**. | Day 1→2 loop works end to end with autosave. |
+| **M4: Narrative systems** ✅ | Data-driven dialogue (`dialogue/dialogue.json`: variants, `when` conditions, trust/flags, chained replies) instead of the Dialogue Manager addon (its repo is outside this session's GitHub scope), satchel, cassette player, 3-page journal (log / satchel / tapes), zone-aware reactive lines. | Day 1 + Day 2 scripted with report/withhold branching. |
+| **M5: Full island blockout and weather** ✅ | North cove (cable hut + armored cable), south reef cable vault (Day 5 spring low only), 4 bell buoys (1 N / 2 E / 3 S / 4 W strikes) for fog navigation, morning mist + per-day fog, gravel/concrete/wet/sand/rock surfaces. | All locations reachable under the correct tides (verified by walking them with the real controller). |
 | **M6: Content** | Write and implement Days 1–7, 4–6 tapes, and 3 endings. | Full playthrough on all 3 ending paths. |
-| **M7: Art, audio and ship** | Stylized art pass, music stings, accessibility (Assist, subtitles size, hold→toggle), Deck perf (≥40 fps at 800p), Steam build. | Release candidate. |
+| **M7: Polish, settings and ship (Godot)** | Unity port **parked** (decision: stay with Godot). M7 proceeds in Godot: Settings + pause menus, accessibility, central UI theme and font roles, procedural placeholder music stings, procedural painterly art pass, perf/quality presets, Windows/Linux export presets. Steam deferred. | Release candidate. |
+| *(superseded)* M7: Art, audio, settings and ship | Stylized art pass, **typography** (see below), music stings, **Settings menu** (see below), pause menu with "replay controls tutorial", accessibility (subtitle size, hold→toggle), Deck perf (≥40 fps at 800p), Steam build. | Release candidate. |
+
+### M5 design notes
+- Day 5 has **two** spring lows (about 10:50 and 23:55). The reef is walkable for ~133 game minutes around the daytime one; the late one falls after Arthur is sent home at 21:00.
+- The vault bar crest is -1.0 m; at the spring low (-0.4 m) the water is knee deep (0.6x speed). The causeway lane is **dead level out to exactly 2 m** from the centreline, then slopes 1:1 into the trench, so Arthur is safe within 2 m and swept from about 2.4 m. A sign post and 14 orange-tipped lane-edge poles (at +/-2 m) mark it. Terrain mesh resolution was raised to 0.7 m cells (was 1.17 m) so the lane is honoured by the physical mesh.
+- Cassette player plays unheard tapes in story order, not pickup order.
+- Tape 2 (June's recording) and the cable/vault conversations are draft text for M6.
+
+### Audio
+No audio asset files exist; everything is synthesised (`autoload/audio_director.gd`). See `docs/audio_checklist.md` for what to listen to and `tools/export_audio.gd` to render every sound to WAV. Automated sanity checks cover clipping, silence, NaN and loop-seam clicks.
+
+### Settings menu spec (requested; reachable from the title screen and the pause menu)
+- **Graphics:** quality presets (Low / Medium / High / Deck), resolution, window mode, vsync, FPS cap, render scale, shadow quality and distance, fog quality, MSAA/FXAA, ocean detail, Compatibility-renderer fallback for older GPUs.
+- **Audio:** master, ambience (surf and wind), footsteps/SFX, radio/voice, music buses, radio static intensity, subtitles size and background, mono mix.
+- **Lighting:** brightness/gamma slider, exposure, night-brightness assist (lifts the darkest scenes), fog density scale, bloom/glow toggle, lamp-beam intensity, optional colour-grade strength.
+- **Controls:** rebinding for keyboard/mouse and gamepad, look sensitivity (separate for binoculars), invert Y, stick deadzone, hold-vs-toggle for binoculars/watch/interact-hold.
+- **Accessibility:** Assist HUD default on/off, reduce head-bob, reduce screen shake/fade durations.
+- Persisted to `user://settings.cfg` through the existing `Settings` autoload. The controls tutorial shown in New Watch setup (M3) can be replayed from here.
+
+### Typography (requested)
+Replace the placeholder default font with something different and fresh. Decision deferred; requirements, a text-surface inventory and an in-engine test plan are in `docs/typography.md`. Includes moving UI styling into one `Theme` resource.
 
 **Next session (on approval):** scaffold the Godot project on `claude/tender-brahmagupta-k7oa6r`, commit `docs/` (amended bible, this plan, narrative outline, tide tables), archive the prototype in `reference/`, then start M2.
 
@@ -105,7 +126,7 @@ Arthur's backstory is still open. My default: a recently widowed schoolteacher t
 
 ## 6. Remaining open questions (defaults assumed unless you say otherwise)
 - Arthur's backstory: the widowed-teacher default above.
-- Character names Walt, June and "Station Rockland" are placeholders. Station Rockland is a real USCG station, so keep it or invent one?
+- Character names Walt, June and "Station Penobscot" are placeholders. (Resolved: renamed to the fictional "Station Penobscot".)
 - Should Clara ever appear in person? Default: no, only the ending's boat light, which respects the two-person cast.
 - Music composer or sourcing is TBD. Default: stings only, added in M7.
 - Is there a team or deadline? Default: solo or small team, no fixed date.
@@ -113,7 +134,7 @@ Arthur's backstory is still open. My default: a recently widowed schoolteacher t
 ---
 
 ## 7. Verification
-- **Unit tests (GUT, headless):** tide interpolation against the tide tables, threshold events at 2.1m, depth-band classification, clock rollover and day advance, dialogue condition evaluation, save/load round-trip. Run with `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests`.
+- **Unit + smoke tests (custom headless runner `tests/run_tests.gd`; GUT's repo is outside this session's GitHub scope):** tide interpolation against the tide tables, threshold events at 2.1m, depth-band classification, clock rollover and day advance, dialogue condition evaluation, save/load round-trip. Run with `godot --headless -s tests/run_tests.gd` (non-zero exit on failure). Screenshots: `xvfb-run -a godot --rendering-method gl_compatibility -s tests/screenshot.gd -- <outdir>`.
 - **CI:** a GitHub Actions workflow using a Godot 4.4 headless container to run GUT and a Linux export smoke build.
 - **Playtest checklist per milestone:** cross the East bar at low tide and get swept on the rising tide (fade, dock, Clara line, −45 min); binocular rangefinder labels; dialogue while walking; gamepad-only full loop; Assist toggle; Deck framerate via Godot's monitor overlay.
 - **In this container:** install the Godot 4.4 headless Linux binary (if the network allows it) to run tests and a headless scene-load smoke test. Visual checks need your machine or a Deck.
