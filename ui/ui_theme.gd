@@ -17,38 +17,103 @@ static func box(bg: Color, border := BORDER, radius := 3, margin := 10) -> Style
 
 static func build() -> Theme:
 	var t := Theme.new()
-	t.default_font_size = 16
+	t.default_font_size = 17
 	var f := UiFonts.get_font("ui")
 	if f:
 		t.default_font = f
-	# Tab headings use the display face; body text stays quiet.
-	var disp := UiFonts.get_font("display")
-	if disp:
-		t.set_font("font", "TabContainer", disp)
-		t.set_font_size("font_size", "TabContainer", 19)
-	t.set_color("font_color", "Label", TEXT)
-	for c in ["Button", "CheckBox", "OptionButton"]:
-		t.set_color("font_color", c, TEXT)
+	var bold := UiFonts.get_font("ui_bold")
+	t.set_color("font_color", "Label", CREAM)
+	# Panels: deep slate, soft shadow, roomy padding (the menu dims the game).
+	var pnl := box(Color(0.045, 0.065, 0.085, 0.95), Color(1, 0.94, 0.82, 0.10), RADIUS, 0)
+	pnl.content_margin_left = 32
+	pnl.content_margin_right = 32
+	pnl.content_margin_top = 26
+	pnl.content_margin_bottom = 26
+	_shadow(pnl, 26)
+	t.set_stylebox("panel", "PanelContainer", pnl)
+	# Buttons and dropdowns: the shared chip look, amber edge on hover/focus.
+	for c in ["Button", "OptionButton"]:
+		t.set_stylebox("normal", c, _chip(Color(1, 1, 1, 0.07)))
+		t.set_stylebox("hover", c, _chip(Color(1, 0.8, 0.5, 0.15), true))
+		t.set_stylebox("pressed", c, _chip(Color(1, 0.75, 0.4, 0.24), true))
+		t.set_stylebox("focus", c, _chip(Color(1, 0.8, 0.5, 0.15), true, true))
+		t.set_stylebox("disabled", c, _chip(Color(1, 1, 1, 0.03)))
+		if bold:
+			t.set_font("font", c, bold)
+		t.set_font_size("font_size", c, 16)
+	for c in ["Button", "CheckBox", "CheckButton", "OptionButton"]:
+		t.set_color("font_color", c, CREAM)
 		t.set_color("font_hover_color", c, Color.WHITE)
-		t.set_color("font_focus_color", c, AMBER)
-		t.set_color("font_pressed_color", c, AMBER)
-	t.set_stylebox("normal", "Button", box(Color(0.12, 0.17, 0.22, 0.95)))
-	t.set_stylebox("hover", "Button", box(Color(0.18, 0.25, 0.31, 0.98), AMBER))
-	t.set_stylebox("pressed", "Button", box(Color(0.25, 0.2, 0.1, 0.98), AMBER))
-	t.set_stylebox("focus", "Button", box(Color(0.15, 0.2, 0.26, 0.98), AMBER))
-	t.set_stylebox("normal", "OptionButton", box(Color(0.12, 0.17, 0.22, 0.95)))
-	t.set_stylebox("hover", "OptionButton", box(Color(0.18, 0.25, 0.31, 0.98), AMBER))
-	t.set_stylebox("focus", "OptionButton", box(Color(0.15, 0.2, 0.26, 0.98), AMBER))
-	t.set_stylebox("panel", "PanelContainer", box(BG, BORDER, 4, 18))
-	t.set_stylebox("panel", "TabContainer", box(Color(0.08, 0.11, 0.15, 0.9), BORDER, 2, 14))
-	t.set_stylebox("tab_selected", "TabContainer", box(Color(0.2, 0.16, 0.08, 0.95), AMBER, 2, 8))
-	t.set_stylebox("tab_unselected", "TabContainer", box(Color(0.1, 0.14, 0.18, 0.9), BORDER, 2, 8))
-	t.set_stylebox("tab_hovered", "TabContainer", box(Color(0.16, 0.2, 0.25, 0.95), AMBER, 2, 8))
-	t.set_stylebox("tab_focus", "TabContainer", box(Color(0.2, 0.16, 0.08, 0.95), AMBER, 2, 8))
-	t.set_color("font_selected_color", "TabContainer", AMBER)
-	t.set_color("font_unselected_color", "TabContainer", TEXT)
+		t.set_color("font_focus_color", c, Color.WHITE)
+		t.set_color("font_pressed_color", c, ACCENT)
+	t.set_stylebox("panel", "PopupMenu", box(Color(0.05, 0.075, 0.095, 0.98), Color(1, 0.94, 0.82, 0.12), RADIUS_SMALL, 8))
+	t.set_stylebox("hover", "PopupMenu", _chip(Color(1, 0.8, 0.5, 0.15)))
+	t.set_color("font_color", "PopupMenu", CREAM)
+	t.set_color("font_hover_color", "PopupMenu", Color.WHITE)
+	t.set_font_size("font_size", "PopupMenu", 16)
+	# Tabs: chips across the top; the current one tinted amber with an underline.
+	t.set_stylebox("panel", "TabContainer", box(Color(0, 0, 0, 0.18), Color(1, 0.94, 0.82, 0.08), RADIUS_SMALL, 18))
+	var tab_on := _chip(Color(1, 0.75, 0.4, 0.18))
+	tab_on.border_color = ACCENT
+	tab_on.border_width_bottom = 2
+	t.set_stylebox("tab_selected", "TabContainer", tab_on)
+	t.set_stylebox("tab_unselected", "TabContainer", _chip(Color(0, 0, 0, 0)))
+	t.set_stylebox("tab_hovered", "TabContainer", _chip(Color(1, 1, 1, 0.07)))
+	var tab_focus := _chip(Color(1, 0.75, 0.4, 0.18), true, true)
+	t.set_stylebox("tab_focus", "TabContainer", tab_focus)
+	if bold:
+		t.set_font("font", "TabContainer", bold)
+	t.set_font_size("font_size", "TabContainer", 16)
+	t.set_color("font_selected_color", "TabContainer", ACCENT)
+	t.set_color("font_unselected_color", "TabContainer", MUTED)
 	t.set_color("font_hovered_color", "TabContainer", Color.WHITE)
+	# Sliders: rounded track, amber fill.
+	var track := StyleBoxFlat.new()
+	track.bg_color = Color(0, 0, 0, 0.4)
+	track.set_corner_radius_all(4)
+	track.content_margin_top = 3
+	track.content_margin_bottom = 3
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = ACCENT
+	fill.set_corner_radius_all(4)
+	fill.content_margin_top = 3
+	fill.content_margin_bottom = 3
+	t.set_stylebox("slider", "HSlider", track)
+	t.set_stylebox("grabber_area", "HSlider", fill)
+	t.set_stylebox("grabber_area_highlight", "HSlider", fill)
+	# Slim scroll bars.
+	var sb_track := StyleBoxFlat.new()
+	sb_track.bg_color = Color(1, 1, 1, 0.04)
+	sb_track.set_corner_radius_all(4)
+	sb_track.content_margin_left = 4
+	sb_track.content_margin_right = 4
+	var sb_grab := StyleBoxFlat.new()
+	sb_grab.bg_color = Color(1, 1, 1, 0.22)
+	sb_grab.set_corner_radius_all(4)
+	t.set_stylebox("scroll", "VScrollBar", sb_track)
+	t.set_stylebox("grabber", "VScrollBar", sb_grab)
+	t.set_stylebox("grabber_highlight", "VScrollBar", sb_grab)
+	t.set_stylebox("grabber_pressed", "VScrollBar", sb_grab)
 	return t
+
+## A chip state for the theme: fill, optional amber left edge, optional focus ring.
+static func _chip(bg: Color, edge := false, ring := false) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = bg
+	sb.set_corner_radius_all(RADIUS_SMALL)
+	sb.content_margin_left = PAD_SMALL.x
+	sb.content_margin_right = PAD_SMALL.x
+	sb.content_margin_top = 10
+	sb.content_margin_bottom = 10
+	sb.anti_aliasing_size = 1.0
+	if ring:
+		sb.border_color = ACCENT
+		sb.set_border_width_all(2)
+		sb.border_width_left = 3
+	elif edge:
+		sb.border_color = ACCENT
+		sb.border_width_left = 3
+	return sb
 
 # --- M6.5 helpers (title screen, prologue): the same fonts via UiFonts ------
 
