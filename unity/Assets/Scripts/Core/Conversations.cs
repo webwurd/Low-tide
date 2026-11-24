@@ -51,7 +51,7 @@ namespace LowTide.Core
     /// </summary>
     public sealed class Conversations
     {
-        public const string ClaraSpeaker = "CH-16 // CLARA (COAST GUARD DISPATCH)";
+        public const string ClaraSpeaker = "Clara, Coast Guard dispatch (channel 16)";
         readonly JObject convs;
         public readonly List<ReactionDef> Reactions = new List<ReactionDef>();
         readonly Dictionary<string, TapeDef> tapes = new Dictionary<string, TapeDef>();
@@ -131,7 +131,7 @@ namespace LowTide.Core
 
         static string SpeakerName(string key)
         {
-            if (key == "arthur") return "ARTHUR";
+            if (key == "arthur") return "Arthur";
             return ClaraSpeaker;
         }
 

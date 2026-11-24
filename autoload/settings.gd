@@ -228,6 +228,7 @@ const PAD := "pad"
 var _defaults: Dictionary = {}     # action -> {kb: [dict], pad: [dict]}
 
 func _ready() -> void:
+	UiFonts.install_default()
 	_save_timer = Timer.new()
 	_save_timer.one_shot = true
 	_save_timer.timeout.connect(save_settings)

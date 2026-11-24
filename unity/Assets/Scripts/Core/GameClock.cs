@@ -49,7 +49,7 @@ namespace LowTide.Core
             int h24 = m / 60;
             int h12 = h24 % 12;
             if (h12 == 0) h12 = 12;
-            return string.Format("{0:00}:{1:00} {2}", h12, m % 60, h24 >= 12 ? "PM" : "AM");
+            return string.Format("{0}:{1:00} {2}", h12, m % 60, h24 >= 12 ? "pm" : "am");
         }
     }
 }

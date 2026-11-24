@@ -63,7 +63,7 @@ func _run() -> void:
 	await _wait(4)
 	await _snap(out, "14_journal_tapes")
 	main.hud.close_modal()
-	main.hud._tape_title.text = "TAPE 1  -  WALT, JANUARY 1976"
+	main.hud._tape_title.text = "Tape 1: Walt, January 1976"
 	main.hud._tape_text.text = "I keep telling myself you'd laugh at me, talking to a machine."
 	main.hud._tape_panel.visible = true
 	await _wait(4)
@@ -130,6 +130,38 @@ func _run() -> void:
 	main.hud._card.modulate.a = 0.0
 	main.hud._tape_panel.visible = false
 	main._place("cottage", main.interiors.spawn["cottage"], 0.6)
+	# typography pass: radio at the default and the largest subtitle size, day card, tide table
+	var convs = load("res://story/conversations.gd")
+	var long_text: String = convs.get_conv("evening_d6").get("text", "")
+	if long_text == "":
+		long_text = "All right, Arthur. You've earned this. My father piloted the boat that took June Haskell to the reef. He told the Navy the tide table said one hour. They said two."
+	var opts := [{"text": "Tell her about the canister and the cable vault"}, {"text": "Say nothing and keep the tapes to yourself for now"}]
+	var cfg := root.get_node("Settings")
+	for sc in [1.0, 1.8]:
+		cfg.set_v("subtitle_scale", sc)
+		main.hud.apply_text_scale()
+		main.hud._on_line(convs.SPEAKER, long_text, opts)
+		await _wait(6)
+		await _snap(out, "28_radio_scale_%d" % int(sc * 10))
+	cfg.set_v("subtitle_scale", 1.0)
+	main.hud.apply_text_scale()
+	main.hud._on_reply("Clara, replying", "Copy that, Arthur. Keep the lamp lit.")
+	await _wait(4)
+	await _snap(out, "28_radio_reply")
+	main.hud._radio.visible = false
+	main.hud.show_card("Day 5", "Spring low, clear", 6.0)
+	await _wait(25)
+	await _snap(out, "29_day_card")
+	main.hud._card.modulate.a = 0.0
+	main.hud.show_tide_table(5, root.get_node("TideSystem").extremes_for_day(5))
+	await _wait(5)
+	await _snap(out, "29_tide_table")
+	main.hud.close_modal()
+	for k in ["b", "c"]:
+		main._show_ending_card(k)
+		await _wait(60)
+		await _snap(out, "27_ending_card_" + k)
+		main.hud._ending_panel.visible = false
 	var menus = main.menus
 	menus.open_pause()
 	await _wait(6)

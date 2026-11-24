@@ -117,9 +117,9 @@ namespace LowTide.Core
 
         public static string TideLabel(double height, double ahead)
         {
-            if (height <= 0.9) return "LOW TIDE";
-            if (height >= 3.5) return "HIGH TIDE";
-            return ahead > height ? "RISING" : "FALLING";
+            if (height <= 0.9) return "Low tide";
+            if (height >= 3.5) return "High tide";
+            return ahead > height ? "Rising" : "Falling";
         }
     }
 }

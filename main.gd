@@ -63,7 +63,7 @@ func _ready() -> void:
 	RadioSystem.line_shown.connect(func(_sp, _tx, _op): _on_radio_line_for_sting())
 	TapePlayer.finished.connect(_on_tape_finished)
 	hud.ending_closed.connect(_on_ending_closed)
-	DayDirector.week_ended.connect(func(): hud.show_card("ONE WEEK ON GANNET ROCK", "End of the current build. Story content arrives in M6.", 6.0))
+	DayDirector.week_ended.connect(func(): hud.show_card("One week on Gannet Rock", "The relief boat is due at first light.", 6.0))
 	_place("cottage", interiors.spawn["cottage"], 0.0)
 	if autostart:
 		hud.show_title(false)
@@ -78,7 +78,7 @@ func new_game() -> void:
 	_place("cottage", interiors.spawn["cottage"], 0.0)
 	_begin()
 	_autosave()
-	hud.show_card("DAY 1", DayDirector.data().title + "  -  " + DayDirector.data().weather, 3.5)
+	hud.show_card("Day 1", _day_subtitle(), 3.5)
 
 func continue_game() -> void:
 	var loc := SaveSystem.load_game()
@@ -89,7 +89,12 @@ func continue_game() -> void:
 	var sp: Vector3 = interiors.spawn.get(loc, interiors.spawn["cottage"])
 	_place(loc, sp, 0.0)
 	_begin()
-	hud.show_card("DAY %d" % GameClock.day, DayDirector.data().title + "  -  " + DayDirector.data().weather, 3.0)
+	hud.show_card("Day %d" % GameClock.day, _day_subtitle(), 3.0)
+
+## "First Watch, fog": title in title case, the weather as ordinary lower-case text.
+func _day_subtitle() -> String:
+	var dd := DayDirector.data()
+	return "%s, %s" % [dd.title, dd.weather.to_lower()]
 
 func _begin() -> void:
 	started = true
@@ -292,9 +297,9 @@ func _on_bed() -> void:
 		_place("cottage", interiors.spawn["bed"], 0.0)
 		_autosave()
 		hud.fade_in(1.2)
-		hud.show_card("DAY %d" % GameClock.day, DayDirector.data().title + "  -  " + DayDirector.data().weather, 3.5)
+		hud.show_card("Day %d" % GameClock.day, _day_subtitle(), 3.5)
 	else:
-		hud.show_card("ONE WEEK ON GANNET ROCK", "End of the current build. Story content arrives in M6.", 6.0)
+		hud.show_card("One week on Gannet Rock", "The relief boat is due at first light.", 6.0)
 	await get_tree().create_timer(0.8).timeout
 	player.locked = false
 	_busy = false
@@ -563,7 +568,7 @@ func _spawn_boat() -> void:
 	_boat_player.play()
 	_boat.look_at(_boat_target + Vector3(0, 0, 0))
 	_boat.rotate_y(PI)         # bow (local -z in look_at) forward
-	_boat.set_meta("label", "RELIEF BOAT // FIRST LIGHT")
+	_boat.set_meta("label", "Relief boat, first light")
 	_boat.add_to_group("bino_target")
 	_boat_arrived = false
 
@@ -588,7 +593,7 @@ func _update_ending_scene(delta: float) -> void:
 		var want_pitch := asin(clampf(dir.y / maxf(dir.length(), 0.001), -1.0, 1.0))
 		player.yaw = lerp_angle(player.yaw, want_yaw, minf(1.0, delta * 2.0))
 		player.pitch = lerpf(player.pitch, want_pitch, minf(1.0, delta * 2.0))
-		player.bino_label = "RELIEF BOAT // FIRST LIGHT"
+		player.bino_label = "Relief boat, first light"
 		player.bino_dist = int(dir.length())
 	player.rotation.y = player.yaw
 	player.cam.rotation.x = player.pitch

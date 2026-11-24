@@ -7,9 +7,9 @@ namespace LowTide.Core
         {
             switch (kind)
             {
-                case "a": return "THE RIGHT ADDRESS";
-                case "b": return "LEFT QUIET";
-                default: return "ON THE RECORD";
+                case "a": return "The Right Address";
+                case "b": return "Left Quiet";
+                default: return "On the Record";
             }
         }
 

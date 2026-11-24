@@ -212,7 +212,7 @@ func _run() -> void:
 	var to_lamp: Vector3 = Vector3(0, 30, -6) - (player.global_position + Vector3(0, 1.72, 0))
 	player.pitch = atan2(to_lamp.y, -to_lamp.z)
 	await _frames(5)
-	ok(player.bino_label.contains("LIGHTHOUSE"), "rangefinder identifies the lighthouse ('%s', %d m)" % [player.bino_label, player.bino_dist])
+	ok(player.bino_label.to_lower().contains("lighthouse"), "rangefinder identifies the lighthouse ('%s', %d m)" % [player.bino_label, player.bino_dist])
 	Input.action_release("binoculars")
 	await _frames(5)
 
@@ -726,7 +726,7 @@ func _run() -> void:
 		if kind == "c":
 			ok(main._boat == null and not main.player.binoculars, "ending C: no boat, no binoculars: just the beam and static")
 		else:
-			ok(main._boat != null and main._boat_arrived and main.player.binoculars and main.player.bino_label.contains("RELIEF BOAT"), "ending %s: relief boat arrives and is seen through the binoculars (%s)" % [kind.to_upper(), main.player.bino_label])
+			ok(main._boat != null and main._boat_arrived and main.player.binoculars and main.player.bino_label.to_lower().contains("relief boat"), "ending %s: relief boat arrives and is seen through the binoculars (%s)" % [kind.to_upper(), main.player.bino_label])
 		ok(save2.endings_seen().has(kind) and not save2.has_save(), "ending %s is recorded and the run's save is removed" % kind.to_upper())
 		if kind == "b":
 			ok(state.has_flag("buoy_off"), "ending B switches the buoy off")
@@ -900,7 +900,7 @@ func _run() -> void:
 	cfg.set_v("toggle_watch", false)
 
 	cfg.set_v("subtitle_scale", 1.5)
-	ok(main.hud._radio_text.get_theme_font_size("font_size") == int(17 * 1.5) and main.hud._tape_text.get_theme_font_size("font_size") == int(17 * 1.5), "subtitle size scales the radio and tape text")
+	ok(main.hud._radio_text.get_theme_font_size("font_size") == int(17 * 1.5) and main.hud._tape_text.get_theme_font_size("font_size") == int(20 * 1.5), "subtitle size scales the radio and tape text")
 	cfg.set_v("subtitle_scale", 1.0)
 
 	cfg.set_v("brightness", 1.3); cfg.set_v("exposure", 1.2); cfg.set_v("glow", true)
@@ -1029,8 +1029,108 @@ func _run() -> void:
 	if FileAccess.file_exists(root.get_node("SaveSystem").endings_path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(root.get_node("SaveSystem").endings_path))
 
+	print("-- typography: standard capitalisation")
+	var shouty: Array = []
+	var seen := [0]    # lambdas capture ints by value, so count in an array
+	var scan := func(txt: String, where: String) -> void:
+		seen[0] += 1
+		if _shouty(txt):
+			shouty.append("%s: '%s'" % [where, txt.replace("\n", " / ")])
+	var stack: Array = [main.hud, main.menus]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		stack.append_array(n.get_children())
+		if n is Label or n is Button or n is CheckBox or n is OptionButton:
+			scan.call(n.text, "%s.%s" % [n.get_class(), n.name])
+		if n is OptionButton:
+			for i in n.item_count:
+				scan.call(n.get_item_text(i), "option %s" % n.name)
+		if n is TabContainer:
+			for i in n.get_tab_count():
+				scan.call(n.get_tab_title(i), "tab")
+	var ending_mod = load("res://story/endings.gd")
+	for k in ["a", "b", "c"]:
+		scan.call(ending_mod.ending_name(k), "ending " + k)
+	for pg in load("res://ui/tutorial_data.gd").pages():
+		scan.call(pg.title, "tutorial title")
+		scan.call(pg.text, "tutorial text")
+		for row in pg.rows:
+			for cell in row:
+				scan.call(cell, "tutorial row")
+	for t in ["tape_1", "tape_2", "tape_3", "tape_4", "tape_5", "tape_6"]:
+		scan.call(String(load("res://story/conversations.gd").tape(t).get("title", "")), t)
+	scan.call(load("res://story/conversations.gd").SPEAKER, "speaker")
+	scan.call(load("res://story/conversations.gd").SPEAKERS["arthur"], "speaker arthur")
+	for lbl in ["Low tide", "High tide", "Rising", "Falling"]:
+		scan.call(lbl, "tide label")
+	scan.call(clock.hhmm(), "clock")
+	scan.call(main._day_subtitle(), "day card subtitle")
+	ok(seen[0] > 150, "capitalisation scan covers the whole UI (%d strings)" % seen[0])
+	ok(shouty.is_empty(), "no all-caps UI text outside key names and acronyms: %s" % [shouty])
+	ok(_shouty("LOW TIDE") and _shouty("NEW WATCH") and _shouty("Tape 1 - WALT JANUARY") and not _shouty("Low tide") and not _shouty("MSAA") and not _shouty("W A S D") and not _shouty("Hold LB / LT"), "the capitalisation guard flags shouting but allows key names")
+
+	print("-- radio panel layout")
+	var all_ok := true
+	var worst := ""
+	var longest: Dictionary = {}
+	var conv_ids: Array = load("res://story/conversations.gd")._json.get("convs", {}).keys()
+	for cid in conv_ids:
+		for variant in load("res://story/conversations.gd")._json["convs"][cid]:
+			if String(variant.get("text", "")).length() > String(longest.get("text", "")).length():
+				longest = variant.duplicate()
+				longest["id"] = cid
+	ok(longest.has("text"), "found the longest radio line (%s, %d chars)" % [longest.get("id", ""), String(longest.get("text", "")).length()])
+	var long_opts: Array = [{"text": "I will check the east bar before the water comes back up and then call you from the cottage"}, {"text": "Understood, I will stay inside until the tide has turned and the light is on"}]
+	for sc in [1.0, 1.5, 1.8]:
+		cfg.set_v("subtitle_scale", sc)
+		main.hud.apply_text_scale()
+		main.hud._on_line(load("res://story/conversations.gd").SPEAKER, longest.get("text", ""), long_opts)
+		await _frames(4)
+		# Headless runs use a stand-in text height (about 3x real), so measure width
+		# exactly and estimate height from line counts. Screenshots check the real thing.
+		var r: Rect2 = main.hud._radio.get_global_rect()
+		var fs_text: float = 17.0 * sc
+		var fs_opt: float = 14.0 * sc
+		var opt_w: float = main.hud._opt_buttons[0].size.x
+		var opt_lines: float = 1.0
+		for o in long_opts:
+			opt_lines = maxf(opt_lines, ceilf((String(o["text"]).length() + 3) * fs_opt * 0.6 / maxf(opt_w - 20.0, 1.0)))
+		var est_h: float = 32.0 + fs_text * 1.0 + main.hud._radio_text.get_line_count() * fs_text * 1.45 + opt_lines * fs_opt * 1.6 + 30.0
+		var cx: float = r.position.x + r.size.x * 0.5
+		var inside: bool = r.position.x >= 0.0 and r.end.x <= 1280.0 and absf(cx - 640.0) < 1.0 and est_h <= 720.0 - 60.0 - 40.0
+		if not inside:
+			all_ok = false
+			worst = "scale %.1f -> %s, estimated height %.0f" % [sc, r, est_h]
+	ok(all_ok, "the radio panel stays inside 1280x720 with the longest line at every subtitle size %s" % worst)
+	cfg.reset_defaults()
+	main.hud.apply_text_scale()
+	main.hud._radio.visible = false
+
 	print("\n%d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)
+
+## True when a visible string reads as shouting: a word of 5+ capitals, or a
+## line of 6+ letters that is mostly capitals. Short key names and acronyms
+## (W A S D, LB, LT, L3, MSAA, FXAA) are fine.
+func _shouty(txt: String) -> bool:
+	var letters := 0
+	var upper := 0
+	for i in txt.length():
+		var ch := txt[i]
+		if ch.to_upper() != ch.to_lower():
+			letters += 1
+			if ch == ch.to_upper():
+				upper += 1
+	if letters >= 6 and float(upper) / float(letters) >= 0.8:
+		return true
+	for w in txt.split(" ", false):
+		var core := ""
+		for i in w.length():
+			if w[i].to_upper() != w[i].to_lower():
+				core += w[i]
+		if core.length() >= 5 and core == core.to_upper():
+			return true
+	return false
 
 ## Terrain heights sampled along a polyline of Vector2 points (every metre).
 func _route_heights(Terr, pts: Array) -> Array:
