@@ -15,6 +15,7 @@ var ocean: Ocean
 var hud: HUD
 var menus: Menus
 var env: Environment
+var sky_mat: ShaderMaterial
 var sun: DirectionalLight3D
 var rain: CPUParticles3D
 var location := "cottage"          # outdoors | cottage | tower_base | tower_top
@@ -312,6 +313,15 @@ func _daylight() -> float:
 func _build_environment() -> void:
 	env = Environment.new()
 	env.background_mode = Environment.BG_COLOR
+	sky_mat = ShaderMaterial.new()
+	sky_mat.shader = load("res://world/sky.gdshader")
+	var sky := Sky.new()
+	sky.sky_material = sky_mat
+	sky.process_mode = Sky.PROCESS_MODE_INCREMENTAL
+	sky.radiance_size = Sky.RADIANCE_SIZE_32       # we never light from the sky texture, only look at it
+	env.sky = sky
+	env.fog_sky_affect = 0.0                         # the sky shader paints its own haze
+	env.fog_sun_scatter = 0.2
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.tonemap_exposure = 0.95
@@ -329,6 +339,8 @@ func _build_environment() -> void:
 ## Brightness / exposure / bloom from the Lighting settings.
 func _apply_display_settings() -> void:
 	env.adjustment_enabled = true
+	env.adjustment_saturation = 1.12                 # a touch of storybook colour
+	env.adjustment_contrast = 1.05
 	env.adjustment_brightness = float(Settings.v("brightness"))
 	env.tonemap_exposure = 0.95 * float(Settings.v("exposure"))
 	env.glow_enabled = bool(Settings.v("glow"))
@@ -361,6 +373,7 @@ func _apply_lighting() -> void:
 	var outdoors := location == "outdoors"
 	if not outdoors:
 		env.fog_enabled = false
+		env.background_mode = Environment.BG_COLOR
 		env.background_color = Color.BLACK
 		env.ambient_light_color = INDOOR_AMBIENT
 		env.ambient_light_energy = 0.8
@@ -368,21 +381,43 @@ func _apply_lighting() -> void:
 		rain.emitting = false
 		return
 	var d := clampf(_daylight() * dd.light_scale, 0.0, 1.0)
-	var fog_col := NIGHT_FOG.lerp(dd.fog_tint, d)
+	var sk := SkyModel.describe(GameClock.minute_of_day, dd.cloud, dd.fog_tint, dd.fog_density, dd.light_scale)
+	var fog_col: Color = sk["fog_color"]
+	env.background_mode = Environment.BG_SKY
 	env.fog_enabled = true
 	env.fog_density = dd.fog_density * lerpf(1.5, 1.0, smoothstep(390.0, 660.0, GameClock.minute_of_day)) * float(Settings.v("fog_scale"))   # morning mist burns off
 	env.fog_light_color = fog_col
 	env.background_color = fog_col
-	env.ambient_light_color = Color("6f84a6").lerp(Color("9fb4c7"), d)
+	var ambient_sky: Color = (sk["zenith"] as Color).lerp(sk["horizon"], 0.45)
+	env.ambient_light_color = ambient_sky.lerp(Color("6f84a6").lerp(Color("9fb4c7"), d), 0.35)
 	env.ambient_light_energy = lerpf(0.3, 0.4, d) + float(Settings.v("night_assist")) * (1.0 - d) * 0.45
+	_feed_sky(sk)
+	ocean.set_sky_color((sk["horizon"] as Color).lerp(sk["zenith"], 0.3))
+	var sun_h: float = sk["sun_height"]
+	var from_dir: Vector3 = sk["sun_dir"] if sun_h > 0.0 else sk["moon_dir"]
 	sun.visible = true
-	sun.light_color = Color("5f78a8").lerp(Color("dce6f0"), d)
+	sun.position = from_dir * 80.0
+	sun.look_at(Vector3.ZERO)
+	sun.light_color = SkyModel.sun_light_color(sun_h, dd.cloud) if sun_h > 0.0 else Color("5f78a8")
 	sun.light_energy = lerpf(0.14, 0.6, d)
 	sun.shadow_enabled = d > 0.15 and Settings.shadow_distance() > 0.0
 	sun.directional_shadow_max_distance = maxf(Settings.shadow_distance(), 1.0)
 	island.set_lamp(DayDirector.lamp_lit, DayDirector.weights_wound, _daylight())
 	rain.emitting = dd.rain
 	rain.global_position = player.global_position + Vector3(0, 14, 0)
+
+func _feed_sky(sk: Dictionary) -> void:
+	sky_mat.set_shader_parameter("zenith_color", sk["zenith"])
+	sky_mat.set_shader_parameter("horizon_color", sk["horizon"])
+	sky_mat.set_shader_parameter("glow_color", sk["glow"])
+	sky_mat.set_shader_parameter("fog_color", sk["fog_color"])
+	sky_mat.set_shader_parameter("sun_dir", sk["sun_dir"])
+	sky_mat.set_shader_parameter("moon_dir", sk["moon_dir"])
+	sky_mat.set_shader_parameter("glow_strength", sk["glow_strength"])
+	sky_mat.set_shader_parameter("haze_height", sk["haze_height"])
+	sky_mat.set_shader_parameter("cloud_cover", sk["cloud"])
+	sky_mat.set_shader_parameter("star_amount", sk["stars"])
+	sky_mat.set_shader_parameter("sun_height", sk["sun_height"])
 
 # --- frame -----------------------------------------------------------------
 
