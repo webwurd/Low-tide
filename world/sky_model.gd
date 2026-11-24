@@ -94,3 +94,17 @@ static func sun_light_color(h: float, cloud: float) -> Color:
 	var c := warm.lerp(mid, smoothstep(0.0, 0.12, h)).lerp(noon, smoothstep(0.12, 0.3, h))
 	c = c.lerp(Color("c8d3dc"), clampf(cloud, 0.0, 1.0) * 0.6)
 	return moon.lerp(c, smoothstep(-0.12, 0.02, h))
+
+## Half-width (in sun height) of the twilight band in which the key light hands over
+## from the sun to the moon. The two sit on opposite sides of the sky, so the light
+## fades to nothing at the horizon and only changes direction while it is off.
+const HANDOVER := 0.1
+
+## The scene's single key light for a sun height: {dir, color, fade}. `dir` points at
+## the sun while it is up and at the moon after; `fade` (0..1) scales the light's
+## energy so that `dir * fade` and `color * fade` are continuous through the hand-over.
+static func key_light(h: float, sun: Vector3, moon: Vector3, cloud: float) -> Dictionary:
+	var fade := smoothstep(0.0, HANDOVER, absf(h))
+	if h > 0.0:
+		return {"dir": sun, "color": sun_light_color(h, cloud), "fade": fade}
+	return {"dir": moon, "color": Color("5f78a8"), "fade": fade}
