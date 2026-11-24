@@ -386,6 +386,7 @@ func _save() -> int:
 	director.begin_day(4)
 	clock.set_time(4, 777.5)
 	state.trust = 5
+	state.ending = "b"
 	for f in ["reported_canister", "heard_tape_1", "clara_shared_father"]:
 		state.set_flag(f)
 	state.flag_day["heard_tape_1"] = 2
@@ -408,7 +409,7 @@ func _save() -> int:
 	save.delete_save()
 	var expect := {"location": "tower_top", "day": 4, "minute": 777.5, "trust": 5, "flags": _flags(), "items": state.items.duplicate(), "version": save.VERSION,
 		"discovered": state.discovered.keys(), "logbook_count": state.logbook.size(), "phase": director.phase, "rituals": director.rituals.keys(),
-		"weights_wound": director.weights_wound, "lamp_lit": director.lamp_lit, "dusk_nudged": director.dusk_nudged}
+		"weights_wound": director.weights_wound, "lamp_lit": director.lamp_lit, "dusk_nudged": director.dusk_nudged, "ending": state.ending}
 	_write("save", {"raw": raw, "expect": expect})
 	return 1
 

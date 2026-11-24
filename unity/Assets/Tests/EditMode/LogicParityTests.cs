@@ -238,6 +238,7 @@ namespace LowTide.Core.Tests
             Assert.AreEqual((bool)ex["weights_wound"], s.Director.WeightsWound);
             Assert.AreEqual((bool)ex["lamp_lit"], s.Director.LampLit);
             Assert.AreEqual((bool)ex["dusk_nudged"], s.Director.DuskNudged);
+            Assert.AreEqual((string)ex["ending"], s.State.Ending, "the ending in progress survives a save");
             Assert.AreEqual(2, s.State.FlagDay["heard_tape_1"], "flag day survives");
             Assert.AreEqual(596.0, s.State.ReactionLast["r_east_bar_first"], 1e-9);
 

@@ -13,6 +13,16 @@ var current := ""
 func is_heard(id: String) -> bool:
 	return GameState.has_flag("heard_" + id)
 
+var _gen := 0               # bumped by cancel(); a stale run stops at its next await
+
+## Stops the current tape without marking it heard (new game, return to title).
+func cancel() -> void:
+	_gen += 1
+	if playing:
+		AudioDirector.set_tape(false)
+	playing = false
+	current = ""
+
 func play(id: String) -> void:
 	if playing:
 		return
@@ -22,6 +32,7 @@ func play(id: String) -> void:
 		return
 	playing = true
 	current = id
+	var gen := _gen
 	AudioDirector.play_sfx("clunk")
 	AudioDirector.set_tape(true)
 	started.emit(String(tape.get("title", id)))
@@ -30,9 +41,13 @@ func play(id: String) -> void:
 		var t := float(l["t"])
 		if t > t_prev:
 			await get_tree().create_timer((t - t_prev) / speed).timeout
+			if gen != _gen:
+				return
 		t_prev = t
 		line_shown.emit(String(l["text"]))
 	await get_tree().create_timer(3.0 / speed).timeout
+	if gen != _gen:
+		return
 	AudioDirector.set_tape(false)
 	AudioDirector.play_sfx("clunk")
 	GameState.set_flag("heard_" + id)

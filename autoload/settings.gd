@@ -385,9 +385,25 @@ static func event_text(ev: InputEvent) -> String:
 
 ## Rebinds `action` on one device class to `ev`. Any other rebindable action holding
 ## the same input loses it. Returns the labels of actions that were unbound.
+## Non-empty (a message for the player) when binding `ev` to `action` would take the
+## last keyboard binding away from Pause, leaving the menu unreachable by keyboard.
+func rebind_blocked(action: String, ev: InputEvent) -> String:
+	if action == "pause" or device_of(ev) != KB:
+		return ""
+	var want := ev_to_dict(ev)
+	var kb_events: Array = []
+	for other in InputMap.action_get_events("pause"):
+		if device_of(other) == KB:
+			kb_events.append(other)
+	if kb_events.size() == 1 and ev_to_dict(kb_events[0]) == want:
+		return "Pause needs a keyboard key. Give it another key first."
+	return ""
+
 func rebind(action: String, ev: InputEvent) -> Array:
 	var dev := device_of(ev)
 	if dev == "" or not is_rebindable(action, dev):
+		return []
+	if rebind_blocked(action, ev) != "":
 		return []
 	var want := ev_to_dict(ev)
 	var cleared: Array = []

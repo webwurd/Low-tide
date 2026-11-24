@@ -87,6 +87,7 @@ namespace LowTide.Core
             o["items"] = new JArray(ItemList);
             o["flag_day"] = new JObject(FlagDay.Select(kv => new JProperty(kv.Key, kv.Value)));
             o["reaction_last"] = new JObject(ReactionLast.Select(kv => new JProperty(kv.Key, kv.Value)));
+            o["ending"] = Ending;
             return o;
         }
 
@@ -100,6 +101,7 @@ namespace LowTide.Core
             if (d["items"] is JArray its) foreach (var t in its) ItemList.Add((string)t);
             if (d["flag_day"] is JObject fd) foreach (var p in fd.Properties()) FlagDay[p.Name] = (int)p.Value;
             if (d["reaction_last"] is JObject rl) foreach (var p in rl.Properties()) ReactionLast[p.Name] = (double)p.Value;
+            Ending = d["ending"] != null ? (string)d["ending"] : "";
             if (d["logbook"] is JArray lb)
                 foreach (var e in lb) Logbook.Add(new LogEntry { Day = (int)e["day"], Text = (string)e["text"] });
         }

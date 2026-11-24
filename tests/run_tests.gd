@@ -1101,6 +1101,130 @@ func _run() -> void:
 	ok(aud._ui.process_mode == Node.PROCESS_MODE_ALWAYS, "menu clicks still sound while paused")
 	btn.queue_free()
 
+	print("== review fixes (PR #1)")
+	# 1. gamepad capture can always be cancelled
+	menus.open_pause()
+	menus._show_only("settings")
+	var rsm = menus.settings_menu()
+	var esc := _key_ev(KEY_ESCAPE)
+	esc.pressed = true
+	rsm.tabs.current_tab = 3
+	rsm._begin_capture("binoculars", "pad", rsm.bind_buttons["binoculars|pad"])
+	rsm._input(esc)
+	ok(not rsm.is_capturing() and rsm._hint.text == "Cancelled.", "Esc cancels a gamepad rebind capture (a keyboard-only player is not stuck)")
+	rsm._begin_capture("binoculars", "pad", rsm.bind_buttons["binoculars|pad"])
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	rsm._input(click)
+	ok(not rsm.is_capturing(), "a mouse click cancels a gamepad rebind capture")
+	rsm._begin_capture("binoculars", "pad", rsm.bind_buttons["binoculars|pad"])
+	rsm._input(InputEventMouseMotion.new())
+	var small_stick := InputEventJoypadMotion.new()
+	small_stick.axis = JOY_AXIS_LEFT_X
+	small_stick.axis_value = 0.3
+	rsm._input(small_stick)
+	ok(rsm.is_capturing(), "mouse movement and small stick motion do not disturb a gamepad capture")
+	var pad_btn := InputEventJoypadButton.new()
+	pad_btn.button_index = JOY_BUTTON_Y
+	pad_btn.pressed = true
+	rsm._input(pad_btn)
+	ok(not rsm.is_capturing() and rsm.bind_buttons["binoculars|pad"].text.contains("Y"), "a gamepad button still rebinds")
+	rsm._begin_capture("binoculars", "kb", rsm.bind_buttons["binoculars|kb"])
+	rsm._input(esc)
+	ok(not rsm.is_capturing(), "Esc still cancels a keyboard capture")
+	cfg.reset_bindings()
+
+	# 3. Pause can never lose its last keyboard binding
+	cfg.rebind("pause", _key_ev(KEY_F10))
+	ok(cfg.rebind_blocked("interact", _key_ev(KEY_F10)) != "", "taking Pause's only keyboard key is refused")
+	ok(cfg.rebind("interact", _key_ev(KEY_F10)).is_empty() and cfg.binding_text("pause", "kb").contains("F10") and not cfg.binding_text("interact", "kb").contains("F10"), "...and nothing changes")
+	rsm._begin_capture("interact", "kb", rsm.bind_buttons["interact|kb"])
+	rsm.apply_capture(_key_ev(KEY_F10))
+	ok(rsm._hint.text.begins_with("Pause needs a keyboard key"), "the menu explains why it was refused")
+	ok(cfg.rebind_blocked("interact", _key_ev(KEY_G)) == "", "other keys are fine")
+	var stolen: Array = cfg.rebind("pause", _key_ev(KEY_E))
+	ok(stolen.size() > 0 and cfg.binding_text("pause", "kb").contains("E"), "Pause itself can still take a key from another action")
+	cfg.reset_bindings()
+	menus.resume()
+
+	# 2. a preempted call's follow-up plays after the urgent call
+	_reset_radio(radio)
+	radio.play({"id": "low", "speaker": "X", "priority": 2, "text": "a", "options": [{"text": "x", "reply": "r", "next": "react_cottage_curious", "trust": 0}]})
+	radio.choose(0)
+	radio.play({"id": "urgent", "speaker": "X", "priority": 3, "text": "b", "options": []})
+	ok(radio.active and radio.current.get("id", "") == "urgent", "an urgent call takes over at once")
+	radio.dismiss()
+	ok(radio.active and radio.current.get("id", "") == "react_cottage_curious", "...and the interrupted call's follow-up plays after it, not before")
+	_reset_radio(radio)
+	# the next call is current in the same frame, so nothing can slip in between
+	radio.play({"id": "a", "speaker": "X", "priority": 2, "text": "a", "options": []})
+	radio.play({"id": "b", "speaker": "X", "priority": 2, "text": "b", "options": []})
+	radio.dismiss()
+	ok(radio.active and radio.current.get("id", "") == "b", "dismissing shows the queued call immediately")
+	radio.play({"id": "c", "speaker": "X", "priority": 2, "text": "c", "options": []})
+	ok(radio.current.get("id", "") == "b" and radio._queue.size() == 1, "a new call queues behind it instead of replacing it")
+	_reset_radio(radio)
+
+	# 4. cancelling a tape stops it cleanly
+	var old_speed: float = tapes.speed
+	tapes.speed = 200.0
+	state.reset()
+	var fin := [0]
+	var fin_cb := func(_id): fin[0] += 1
+	tapes.finished.connect(fin_cb)
+	tapes.play("tape_1")
+	ok(tapes.playing and aud._hiss.playing, "a tape starts playing with the hiss")
+	tapes.cancel()
+	ok(not tapes.playing and tapes.current == "" and not aud._hiss.playing, "cancel stops the tape and the hiss")
+	await create_timer(1.2).timeout
+	ok(fin[0] == 0 and not state.has_flag("heard_tape_1"), "a cancelled tape is never marked heard")
+	tapes.play("tape_2")
+	await create_timer(1.5).timeout
+	ok(fin[0] == 1 and state.has_flag("heard_tape_2") and not tapes.playing, "a later tape plays normally")
+	tapes.finished.disconnect(fin_cb)
+	tapes.speed = old_speed
+	state.reset()
+
+	# 5. damaged saves are rejected before anything is applied
+	save.path = "user://test_save.json"
+	save.delete_save()
+	state.reset(); director.begin_day(2)
+	clock.set_time(2, 321.0)
+	state.trust = 7
+	state.ending = "b"
+	save.save_game("cottage")
+	var good: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(save.path))
+	var bad_cases := {}
+	var no_state := good.duplicate(true); no_state.erase("state"); bad_cases["missing state"] = JSON.stringify(no_state)
+	var bad_clock := good.duplicate(true); bad_clock["clock"] = {"day": "x"}; bad_cases["wrong clock types"] = JSON.stringify(bad_clock)
+	var no_loc := good.duplicate(true); no_loc.erase("location"); bad_cases["missing location"] = JSON.stringify(no_loc)
+	bad_cases["not json"] = "{\"version\": 1, \"clock\": "
+	for case_name in bad_cases:
+		var f := FileAccess.open(save.path, FileAccess.WRITE)
+		f.store_string(bad_cases[case_name])
+		f.close()
+		clock.set_time(5, 100.0)
+		state.trust = 1
+		var r: String = save.load_game()
+		ok(r == "" and clock.day == 5 and absf(clock.minute_of_day - 100.0) < 0.01 and state.trust == 1, "a damaged save (%s) is ignored and nothing is half-applied" % case_name)
+	var f2 := FileAccess.open(save.path, FileAccess.WRITE)
+	f2.store_string(JSON.stringify(good))
+	f2.close()
+	state.reset()
+	ok(save.load_game() == "cottage" and clock.day == 2 and state.trust == 7, "an intact save still loads")
+	# 6. the ending in progress is saved
+	ok(state.ending == "b", "the ending in progress survives save and load")
+	var old_save := good.duplicate(true); old_save["state"].erase("ending")
+	var f3 := FileAccess.open(save.path, FileAccess.WRITE)
+	f3.store_string(JSON.stringify(old_save))
+	f3.close()
+	state.ending = "c"
+	save.load_game()
+	ok(state.ending == "", "a save from before this field loads with no ending")
+	save.delete_save()
+	state.reset()
+
 	print("-- typography: standard capitalisation")
 	var shouty: Array = []
 	var seen := [0]    # lambdas capture ints by value, so count in an array

@@ -72,6 +72,7 @@ func _ready() -> void:
 # --- game start / load --------------------------------------------------
 
 func new_game() -> void:
+	TapePlayer.cancel()
 	GameState.reset()
 	DayDirector.begin_day(1)
 	_forced_home_done = false
@@ -81,6 +82,7 @@ func new_game() -> void:
 	hud.show_card("Day 1", _day_subtitle(), 3.5)
 
 func continue_game() -> void:
+	TapePlayer.cancel()
 	var loc := SaveSystem.load_game()
 	if loc == "":
 		new_game()
@@ -461,6 +463,7 @@ func _on_resumed() -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func _return_to_title() -> void:
+	TapePlayer.cancel()
 	# Leaving mid-expedition means heading home: Continue always resumes indoors.
 	SaveSystem.save_game(location if location != "outdoors" else "cottage")
 	GameState.reset()

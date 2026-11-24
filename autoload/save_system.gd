@@ -24,13 +24,29 @@ func load_game() -> String:
 	if not has_save():
 		return ""
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
-	if typeof(parsed) != TYPE_DICTIONARY or int(parsed.get("version", 0)) != VERSION:
+	if not _valid(parsed):
+		push_warning("Ignoring a damaged save file.")
 		return ""
 	GameClock.set_time(int(parsed["clock"]["day"]), float(parsed["clock"]["minute"]))
 	GameState.from_dict(parsed["state"])
 	DayDirector.from_dict(parsed["director"])
 	TideSystem.refresh()
 	return String(parsed["location"])
+
+## A save is only applied if every part is present and the right type, so a
+## truncated or hand-edited file can't leave the game half-loaded.
+func _valid(d: Variant) -> bool:
+	if typeof(d) != TYPE_DICTIONARY or int(d.get("version", 0)) != VERSION:
+		return false
+	if typeof(d.get("location")) != TYPE_STRING:
+		return false
+	var c: Variant = d.get("clock")
+	if typeof(c) != TYPE_DICTIONARY:
+		return false
+	for k in ["day", "minute"]:
+		if not c.has(k) or (typeof(c[k]) != TYPE_FLOAT and typeof(c[k]) != TYPE_INT):
+			return false
+	return typeof(d.get("state")) == TYPE_DICTIONARY and typeof(d.get("director")) == TYPE_DICTIONARY
 
 func delete_save() -> void:
 	if has_save():
