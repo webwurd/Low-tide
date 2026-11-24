@@ -24,7 +24,10 @@ const STORM_FLOOR := 2.5
 
 signal threshold_crossed(open: bool)
 var current_height := 1.0
-var _was_open := true
+## Sandbar gate state: -1 unknown (fresh start or just loaded), 0 closed, 1 open.
+## The first refresh only records it, so loading at high water never reports a
+## crossing that didn't happen.
+var _gate := -1
 
 func _process(_delta: float) -> void:
 	refresh()
@@ -32,9 +35,18 @@ func _process(_delta: float) -> void:
 func refresh() -> void:
 	current_height = water_height_abs(GameClock.abs_minute())
 	var open := sandbars_open(current_height)
-	if open != _was_open:
-		_was_open = open
+	var g := 1 if open else 0
+	if _gate == -1:
+		_gate = g
+	elif g != _gate:
+		_gate = g
 		threshold_crossed.emit(open)
+
+## Forget the gate state (after a load or a time jump); the next refresh
+## records it again without emitting.
+func resync() -> void:
+	_gate = -1
+	refresh()
 
 ## Height of extreme number k (k even = low, k odd = high).
 func _extreme_height(k: int) -> float:

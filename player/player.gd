@@ -191,6 +191,11 @@ func _update_interaction() -> void:
 		if d <= it.radius and d < best_d:
 			best = it
 			best_d = d
+	if best != nearby:
+		if nearby and is_instance_valid(nearby):
+			nearby.set_highlight(false)
+		if best:
+			best.set_highlight(true)
 	nearby = best
 
 func _update_binoculars() -> void:

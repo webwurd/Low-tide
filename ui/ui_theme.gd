@@ -49,3 +49,26 @@ static func build() -> Theme:
 	t.set_color("font_unselected_color", "TabContainer", TEXT)
 	t.set_color("font_hovered_color", "TabContainer", Color.WHITE)
 	return t
+
+# --- M6.5 helpers (title screen, prologue): the same fonts via UiFonts ------
+
+const INK := Color("e8dfc8")
+const SLATE := Color(0.055, 0.08, 0.105, 0.9)
+
+## UI face (Work Sans) at a given variable weight.
+static func ui_font(weight := 420) -> Font:
+	return UiFonts.weighted("ui", weight)
+
+## Display face (Cormorant Garamond) at a weight, with optional letter spacing.
+static func title_font(weight := 600, tracking := 0) -> Font:
+	var f := UiFonts.weighted("display", weight)
+	if f is FontVariation and tracking != 0:
+		(f as FontVariation).spacing_glyph = tracking
+	return f
+
+## Panel style shared by the title and prologue overlays.
+static func panel(bg := SLATE, border := BORDER, radius := 6) -> StyleBoxFlat:
+	var sb := box(bg, border, radius, 16)
+	sb.shadow_color = Color(0, 0, 0, 0.25)
+	sb.shadow_size = 12
+	return sb

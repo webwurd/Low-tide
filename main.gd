@@ -4,8 +4,6 @@ extends Node3D
 ## forced-home, sleep, autosave.
 ## Tests set `autostart = true` before adding to the tree to skip the title.
 
-const NIGHT_FOG := Color("0d1520")
-const INDOOR_AMBIENT := Color("6a5846")
 
 var autostart := false
 var player: Player
@@ -14,10 +12,20 @@ var interiors: Interiors
 var ocean: Ocean
 var hud: HUD
 var menus: Menus
-var env: Environment
-var sky_mat: ShaderMaterial
-var sun: DirectionalLight3D
-var rain: CPUParticles3D
+var sky_rig: SkyRig
+var env: Environment                 # = sky_rig.env (kept for tests and tools)
+var sun: DirectionalLight3D          # = sky_rig.key_light (sun by day, moon by night)
+var rain: GPUParticles3D
+var title_cam: Camera3D
+var tender: Node3D
+var _title_t := 0.0
+var _pro_shot := 0
+var _pro_t := 0.0
+var _pro_len := 8.0
+## Title backdrop: dusk on a clear day, lamp lit, beam sweeping. Purely
+## visual: the clock, director and save state are never touched.
+const TITLE_MINUTE := 978.0
+const TITLE_DAY := 5
 var location := "cottage"          # outdoors | cottage | tower_base | tower_top
 var started := false
 var _busy := false
@@ -66,6 +74,21 @@ func _ready() -> void:
 	hud.ending_closed.connect(_on_ending_closed)
 	DayDirector.week_ended.connect(func(): hud.show_card("One week on Gannet Rock", "The relief boat is due at first light.", 6.0))
 	_place("cottage", interiors.spawn["cottage"], 0.0)
+	title_cam = Camera3D.new()
+	title_cam.name = "TitleCam"
+	title_cam.fov = 52.0
+	title_cam.far = 900.0
+	add_child(title_cam)
+	tender = Node3D.new()
+	tender.name = "Tender"
+	var hull := MeshInstance3D.new()
+	hull.mesh = load("res://assets/models/tender.res")
+	tender.add_child(hull)
+	tender.visible = false
+	add_child(tender)
+	hud.prologue.shot_requested.connect(func(i, secs):
+		_pro_shot = i; _pro_t = 0.0; _pro_len = secs + 2.5)
+	_set_title_mode(true)
 	if autostart:
 		hud.show_title(false)
 		new_game()
@@ -75,6 +98,7 @@ func _ready() -> void:
 func new_game() -> void:
 	TapePlayer.cancel()
 	GameState.reset()
+	hud.prologue.apply_to_state()
 	DayDirector.begin_day(1)
 	_forced_home_done = false
 	_place("cottage", interiors.spawn["cottage"], 0.0)
@@ -88,6 +112,7 @@ func continue_game() -> void:
 	if loc == "":
 		new_game()
 		return
+	TideSystem.resync()
 	_apply_island_lamp()
 	var sp: Vector3 = interiors.spawn.get(loc, interiors.spawn["cottage"])
 	_place(loc, sp, 0.0)
@@ -100,6 +125,7 @@ func _day_subtitle() -> String:
 	return "%s, %s" % [dd.title, dd.weather.to_lower()]
 
 func _begin() -> void:
+	_set_title_mode(false)
 	started = true
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	hud.refresh_log()
@@ -314,119 +340,117 @@ func _apply_island_lamp() -> void:
 # --- lighting / weather ---------------------------------------------------
 
 func _daylight() -> float:
-	var m := GameClock.minute_of_day
-	return smoothstep(390.0, 450.0, m) * (1.0 - smoothstep(945.0, 1020.0, m))
+	return sky_rig.daylight(GameClock.minute_of_day)
 
 func _build_environment() -> void:
-	env = Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	sky_mat = ShaderMaterial.new()
-	sky_mat.shader = load("res://world/sky.gdshader")
-	var sky := Sky.new()
-	sky.sky_material = sky_mat
-	sky.process_mode = Sky.PROCESS_MODE_INCREMENTAL
-	sky.radiance_size = Sky.RADIANCE_SIZE_32       # we never light from the sky texture, only look at it
-	env.sky = sky
-	env.fog_sky_affect = 0.0                         # the sky shader paints its own haze
-	env.fog_sun_scatter = 0.2
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	env.tonemap_exposure = 0.95
-	env.fog_enabled = true
-	var we := WorldEnvironment.new()
-	we.environment = env
-	add_child(we)
-	sun = DirectionalLight3D.new()
-	sun.shadow_enabled = true
-	sun.directional_shadow_max_distance = 160.0
-	sun.position = Vector3(-45, 75, 35)
-	add_child(sun)
-	sun.look_at(Vector3.ZERO)
+	sky_rig = SkyRig.new()
+	sky_rig.name = "SkyRig"
+	add_child(sky_rig)
+	env = sky_rig.env
+	sun = sky_rig.key_light
 
-## Brightness / exposure / bloom from the Lighting settings.
-func _apply_display_settings() -> void:
-	env.adjustment_enabled = true
-	env.adjustment_saturation = 1.12                 # a touch of storybook colour
-	env.adjustment_contrast = 1.05
-	env.adjustment_brightness = float(Settings.v("brightness"))
-	env.tonemap_exposure = 0.95 * float(Settings.v("exposure"))
-	env.glow_enabled = bool(Settings.v("glow"))
-
+## Rain: velocity-aligned streaks (GPU), plus a soft film layer under the HUD.
 func _build_rain() -> void:
-	rain = CPUParticles3D.new()
-	rain.amount = 900
-	rain.lifetime = 0.8
-	rain.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
-	rain.emission_box_extents = Vector3(22, 0.5, 22)
-	rain.direction = Vector3(0.15, -1, 0)
-	rain.spread = 3.0
-	rain.initial_velocity_min = 22.0
-	rain.initial_velocity_max = 26.0
-	rain.gravity = Vector3.ZERO
-	var bm := BoxMesh.new()
-	bm.size = Vector3(0.015, 0.45, 0.015)
+	rain = GPUParticles3D.new()
+	rain.name = "Rain"
+	rain.amount = 2800 if SkyRig.tier() >= 1 else 1200
+	rain.lifetime = 0.9
+	rain.visibility_aabb = AABB(Vector3(-16, -24, -16), Vector3(32, 30, 32))
+	var pm := ParticleProcessMaterial.new()
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	pm.emission_box_extents = Vector3(15, 0.5, 15)
+	pm.direction = Vector3(0.22, -1, 0.05)
+	pm.spread = 4.0
+	pm.initial_velocity_min = 22.0
+	pm.initial_velocity_max = 28.0
+	pm.gravity = Vector3.ZERO
+	pm.particle_flag_align_y = true
+	pm.scale_min = 0.7
+	pm.scale_max = 1.2
+	rain.process_material = pm
+	var streak := QuadMesh.new()
+	streak.size = Vector2(0.018, 0.75)
 	var m := StandardMaterial3D.new()
-	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	m.albedo_color = Color(0.75, 0.82, 0.9, 0.5)
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	bm.material = m
-	rain.mesh = bm
+	m.albedo_color = Color(0.8, 0.86, 0.92, 0.32)
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+	m.roughness = 0.2
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.disable_receive_shadows = true
+	streak.material = m
+	rain.draw_pass_1 = streak
+	rain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	rain.emitting = false
 	add_child(rain)
+	var film := CanvasLayer.new()
+	film.name = "Film"
+	film.layer = 5
+	var rect := ColorRect.new()
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var fm := ShaderMaterial.new()
+	fm.shader = load("res://ui/post.gdshader")
+	rect.material = fm
+	film.add_child(rect)
+	add_child(film)
 
 func _apply_lighting() -> void:
-	_apply_display_settings()
 	var dd := DayDirector.data()
 	var outdoors := location == "outdoors"
+	sky_rig.apply(outdoors, GameClock.minute_of_day, dd)
 	if not outdoors:
-		env.fog_enabled = false
-		env.background_mode = Environment.BG_COLOR
-		env.background_color = Color.BLACK
-		env.ambient_light_color = INDOOR_AMBIENT
-		env.ambient_light_energy = 0.8
-		sun.visible = false
 		rain.emitting = false
+		var o := sky_rig.outside_colors(GameClock.minute_of_day, dd)
+		interiors.set_outside(_daylight() * dd.light_scale, o[0], o[1], o[2])
 		return
-	var d := clampf(_daylight() * dd.light_scale, 0.0, 1.0)
-	var sk := SkyModel.describe(GameClock.minute_of_day, dd.cloud, dd.fog_tint, dd.fog_density, dd.light_scale)
-	var fog_col: Color = sk["fog_color"]
-	env.background_mode = Environment.BG_SKY
-	env.fog_enabled = true
-	env.fog_density = dd.fog_density * lerpf(1.5, 1.0, smoothstep(390.0, 660.0, GameClock.minute_of_day)) * float(Settings.v("fog_scale"))   # morning mist burns off
-	env.fog_light_color = fog_col
-	env.background_color = fog_col
-	var ambient_sky: Color = (sk["zenith"] as Color).lerp(sk["horizon"], 0.45)
-	env.ambient_light_color = ambient_sky.lerp(Color("6f84a6").lerp(Color("9fb4c7"), d), 0.35)
-	env.ambient_light_energy = lerpf(0.3, 0.4, d) + float(Settings.v("night_assist")) * (1.0 - d) * 0.45
-	_feed_sky(sk)
-	ocean.set_sky_color((sk["horizon"] as Color).lerp(sk["zenith"], 0.3))
-	var sun_h: float = sk["sun_height"]
-	var key := SkyModel.key_light(sun_h, sk["sun_dir"], sk["moon_dir"], dd.cloud)
-	sun.visible = true
-	sun.position = (key["dir"] as Vector3) * 80.0
-	sun.look_at(Vector3.ZERO)
-	sun.light_color = key["color"]
-	# The key light fades out as the sun crosses the horizon, so the swap to the moon
-	# (the opposite side of the sky) never shows as a jump in shadows or colour.
-	sun.light_energy = lerpf(0.14, 0.6, d) * float(key["fade"])
-	sun.shadow_enabled = d > 0.15 and float(key["fade"]) > 0.02 and Settings.shadow_distance() > 0.0
-	sun.directional_shadow_max_distance = maxf(Settings.shadow_distance(), 1.0)
 	island.set_lamp(DayDirector.lamp_lit, DayDirector.weights_wound, _daylight())
 	rain.emitting = dd.rain
 	rain.global_position = player.global_position + Vector3(0, 14, 0)
 
-func _feed_sky(sk: Dictionary) -> void:
-	sky_mat.set_shader_parameter("zenith_color", sk["zenith"])
-	sky_mat.set_shader_parameter("horizon_color", sk["horizon"])
-	sky_mat.set_shader_parameter("glow_color", sk["glow"])
-	sky_mat.set_shader_parameter("fog_color", sk["fog_color"])
-	sky_mat.set_shader_parameter("sun_dir", sk["sun_dir"])
-	sky_mat.set_shader_parameter("moon_dir", sk["moon_dir"])
-	sky_mat.set_shader_parameter("glow_strength", sk["glow_strength"])
-	sky_mat.set_shader_parameter("haze_height", sk["haze_height"])
-	sky_mat.set_shader_parameter("cloud_cover", sk["cloud"])
-	sky_mat.set_shader_parameter("star_amount", sk["stars"])
-	sky_mat.set_shader_parameter("sun_height", sk["sun_height"])
+# --- title backdrop + prologue crossing ------------------------------------
+
+func _set_title_mode(on: bool) -> void:
+	title_cam.current = on
+	player.cam.current = not on
+	tender.visible = false
+	if not on:
+		_apply_island_lamp()
+
+## Slow drift from the south-west shore towards the light, then back.
+func _update_title_backdrop(delta: float) -> void:
+	_title_t += delta
+	var a := sin(_title_t * 0.035) * 0.5 + 0.5
+	var pos := Vector3(-30.0, 3.4, 34.0).lerp(Vector3(-18.0, 4.2, 40.0), a)
+	title_cam.global_position = pos + Vector3(0, sin(_title_t * 0.21) * 0.15, 0)
+	title_cam.look_at(Vector3(-4.0, 13.5, -4.0).lerp(Vector3(0.0, 14.5, -6.0), a), Vector3.UP)
+	var dd := Days.get_day(TITLE_DAY)
+	sky_rig.apply(true, TITLE_MINUTE, dd)
+	ocean.set_wave_height(dd.wave_height)
+	island.set_lamp(true, true, sky_rig.daylight(TITLE_MINUTE))
+	rain.emitting = false
+
+## Prologue crossing: ride the tender through the dawn fog towards the light.
+func _update_prologue(delta: float) -> void:
+	_pro_t += delta
+	tender.visible = true
+	var path := Prologue.shot_path(_pro_shot)
+	var f := clampf(_pro_t / _pro_len, 0.0, 1.0)
+	var pos: Vector3 = (path[0] as Vector3).lerp(path[1], f)
+	var fwd: Vector3 = ((path[1] as Vector3) - (path[0] as Vector3)).normalized()
+	var bob := sin(_elapsed * 0.9) * 0.12
+	tender.global_position = pos + Vector3(0, TideSystem.current_height - 0.35 + bob, 0)
+	tender.look_at(tender.global_position + fwd, Vector3.UP)
+	tender.rotate_object_local(Vector3.FORWARD, sin(_elapsed * 0.7) * 0.035)
+	tender.rotate_object_local(Vector3.RIGHT, sin(_elapsed * 0.9 + 0.6) * 0.02)
+	title_cam.global_position = tender.global_transform * Vector3(0.35, 2.45, 1.0)
+	var look: Vector3 = (tender.global_position + fwd * 60.0 + Vector3(0, 2.0, 0)).lerp(path[2], 0.35 + 0.4 * f)
+	title_cam.look_at(look, Vector3.UP)
+	var minute := 402.0 + _pro_shot * 6.0 + f * 5.0
+	var dd := Days.get_day(1)
+	sky_rig.apply(true, minute, dd)
+	ocean.set_wave_height(0.22)
+	island.set_lamp(true, true, sky_rig.daylight(minute))
+	rain.emitting = false
 
 # --- frame -----------------------------------------------------------------
 
@@ -434,6 +458,12 @@ func _process(delta: float) -> void:
 	_elapsed += delta
 	if not started:
 		GameClock.paused = true
+		if title_cam.current:
+			if hud.prologue.visible:
+				_update_prologue(delta)
+			else:
+				tender.visible = false
+				_update_title_backdrop(delta)
 		return
 	GameClock.paused = location != "outdoors" or ending_kind != ""
 	if location == "outdoors":
@@ -444,7 +474,7 @@ func _process(delta: float) -> void:
 	ocean.set_wave_height(dd.wave_height)
 	AudioDirector.weather_db = dd.wind_db
 	AudioDirector.update_ambient(_elapsed, player.global_position.y if location == "outdoors" else 0.0, TideSystem.current_height)
-	if Input.is_action_just_pressed("debug_skip") and OS.is_debug_build():
+	if OS.is_debug_build() and Input.is_action_just_pressed("debug_skip"):
 		GameClock.advance(60.0)
 	_check_day_events()
 	_update_ending_scene(delta)

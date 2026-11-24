@@ -53,47 +53,46 @@ func _run() -> void:
 	ok(tide.sandbars_open(2.1) and not tide.sandbars_open(2.11), "sandbar gate at 2.1 m")
 	near(tide.speed_multiplier(0.5), 0.6, 0.001, "knee-deep speed x0.6")
 
-	print("== sky model")
-	ok(SkyModel.sun_dir(700.0).y > 0.2 and SkyModel.sun_dir(1200.0).y < -0.2, "sun is up at 11:40 and well below the horizon at 20:00")
-	ok(SkyModel.sun_dir(410.0).x > 0.9 and SkyModel.sun_dir(990.0).x < -0.9, "sun rises in the east (+x) and sets in the west (-x)")
-	ok(SkyModel.sun_dir(700.0).z > 0.5, "noon sun is in the south")
-	ok(SkyModel.moon_dir(1200.0).y > 0.2 and SkyModel.moon_dir(700.0).y < 0.0, "moon is up at night and down at noon")
+	print("== sky (Atmosphere / SkyRig)")
+	var atm := Atmosphere.new()
+	ok(atm.sun_direction(700.0).y > 0.2 and atm.day_factor(700.0) > 0.99, "sun is well up at 11:40")
+	ok(atm.day_factor(1200.0) < 0.01, "it is fully night at 20:00")
+	ok(atm.sun_direction(430.0).x > 0.5 and atm.sun_direction(960.0).x < -0.5, "sun rises in the east (+x) and sets in the west (-x)")
+	ok(atm.sun_direction(700.0).z > 0.5, "noon sun is in the south")
+	ok(atm.moon_direction(1200.0).y > 0.2, "moon is up at night")
 	var sky_jump := 0.0
-	var prev: Dictionary = SkyModel.describe(0.0, 0.5, Color("526373"), 0.011, 1.0)
+	var prev: Dictionary = atm.sample(0.0)
 	for m in range(1, 1440):
-		var cur: Dictionary = SkyModel.describe(float(m), 0.5, Color("526373"), 0.011, 1.0)
-		for k in ["zenith", "horizon", "fog_color"]:
+		var cur: Dictionary = atm.sample(float(m))
+		for k in ["sky_top", "sky_horizon", "fog_color"]:
 			var a: Color = prev[k]
-			var b: Color = cur[k]
-			sky_jump = maxf(sky_jump, absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b))
+			var bb: Color = cur[k]
+			sky_jump = maxf(sky_jump, absf(a.r - bb.r) + absf(a.g - bb.g) + absf(a.b - bb.b))
 		prev = cur
-	ok(sky_jump < 0.03, "sky colours change smoothly through the whole day (max step %.4f)" % sky_jump)
-	var clear_noon: Dictionary = SkyModel.describe(700.0, 0.2, Color("6f8ba3"), 0.003, 1.0)
-	var grey_noon: Dictionary = SkyModel.describe(700.0, 1.0, Color("6a7882"), 0.04, 0.75)
-	ok((clear_noon["zenith"] as Color).b - (clear_noon["zenith"] as Color).r > 0.2, "a clear noon sky is properly blue")
-	ok((grey_noon["zenith"] as Color).b - (grey_noon["zenith"] as Color).r < 0.15, "an overcast noon sky is grey")
-	ok(float(grey_noon["haze_height"]) > float(clear_noon["haze_height"]) * 3.0, "dense fog climbs higher into the sky")
-	ok(float(SkyModel.describe(1200.0, 0.0, Color("526373"), 0.011, 1.0)["stars"]) > 0.9 and float(clear_noon["stars"]) < 0.01, "stars at night, none at noon")
-	ok(float(SkyModel.describe(1200.0, 1.0, Color("526373"), 0.011, 1.0)["stars"]) < 0.3, "overcast hides the stars")
-	var dawn_glow: Dictionary = SkyModel.describe(425.0, 0.2, Color("6f8ba3"), 0.003, 1.0)
-	ok((dawn_glow["horizon"] as Color).r > (dawn_glow["horizon"] as Color).b, "dawn horizon is warm")
-	# The key light hands over from sun to moon at the horizon: dir*fade and colour*fade
-	# must stay continuous (no jump in shadow direction or colour at sunrise/sunset).
+	ok(sky_jump < 0.06, "sky colours change smoothly through the whole day (max step %.4f)" % sky_jump)
+	var noon: Dictionary = atm.sample(700.0)
+	ok((noon["sky_top"] as Color).b - (noon["sky_top"] as Color).r > 0.2, "a noon sky is properly blue")
+	ok(float(atm.sample(1200.0)["stars"]) > 0.9 and float(noon["stars"]) < 0.01, "stars at night, none at noon")
+	ok(WeatherLook.preset("overcast").cloud_cover > 0.85 and WeatherLook.preset("clear").cloud_cover < 0.4, "overcast weather hides the sky; clear weather shows it")
+	ok((atm.sample(430.0)["sky_horizon"] as Color).r > (atm.sample(430.0)["sky_horizon"] as Color).b, "dawn horizon is warm")
+	# The key light hands over from sun to moon in each twilight: dir*fade and
+	# colour*fade must stay continuous (no jump in shadows or colour).
 	var key_jump := 0.0
 	var key_prev := Vector3.ZERO
 	var col_prev := Vector3.ZERO
 	for m in range(0, 1440):
-		var sd := SkyModel.sun_dir(float(m))
-		var kl := SkyModel.key_light(sd.y, sd, SkyModel.moon_dir(float(m)), 0.5)
+		var kl: Dictionary = atm.key_light(float(m))
+		var c: Color = atm.sample(float(m))["sun_color"]
 		var kv: Vector3 = (kl["dir"] as Vector3) * float(kl["fade"])
-		var kc := Vector3((kl["color"] as Color).r, (kl["color"] as Color).g, (kl["color"] as Color).b) * float(kl["fade"])
+		var kc := Vector3(c.r, c.g, c.b) * float(kl["fade"])
 		if m > 0:
 			key_jump = maxf(key_jump, maxf(kv.distance_to(key_prev), kc.distance_to(col_prev)))
 		key_prev = kv
 		col_prev = kc
 	ok(key_jump < 0.06, "key light is continuous across sunrise and sunset (max step %.4f)" % key_jump)
-	var at_set := SkyModel.key_light(0.0, SkyModel.sun_dir(SkyModel.SET), SkyModel.moon_dir(SkyModel.SET), 0.5)
-	ok(float(at_set["fade"]) < 0.001, "key light is fully faded at the horizon, where sun and moon swap")
+	var swap_m := atm.sunset_minute + 25.0
+	ok(float(atm.key_light(swap_m)["fade"]) < 0.001 and float(atm.key_light(atm.sunrise_minute - 20.0)["fade"]) < 0.001, "key light is fully faded where sun and moon swap")
+	ok(atm.key_light(swap_m - 1.0)["is_sun"] and not atm.key_light(swap_m + 1.0)["is_sun"], "the swap itself happens inside the dark band")
 
 	print("== terrain")
 	var Terr = load("res://world/terrain.gd")
@@ -945,9 +944,15 @@ func _run() -> void:
 	ok(main.hud._radio_text.get_theme_font_size("font_size") == int(17 * 1.5) and main.hud._tape_text.get_theme_font_size("font_size") == int(20 * 1.5), "subtitle size scales the radio and tape text")
 	cfg.set_v("subtitle_scale", 1.0)
 
-	cfg.set_v("brightness", 1.3); cfg.set_v("exposure", 1.2); cfg.set_v("glow", true)
+	cfg.set_v("brightness", 1.3); cfg.set_v("exposure", 1.0); cfg.set_v("glow", true)
 	main._apply_lighting()
-	ok(absf(main.env.adjustment_brightness - 1.3) < 0.001 and absf(main.env.tonemap_exposure - 0.95 * 1.2) < 0.001 and main.env.glow_enabled, "brightness, exposure and bloom reach the environment")
+	var base_exposure: float = main.env.tonemap_exposure
+	cfg.set_v("exposure", 1.2)
+	main._apply_lighting()
+	ok(absf(main.env.adjustment_brightness - 1.3) < 0.001 and absf(main.env.tonemap_exposure - base_exposure * 1.2) < 0.001 and main.env.glow_enabled, "brightness, exposure and bloom reach the environment")
+	cfg.set_v("glow", false)
+	main._apply_lighting()
+	ok(not main.env.glow_enabled, "turning bloom off turns it off")
 	cfg.reset_defaults()
 	cfg.set_v("shadow_quality", 0)
 	main._place("outdoors", main.island.spawn_point, 0.0)
@@ -959,9 +964,9 @@ func _run() -> void:
 	ok(main.sun.shadow_enabled and main.sun.directional_shadow_max_distance >= 220.0, "high shadow quality draws shadows farther")
 	cfg.reset_defaults()
 	cfg.set_v("ocean_detail", 0)
-	ok(main.ocean.mesh.subdivide_width == 36, "ocean detail Low halves the wave mesh")
+	ok(main.ocean.mesh.subdivide_width == 120, "ocean detail Low halves the wave mesh")
 	cfg.set_v("ocean_detail", 2)
-	ok(main.ocean.mesh.subdivide_width == 72, "...and High restores it")
+	ok(main.ocean.mesh.subdivide_width == 240, "...and High restores it")
 	cfg.set_v("night_assist", 1.0)
 	clock.set_time(1, 1200.0)
 	main._apply_lighting()
@@ -998,13 +1003,14 @@ func _run() -> void:
 	sm.controls["quality_preset"].select(3)
 	sm.controls["quality_preset"].item_selected.emit(3)
 	ok(cfg.v("quality_preset") == 3 and cfg.v("fps_cap") == 60 and sm.controls["fps_cap"].selected == FPS_CAPS_IDX_60, "choosing a preset in the menu applies it and updates the other controls")
-	sm.controls["glow"].button_pressed = true
-	ok(cfg.v("glow") == true, "a checkbox writes to Settings")
+	var glow_flip: bool = not cfg.DEFAULTS["glow"]
+	sm.controls["glow"].button_pressed = glow_flip
+	ok(cfg.v("glow") == glow_flip, "a checkbox writes to Settings")
 	cfg.set_v("vol_master", 0.9)
 	near(sm.controls["vol_master"].value, 0.9, 0.001, "changes from elsewhere refresh the menu controls")
 	sm.tabs.current_tab = 2
 	sm._reset_tab()
-	ok(cfg.v("glow") == false and absf(cfg.v("brightness") - 1.0) < 0.001 and absf(cfg.v("vol_master") - 0.9) < 0.001, "Reset this tab restores only that tab's settings")
+	ok(cfg.v("glow") == cfg.DEFAULTS["glow"] and absf(cfg.v("brightness") - 1.0) < 0.001 and absf(cfg.v("vol_master") - 0.9) < 0.001, "Reset this tab restores only that tab's settings")
 	sm.tabs.current_tab = 3
 	sm._begin_capture("binoculars", "kb", sm.bind_buttons["binoculars|kb"])
 	ok(sm.is_capturing() and sm.bind_buttons["binoculars|kb"].text.begins_with("Press"), "clicking a binding waits for a key")

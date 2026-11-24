@@ -57,7 +57,9 @@ var _tut_title: Label
 var _tut_body: VBoxContainer
 var _tut_next: Button
 var _tut_back: Button
-var _title_panel: PanelContainer
+var _title_panel: Control
+var title_screen: TitleScreen
+var prologue: ProloguePlayer
 var _continue_btn: Button
 var modal_open := false
 var _watch_on := false
@@ -353,65 +355,33 @@ func _title_button(text: String) -> Button:
 		b.add_theme_stylebox_override(st, empty)
 	return b
 
+## Title: a live view of Gannet Rock at dusk (Main drives the backdrop) with
+## the menu column on the left (ui/title_screen.gd). New watch plays the
+## prologue (ui/prologue_player.gd), then the setup tutorial.
 func _build_title() -> void:
-	_title = Control.new()
-	_full(_title)
-	_title.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(_title)
-	# A dusk-coloured wash that is heaviest behind the text and clears to the island on the right.
-	var shade := TextureRect.new()
-	var grad := Gradient.new()
-	grad.set_color(0, Color(0.03, 0.06, 0.08, 0.92))
-	grad.set_color(1, Color(0.03, 0.06, 0.08, 0.0))
-	grad.add_point(0.45, Color(0.03, 0.06, 0.08, 0.72))
-	var gt := GradientTexture2D.new()
-	gt.gradient = grad
-	gt.fill_from = Vector2(0, 0.5)
-	gt.fill_to = Vector2(1, 0.5)
-	shade.texture = gt
-	shade.stretch_mode = TextureRect.STRETCH_SCALE
-	_full(shade)
-	_title.add_child(shade)
-	var m := MarginContainer.new()
-	_full(m)
-	m.add_theme_constant_override("margin_left", 96)
-	m.add_theme_constant_override("margin_right", 96)
-	_title.add_child(m)
-	_title_panel = PanelContainer.new()
-	_title_panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-	_title_panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	_title_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	m.add_child(_title_panel)
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 8)
-	v.custom_minimum_size = Vector2(560, 0)
-	_title_panel.add_child(v)
-	var kicker := _label("Gannet Rock Light Station, Maine coast, winter 1998", 14, AMBER)
-	var t := _label("Low Tide", 120, CREAM, "display")
-	var rule := ColorRect.new()
-	rule.color = POSTER_BRASS
-	rule.custom_minimum_size = Vector2(150, 5)
-	rule.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	var body := _label("You are Arthur, winter keeper on a fog-bound island. Read the tide, cross the sandbars while they last, and be back on high ground before the Atlantic returns.", 15, Color("cfd6d6"))
-	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body.custom_minimum_size = Vector2(520, 0)
-	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, 18)
-	var b_new := _title_button("New watch")
-	b_new.pressed.connect(_open_tutorial)
-	_continue_btn = _title_button("Continue")
-	_continue_btn.pressed.connect(func():
-		_title.visible = false
-		continue_pressed.emit())
-	_continue_btn.visible = SaveSystem.has_save()
-	_endings_label = _label("", 12, Color("9aa7b0"))
+	title_screen = TitleScreen.new()
+	title_screen.z_index = 4
+	add_child(title_screen)
+	_title = title_screen
+	_title_panel = title_screen.panel
+	_continue_btn = title_screen.continue_btn
+	_endings_label = title_screen.endings_label
 	var seen: Array = SaveSystem.endings_seen()
 	if seen.size() > 0:
 		_endings_label.text = "Endings found: " + ", ".join(seen.map(func(k): return String(k).to_upper()))
-	var b_settings := _title_button("Settings")
-	b_settings.pressed.connect(func(): settings_requested.emit())
-	for n in [kicker, t, rule, body, gap, b_new, _continue_btn, b_settings, _endings_label]:
-		v.add_child(n)
+	title_screen.new_watch.connect(_start_prologue)
+	title_screen.continue_game.connect(func():
+		_title.visible = false
+		continue_pressed.emit())
+	title_screen.settings.connect(func(): settings_requested.emit())
+	prologue = ProloguePlayer.new()
+	prologue.z_index = 5
+	add_child(prologue)
+	prologue.finished.connect(_open_tutorial)
+
+func _start_prologue() -> void:
+	_title.visible = false
+	prologue.play()
 
 # --- setup / tutorial (shown before Arthur steps onto the island) -------
 
@@ -445,6 +415,7 @@ func _build_tutorial() -> void:
 	_tut_pages = TutorialData.pages()
 
 func _open_tutorial() -> void:
+	_title.visible = true
 	_title_panel.visible = false
 	_tut.visible = true
 	_tut_go(0)
@@ -755,6 +726,7 @@ func _process(delta: float) -> void:
 	if Input.is_action_just_pressed("radio_dismiss"): RadioSystem.dismiss()
 
 	_bino.visible = player.binoculars
+	_reticle.visible = not _title.visible and not prologue.visible
 	_reticle.get_child(0).visible = not player.binoculars
 	if player.binoculars:
 		_bino_range.text = "Distance: %d m" % player.bino_dist if player.bino_dist >= 0 else "Distance: --- m"

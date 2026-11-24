@@ -1,0 +1,259 @@
+[gd_scene load_steps=30 format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/watch_room.res" id="1_2781r"]
+[ext_resource type="ArrayMesh" path="res://assets/models/clock_weights.res" id="2_rwhgs"]
+[ext_resource type="ArrayMesh" path="res://assets/models/spiral_stair.res" id="3_v4d1f"]
+[ext_resource type="ArrayMesh" path="res://assets/models/door.res" id="4_kr8ym"]
+[ext_resource type="ArrayMesh" path="res://assets/models/oil_can.res" id="5_f08yi"]
+[ext_resource type="ArrayMesh" path="res://assets/models/crate.res" id="6_tue0y"]
+[ext_resource type="ArrayMesh" path="res://assets/models/oilskin.res" id="7_v3rb8"]
+[ext_resource type="ArrayMesh" path="res://assets/models/hand_lantern.res" id="8_sbwb0"]
+[ext_resource type="Script" path="res://world/interactable.gd" id="9_7g64u"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_u4lwh"]
+size = Vector3(6.1, 0.2, 6.1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_vitqw"]
+size = Vector3(6.1, 0.2, 6.1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_oejwl"]
+size = Vector3(0.3, 3, 1.1475)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_s072b"]
+size = Vector3(0.3, 3, 1.1475)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_jd8g3"]
+size = Vector3(0.3, 3, 1.1475)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_cgvbv"]
+size = Vector3(0.3, 3, 1.1475)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_7d32v"]
+size = Vector3(0.3, 3, 1.1475)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_gobkd"]
+size = Vector3(0.3, 3, 1.1475)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_tr74n"]
+size = Vector3(0.3, 3, 1.1475)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_k4q1a"]
+size = Vector3(0.3, 3, 1.1475)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_jg8bb"]
+size = Vector3(0.3, 3, 1.1475)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_b645o"]
+size = Vector3(0.3, 3, 1.1475)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_fcmtg"]
+size = Vector3(0.3, 3, 1.1475)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_yt0s0"]
+size = Vector3(0.3, 3, 1.1475)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_7ngqf"]
+size = Vector3(0.3, 3, 1.1475)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_k0doy"]
+size = Vector3(0.3, 3, 1.1475)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_iu3q5"]
+size = Vector3(0.3, 3, 1.1475)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1iscm"]
+size = Vector3(0.3, 3, 1.1475)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_sjpe0"]
+size = Vector3(0.95, 2.2, 0.95)
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_xv3qn"]
+
+[node name="WatchRoom" type="Node3D"]
+
+[node name="Room" type="MeshInstance3D" parent="."]
+mesh = ExtResource("1_2781r")
+metadata/prop = "watch_room"
+
+[node name="Walls" type="StaticBody3D" parent="."]
+
+[node name="Shape0" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+shape = SubResource("BoxShape3D_u4lwh")
+
+[node name="Shape1" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.1, 0)
+shape = SubResource("BoxShape3D_vitqw")
+
+[node name="Shape2" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.67, 1.5, 0)
+shape = SubResource("BoxShape3D_oejwl")
+
+[node name="Shape3" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(0.92388, 0, -0.382683, 0, 1, 0, 0.382683, 0, 0.92388, 2.46676, 1.5, 1.02176)
+shape = SubResource("BoxShape3D_s072b")
+
+[node name="Shape4" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, 0.707107, 1.88798, 1.5, 1.88798)
+shape = SubResource("BoxShape3D_jd8g3")
+
+[node name="Shape5" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(0.382683, 0, -0.92388, 0, 1, 0, 0.92388, 0, 0.382683, 1.02176, 1.5, 2.46676)
+shape = SubResource("BoxShape3D_cgvbv")
+
+[node name="Shape6" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 1.6349e-16, 1.5, 2.67)
+shape = SubResource("BoxShape3D_7d32v")
+
+[node name="Shape7" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(-0.382683, 0, -0.92388, 0, 1, 0, 0.92388, 0, -0.382683, -1.02176, 1.5, 2.46676)
+shape = SubResource("BoxShape3D_gobkd")
+
+[node name="Shape8" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(-0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, -0.707107, -1.88798, 1.5, 1.88798)
+shape = SubResource("BoxShape3D_tr74n")
+
+[node name="Shape9" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(-0.92388, 0, -0.382683, 0, 1, 0, 0.382683, 0, -0.92388, -2.46676, 1.5, 1.02176)
+shape = SubResource("BoxShape3D_k4q1a")
+
+[node name="Shape10" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(-1, 0, 8.74228e-08, 0, 1, 0, -8.74228e-08, 0, -1, -2.67, 1.5, 3.26981e-16)
+shape = SubResource("BoxShape3D_jg8bb")
+
+[node name="Shape11" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(-0.92388, 0, 0.382683, 0, 1, 0, -0.382683, 0, -0.92388, -2.46676, 1.5, -1.02176)
+shape = SubResource("BoxShape3D_b645o")
+
+[node name="Shape12" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(-0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, -0.707107, -1.88798, 1.5, -1.88798)
+shape = SubResource("BoxShape3D_fcmtg")
+
+[node name="Shape13" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(-0.382684, 0, 0.92388, 0, 1, 0, -0.92388, 0, -0.382684, -1.02176, 1.5, -2.46676)
+shape = SubResource("BoxShape3D_yt0s0")
+
+[node name="Shape14" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(1.19249e-08, 0, 1, 0, 1, 0, -1, 0, 1.19249e-08, -4.90471e-16, 1.5, -2.67)
+shape = SubResource("BoxShape3D_7ngqf")
+
+[node name="Shape15" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(0.382684, 0, 0.923879, 0, 1, 0, -0.923879, 0, 0.382684, 1.02176, 1.5, -2.46676)
+shape = SubResource("BoxShape3D_k0doy")
+
+[node name="Shape16" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, 1.88798, 1.5, -1.88798)
+shape = SubResource("BoxShape3D_iu3q5")
+
+[node name="Shape17" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(0.92388, 0, 0.382683, 0, 1, 0, -0.382683, 0, 0.92388, 2.46676, 1.5, -1.02176)
+shape = SubResource("BoxShape3D_1iscm")
+
+[node name="Spawn_tower_base" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 1.5)
+
+[node name="Spawn_from_above" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0.05, -0.2)
+
+[node name="ClockWeights" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, -1.3, 0, -1.3)
+mesh = ExtResource("2_rwhgs")
+metadata/prop = "clock_weights"
+
+[node name="SpiralStair" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 0, -1)
+mesh = ExtResource("3_v4d1f")
+metadata/prop = "spiral_stair"
+
+[node name="Door" type="MeshInstance3D" parent="."]
+transform = Transform3D(-1.1, 0, -1.50996e-07, 0, 1.05, 0, 1.66095e-07, 0, -1, 0, 0, 2.39)
+mesh = ExtResource("4_kr8ym")
+metadata/prop = "door"
+
+[node name="OilCanA" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.921061, 0, 0.389418, 0, 1, 0, -0.389418, 0, 0.921061, -1.9, 0, 0.6)
+mesh = ExtResource("5_f08yi")
+metadata/prop = "oil_can"
+
+[node name="OilCanB" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.169967, 0, 0.98545, 0, 1, 0, -0.98545, 0, 0.169967, -1.75, 0, 0.95)
+mesh = ExtResource("5_f08yi")
+metadata/prop = "oil_can"
+
+[node name="Crate" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.62161, 0, 0.783327, 0, 1, 0, -0.783327, 0, 0.62161, -1.6, 0, 1.45)
+mesh = ExtResource("6_tue0y")
+metadata/prop = "crate"
+
+[node name="Oilskin" type="MeshInstance3D" parent="."]
+transform = Transform3D(-0.796084, 0, -0.605186, 0, 1, 0, 0.605186, 0, -0.796084, 1.55, 1.75, 1.95)
+mesh = ExtResource("7_v3rb8")
+metadata/prop = "oilskin"
+
+[node name="HandLantern" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.955337, 0, 0.29552, 0, 1, 0, -0.29552, 0, 0.955337, -1.6, 0.41, 1.45)
+mesh = ExtResource("8_sbwb0")
+metadata/prop = "hand_lantern"
+
+[node name="Furniture" type="StaticBody3D" parent="."]
+
+[node name="Shape0" type="CollisionShape3D" parent="Furniture"]
+transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, -1.3, 1.1, -1.3)
+shape = SubResource("BoxShape3D_sjpe0")
+
+[node name="Shape1" type="CollisionShape3D" parent="Furniture"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 1, -1)
+shape = SubResource("CylinderShape3D_xv3qn")
+
+[node name="It_weights" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6, 1.2, -0.9)
+script = ExtResource("9_7g64u")
+id = "weights"
+title = "Wind the clockwork weights"
+radius = 2.4
+hold_time = 3.0
+highlight_paths = Array[NodePath]([NodePath("../ClockWeights")])
+
+[node name="It_stairs_up" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 1, -0.6)
+script = ExtResource("9_7g64u")
+id = "stairs_up"
+title = "Climb to the lantern room"
+radius = 2.2
+highlight_paths = Array[NodePath]([NodePath("../SpiralStair")])
+
+[node name="It_door_tower_out" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, 1.8)
+script = ExtResource("9_7g64u")
+id = "door_tower_out"
+title = "Leave the lighthouse"
+radius = 2.2
+highlight_paths = Array[NodePath]([NodePath("../Door")])
+
+[node name="WallLamp" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.3, -2.2)
+light_color = Color(1, 0.690196, 0.4, 1)
+light_energy = 1.2
+light_volumetric_fog_energy = 0.6
+shadow_enabled = true
+shadow_blur = 1.5
+omni_range = 7.5
+omni_attenuation = 1.4
+
+[node name="Fill" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0.8)
+light_color = Color(0.878431, 0.752941, 0.603922, 1)
+light_energy = 0.25
+light_volumetric_fog_energy = 0.6
+shadow_blur = 1.5
+omni_attenuation = 1.4
+
+[node name="Window" type="SpotLight3D" parent="." groups=["window_light"]]
+transform = Transform3D(-0.763386, 0.39195, -0.513436, 0, 0.794864, 0.606788, 0.645942, 0.463214, -0.606788, -2.4, 2.6, -2.4)
+light_color = Color(0.72549, 0.803922, 0.878431, 1)
+light_energy = 2.0
+light_volumetric_fog_energy = 2.0
+shadow_enabled = true
+spot_range = 8.0
+spot_angle = 38.0
+spot_angle_attenuation = 1.3
