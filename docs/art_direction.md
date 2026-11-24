@@ -61,10 +61,62 @@ Values live in `art/looks/*.tres` and can be tuned in the Inspector.
 | Terrain render mesh | ~130k (collision stays on the coarse grid) |
 
 ## Pipeline
-- `tools/build_assets.sh` runs the asset factory headlessly: textures →
-  import → materials, meshes and scenes. Output is committed under `assets/` and
-  `scenes/`, like any authored asset.
-- Hybrid drop-in: put `assets/models/<name>.glb` next to a generated
-  `<name>.res` and `PropLoader` prefers the hand-made model.
-- Materials use `art/painterly.gdshader` (soft wrap light, tinted shadows, sun rim,
-  triplanar painted detail, wetness).
+- `tools/build_assets.sh` runs the asset factory: paint textures, import, then
+  build materials, models, scenes and look resources. Output is committed under
+  `assets/`, `scenes/` and `art/looks/` like any authored asset.
+  - `tools/texture_kit.gd`: tileable painted textures + normal maps.
+  - `tools/factory_materials.gd`: the material library (`assets/materials/`).
+  - `tools/mesh_kit.gd`: bevelled boxes, lathes, tubes, extrusions, chiselled
+    rocks, merged per material with LODs.
+  - `tools/prop_assets.gd`: hero props (every interactable) and furniture.
+  - `tools/island_assets.gd`, `tools/vegetation_assets.gd`,
+    `tools/interior_assets.gd`: the scenes the game loads.
+- **Hybrid drop-in:** put `assets/models/<name>.glb` next to a generated
+  `<name>.res` and `PropLoader` uses the hand-made model at load time.
+- **Look tuning without code:** `art/looks/atmosphere.tres` (time-of-day keys,
+  sun path, colour grade) and `art/looks/weather_*.tres` (per-weather looks).
+  The factory only writes these if they are missing, so Inspector edits survive.
+- Shaders: `art/painterly.gdshader` (all props), `art/terrain.gdshader`,
+  `world/ocean.gdshader`, `art/foliage.gdshader`, `art/sky.gdshader`,
+  `art/beam.gdshader`, `art/window_view.gdshader`, `ui/post.gdshader`.
+
+## Lighting
+- Outdoors: one key light (sun by day, moon by night) with soft 4-split
+  shadows; sky-driven ambient and reflections; exponential + height fog with
+  aerial perspective; volumetric fog for shafts and the beam; glow; grade.
+- Interiors: shadowed lamp/stove lights, window spill lights and window views
+  that follow the outside sky. Bounce light comes from SDFGI + SSIL on High.
+  (The plan named LightmapGI; Godot can only bake it from the editor, and
+  real-time GI also handles the lamp being lit or dark, so it was not used.)
+
+## Quality presets (`Settings.quality`, `--quality=low|medium|high`)
+| | High (PC) | Medium | Low (Steam Deck / older GPUs) |
+|---|---|---|---|
+| GI | SDFGI + SSIL | none | none |
+| SSAO, volumetric fog, DOF | on | on | off |
+| Shadow distance | 220 m, PCSS | 160 m | 110 m |
+| AA | MSAA 4x | MSAA 2x | FXAA |
+| Render scale | 1.0 | 1.0 | 0.77 (FSR) |
+| Sea mesh | 240 x 240 | 240 x 240 | 140 x 140 |
+| Rain particles | 2800 | 2800 | 1200 |
+
+`tests/perf.gd` reports triangles / draw calls / objects per vantage for a preset.
+
+## Presentation
+- **Type:** Cormorant Garamond (titles, cards, prologue) and Work Sans (UI),
+  both SIL OFL 1.1, bundled with their licences in `assets/fonts/`.
+  `ui/ui_theme.gd` applies them game-wide.
+- **Title screen** (`ui/title_screen.gd`): a live view of Gannet Rock at dusk,
+  lamp lit, from a slowly drifting camera. New watch / Continue / Settings / Quit.
+- **Prologue** (`story/prologue.gd`, `ui/prologue_player.gd`): typed fragments
+  of Arthur's year with choices (backstory flags + starting trust), intercut
+  with the Coast Guard tender crossing in dawn fog. First-draft text; rewrite
+  in M6. Hold Esc / B to skip.
+- A faint vignette + film grain (`ui/post.gdshader`) sits under the HUD.
+
+## Verification
+- `godot --headless -s tests/run_tests.gd` (gameplay, unchanged by the art pass).
+- `tools/shots.sh <dir>` renders every vantage (title, prologue, interiors,
+  each weather, dawn to night). `LAVAPIPE=1` renders on a CPU-only machine.
+- `godot --headless --export-pack "Linux / Steam Deck" build/LowTide.pck` then
+  `godot --main-pack build/LowTide.pck` checks the exported data boots.
