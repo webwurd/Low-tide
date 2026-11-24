@@ -56,6 +56,8 @@ var _note_t := 0.0
 var _hold_bar: ProgressBar
 var _modal: PanelContainer
 var _modal_title: Label
+var _modal_tabs: HBoxContainer
+var _modal_hint: Label
 var _modal_body: Label
 var _modal_frame := -1
 var _card: Control
@@ -619,32 +621,79 @@ func show_note(text: String) -> void:
 	_note_box.modulate.a = 1.0
 	_note_t = 3.5 + text.length() * 0.03
 
+## The journal and the tide table: a sheet of paper Arthur holds up. Title
+## and tab chips on top, a ruled line, the handwritten page, key hints below.
 func _build_modal() -> void:
 	_modal = PanelContainer.new()
-	_modal.add_theme_stylebox_override("panel", _style(Color("e8dfc8"), Color("8a7448")))
-	_modal.set_anchors_preset(Control.PRESET_CENTER)
-	_modal.custom_minimum_size = Vector2(780, 440)
-	_modal.position = Vector2(-390, -240)
+	_modal.add_theme_stylebox_override("panel", UiTheme.paper())
+	_modal.anchor_left = 0.5
+	_modal.anchor_right = 0.5
+	_modal.anchor_top = 0.5
+	_modal.anchor_bottom = 0.5
+	_modal.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_modal.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_modal.offset_left = -430.0
+	_modal.offset_right = 430.0
+	_modal.offset_top = -255.0
+	_modal.offset_bottom = 255.0
 	_modal.visible = false
 	_modal.z_index = 4
 	add_child(_modal)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 10)
+	v.add_theme_constant_override("separation", 12)
 	_modal.add_child(v)
-	_modal_title = _label("", 24, Color("2b2418"), "display")
-	_modal_body = _label("", 17, Color("2b2418"))
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	_modal_title = _label("", 32, UiTheme.PAPER_INK, "display")
+	_modal_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(_modal_title)
+	_modal_tabs = HBoxContainer.new()
+	_modal_tabs.add_theme_constant_override("separation", 6)
+	_modal_tabs.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	for t in ["Log", "Satchel", "Tapes"]:
+		var chip := PanelContainer.new()
+		chip.add_child(_label(t, 15, UiTheme.PAPER_INK, "ui_bold"))
+		_modal_tabs.add_child(chip)
+	head.add_child(_modal_tabs)
+	var rule := ColorRect.new()
+	rule.color = UiTheme.PAPER_EDGE
+	rule.custom_minimum_size = Vector2(0, 2)
+	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_modal_body = _label("", 17, UiTheme.PAPER_INK)
 	_modal_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_modal_body.custom_minimum_size = Vector2(740, 0)
 	_modal_scroll = ScrollContainer.new()
-	_modal_scroll.custom_minimum_size = Vector2(760, 350)
+	_modal_scroll.custom_minimum_size = Vector2(760, 330)
+	_modal_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_modal_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_modal_scroll.add_child(_modal_body)
-	v.add_child(_modal_title)
-	v.add_child(_modal_scroll)
-	v.add_child(_label("[E / Tab / Esc] close     [W / S or right stick] scroll", 12, Color("6a5a3a")))
+	_modal_hint = _label("", 14, Color(0.4, 0.33, 0.22))
+	for n in [head, rule, _modal_scroll, _modal_hint]:
+		v.add_child(n)
+
+## Highlights the current journal page's chip (ink fill), or hides the chips.
+func _set_tabs(page: int) -> void:
+	_modal_tabs.visible = page >= 0
+	for i in _modal_tabs.get_child_count():
+		var chip := _modal_tabs.get_child(i) as PanelContainer
+		var on := i == page
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = UiTheme.PAPER_INK if on else Color(0, 0, 0, 0)
+		sb.border_color = UiTheme.PAPER_INK if on else UiTheme.PAPER_EDGE
+		sb.set_border_width_all(1)
+		sb.set_corner_radius_all(999)
+		sb.content_margin_left = 14
+		sb.content_margin_right = 14
+		sb.content_margin_top = 3
+		sb.content_margin_bottom = 4
+		chip.add_theme_stylebox_override("panel", sb)
+		(chip.get_child(0) as Label).add_theme_color_override("font_color", UiTheme.PAPER if on else Color(UiTheme.PAPER_INK, 0.7))
 
 func _open_modal(title: String, body: String) -> void:
 	_modal_title.text = title
+	_set_tabs(_journal_page)
+	var keys := "Close   E · Tab · Esc        Scroll   W / S"
+	_modal_hint.text = keys + ("        Turn page   A / D" if _journal_page >= 0 else "")
 	_modal_body.text = body
 	_modal_body.tab_stops = PackedFloat32Array()
 	UiFonts.style(_modal_body, "paper", 26)       # journal entries and the tide table are handwritten
@@ -743,10 +792,6 @@ func toggle_logbook() -> void:
 	_render_journal()
 
 func _render_journal() -> void:
-	var tabs := ["Log", "Satchel", "Tapes"]
-	var head: Array = []
-	for i in tabs.size():
-		head.append("[ %s ]" % tabs[i] if i == _journal_page else tabs[i])
 	var body: Array = []
 	match _journal_page:
 		0:
@@ -773,7 +818,7 @@ func _render_journal() -> void:
 					body.append("")
 			if body.is_empty():
 				body.append("No tapes yet.")
-	_open_modal("Keeper's journal     " + "   ".join(head) + "     (A / D to turn)", "\n".join(body))
+	_open_modal("Keeper's journal", "\n".join(body))
 
 ## Day cards: a bold band across the screen with big display type.
 func _build_card() -> void:
