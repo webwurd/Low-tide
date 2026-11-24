@@ -127,6 +127,13 @@ func _surfaces() -> void:
 	await _snap("70_prologue_card")
 	pro._finish()
 	await _wait(60)
+	# Finishing the prologue opens the setup tutorial: put everything back.
+	hud._tut.visible = false
+	hud._title.visible = false
+	main._set_title_mode(false)
+	main._place("outdoors", main.island.spawn_point, 0.0)
+	main.player.locked = true
+	await _wait(6)
 
 	# Pause + settings.
 	var menus = main.menus

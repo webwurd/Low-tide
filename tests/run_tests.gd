@@ -942,7 +942,7 @@ func _run() -> void:
 	cfg.set_v("toggle_watch", false)
 
 	cfg.set_v("subtitle_scale", 1.5)
-	ok(main.hud._radio_text.get_theme_font_size("font_size") == int(17 * 1.5) and main.hud._tape_text.get_theme_font_size("font_size") == int(20 * 1.5), "subtitle size scales the radio and tape text")
+	ok(main.hud._radio_text.get_theme_font_size("font_size") == int(main.hud.RADIO_TEXT_SIZE * 1.5) and main.hud._tape_text.get_theme_font_size("font_size") == int(main.hud.TAPE_TEXT_SIZE * 1.5), "subtitle size scales the radio and tape text")
 	cfg.set_v("subtitle_scale", 1.0)
 
 	cfg.set_v("brightness", 1.3); cfg.set_v("exposure", 1.0); cfg.set_v("glow", true)
@@ -1262,13 +1262,14 @@ func _run() -> void:
 		# Headless runs use a stand-in text height (about 3x real), so measure width
 		# exactly and estimate height from line counts. Screenshots check the real thing.
 		var r: Rect2 = main.hud._radio.get_global_rect()
-		var fs_text: float = 17.0 * sc
-		var fs_opt: float = 14.0 * sc
+		var fs_text: float = main.hud.RADIO_TEXT_SIZE * sc
+		var fs_opt: float = main.hud.RADIO_OPT_SIZE * sc
 		var opt_w: float = main.hud._opt_buttons[0].size.x
 		var opt_lines: float = 1.0
 		for o in long_opts:
-			opt_lines = maxf(opt_lines, ceilf((String(o["text"]).length() + 3) * fs_opt * 0.6 / maxf(opt_w - 20.0, 1.0)))
-		var est_h: float = 32.0 + fs_text * 1.0 + main.hud._radio_text.get_line_count() * fs_text * 1.45 + opt_lines * fs_opt * 1.6 + 30.0
+			opt_lines = maxf(opt_lines, ceilf((String(o["text"]).length() + 3) * fs_opt * 0.6 / maxf(opt_w - UiTheme.PAD_SMALL.x * 2.0 - 4.0, 1.0)))
+		var est_h: float = main.hud.RADIO_PAD.y * 2.0 + main.hud.RADIO_SPEAKER_SIZE * sc * 1.4 + main.hud.RADIO_GAP * 2.0 \
+			+ main.hud._radio_text.get_line_count() * fs_text * 1.45 + opt_lines * fs_opt * 1.6 + UiTheme.PAD_SMALL.y * 2.0
 		var cx: float = r.position.x + r.size.x * 0.5
 		var inside: bool = r.position.x >= 0.0 and r.end.x <= 1280.0 and absf(cx - 640.0) < 1.0 and est_h <= 720.0 - 60.0 - 40.0
 		if not inside:

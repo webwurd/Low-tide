@@ -13,6 +13,16 @@ const CREAM := Color("efe4c8")
 const POSTER_TEAL := Color("1f4b52")
 const POSTER_BRASS := Color("d9a441")      # thin rules only
 const TYPE_CPS := 55.0                     # radio text types in at about reading speed
+# Radio panel (sizes at subtitle scale 1.0; apply_text_scale() multiplies them).
+const RADIO_SPEAKER_SIZE := 15
+const RADIO_TEXT_SIZE := 21
+const RADIO_OPT_SIZE := 18
+const RADIO_PAD := Vector2(32, 24)
+const RADIO_WIDTH := 860.0
+const RADIO_GAP := 12                      # between speaker, text and replies
+const TAPE_TITLE_SIZE := 12
+const TAPE_TEXT_SIZE := 20
+const NOTE_SIZE := 17
 
 var player: Player
 var _reticle: Control
@@ -220,9 +230,10 @@ func _build_assist() -> void:
 	add_child(_stamina)
 
 func _build_radio() -> void:
-	_radio = PanelContainer.new()
-	# Minimal: a quiet dark strip with a thin amber edge.
-	_radio.add_theme_stylebox_override("panel", _flat_box(Color(0.04, 0.07, 0.09, 0.78), AMBER, 18, 12))
+	# A frosted glass panel: the scene shows through, blurred, so the text
+	# stays legible over sky or snow without a heavy slab.
+	var kit := UiTheme.glass_panel(RADIO_PAD)
+	_radio = kit[0]
 	# Bottom-centre, growing upward, so tall text never runs off the screen.
 	_radio.anchor_left = 0.5
 	_radio.anchor_right = 0.5
@@ -233,52 +244,59 @@ func _build_radio() -> void:
 	_radio.visible = false
 	add_child(_radio)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 8)
-	_radio.add_child(v)
-	_radio_speaker = _label("", 12, AMBER)
-	_radio_text = _label("", 17, CREAM)
-	_radio_text.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	v.add_theme_constant_override("separation", RADIO_GAP)
+	(kit[1] as Control).add_child(v)
+	# Header: a small amber "on air" light and the speaker.
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	var dot := ColorRect.new()
+	dot.color = UiTheme.ACCENT
+	dot.custom_minimum_size = Vector2(8, 8)
+	dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_child(dot)
+	_radio_speaker = _label("", RADIO_SPEAKER_SIZE, UiTheme.ACCENT, "ui_bold")
+	head.add_child(_radio_speaker)
+	_radio_text = _label("", RADIO_TEXT_SIZE, UiTheme.CREAM)
+	_radio_text.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.45))
 	_radio_text.add_theme_constant_override("shadow_offset_y", 1)
+	_radio_text.add_theme_constant_override("line_spacing", 5)
 	_radio_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_radio_text.custom_minimum_size = Vector2(750, 0)
 	_radio_opts = HBoxContainer.new()
-	_radio_opts.add_theme_constant_override("separation", 10)
+	_radio_opts.add_theme_constant_override("separation", RADIO_GAP)
 	for i in 2:
 		var b := Button.new()
 		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		b.custom_minimum_size = Vector2(365, 0)
 		b.focus_mode = Control.FOCUS_NONE
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.add_theme_stylebox_override("normal", _flat_box(Color(1, 1, 1, 0.07), Color(0, 0, 0, 0), 12, 8))
-		b.add_theme_stylebox_override("hover", _flat_box(Color(1, 0.72, 0.3, 0.2), Color(0, 0, 0, 0), 12, 8))
-		b.add_theme_stylebox_override("pressed", _flat_box(Color(1, 0.72, 0.3, 0.3), Color(0, 0, 0, 0), 12, 8))
-		b.add_theme_color_override("font_color", CREAM)
-		b.add_theme_color_override("font_hover_color", Color.WHITE)
+		b.size_flags_vertical = Control.SIZE_FILL
+		UiTheme.style_button(b, "choice", RADIO_OPT_SIZE)
 		b.pressed.connect(RadioSystem.choose.bind(i))
 		_radio_opts.add_child(b)
 		_opt_buttons.append(b)
-	for n in [_radio_speaker, _radio_text, _radio_opts]:
+	for n in [head, _radio_text, _radio_opts]:
 		v.add_child(n)
 	_layout_radio()
 
 ## The radio panel widens with the subtitle size so large text still fits.
 func _layout_radio() -> void:
 	var k: float = float(Settings.v("subtitle_scale"))
-	var w: float = clampf(780.0 + (k - 1.0) * 520.0, 780.0, 1220.0)
+	var w: float = clampf(RADIO_WIDTH + (k - 1.0) * 480.0, RADIO_WIDTH, 1220.0)
 	_radio.offset_left = -w * 0.5
 	_radio.offset_right = w * 0.5
-	_radio.offset_bottom = -60.0
-	_radio.offset_top = -60.0
+	_radio.offset_bottom = -56.0
+	_radio.offset_top = -56.0
 	_radio.custom_minimum_size = Vector2(w, 0)
-	_radio_text.custom_minimum_size = Vector2(w - 34.0, 0)
+	var inner := w - RADIO_PAD.x * 2.0
+	_radio_text.custom_minimum_size = Vector2(inner, 0)
 	for b in _opt_buttons:
-		b.custom_minimum_size = Vector2((w - 44.0) * 0.5, 0)
+		b.custom_minimum_size = Vector2((inner - RADIO_GAP) * 0.5, 0)
 
 ## "New radio message": a small padded tag at the top of the screen on a solid
 ## colour, so it reads as a notice rather than part of the world.
 func _build_banner() -> void:
 	var tag := PanelContainer.new()
-	tag.add_theme_stylebox_override("panel", _flat_box(Color(POSTER_TEAL.r, POSTER_TEAL.g, POSTER_TEAL.b, 0.96), Color(0, 0, 0, 0), 20, 9))
+	tag.add_theme_stylebox_override("panel", UiTheme.pill(Color(POSTER_TEAL.r, POSTER_TEAL.g, POSTER_TEAL.b, 0.96), Vector2(20, 12)))
 	tag.anchor_left = 0.5
 	tag.anchor_right = 0.5
 	tag.grow_horizontal = Control.GROW_DIRECTION_BOTH
@@ -292,7 +310,7 @@ func _build_banner() -> void:
 	row.add_theme_constant_override("separation", 12)
 	tag.add_child(row)
 	var dot := ColorRect.new()                          # small brass indicator light
-	dot.color = AMBER
+	dot.color = UiTheme.ACCENT
 	dot.custom_minimum_size = Vector2(8, 8)
 	dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -831,13 +849,13 @@ func _place_note() -> void:
 ## Radio, tape and toast text follow the "subtitle size" accessibility setting.
 func apply_text_scale() -> void:
 	var k: float = float(Settings.v("subtitle_scale"))
-	_radio_speaker.add_theme_font_size_override("font_size", int(12 * k))
-	_radio_text.add_theme_font_size_override("font_size", int(17 * k))
+	_radio_speaker.add_theme_font_size_override("font_size", int(RADIO_SPEAKER_SIZE * k))
+	_radio_text.add_theme_font_size_override("font_size", int(RADIO_TEXT_SIZE * k))
 	for b in _opt_buttons:
-		b.add_theme_font_size_override("font_size", int(14 * k))
-	_tape_title.add_theme_font_size_override("font_size", int(12 * k))
-	_tape_text.add_theme_font_size_override("font_size", int(20 * k))
-	_note.add_theme_font_size_override("font_size", int(17 * k))
+		b.add_theme_font_size_override("font_size", int(RADIO_OPT_SIZE * k))
+	_tape_title.add_theme_font_size_override("font_size", int(TAPE_TITLE_SIZE * k))
+	_tape_text.add_theme_font_size_override("font_size", int(TAPE_TEXT_SIZE * k))
+	_note.add_theme_font_size_override("font_size", int(NOTE_SIZE * k))
 	_layout_radio()
 
 func _on_line(speaker: String, text: String, options: Array) -> void:
