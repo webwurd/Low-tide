@@ -7,7 +7,8 @@ const PILING_MARK_COLOR := Color("e8dfc8")
 
 var beam_pivot: Node3D
 var beam_arms: Array[Node3D] = []
-var beam_mat: StandardMaterial3D
+var beam_mat: ShaderMaterial
+var beam_spots: Array[SpotLight3D] = []
 var lantern_mat: StandardMaterial3D
 var lamp_light: OmniLight3D
 var beam_spinning := false
@@ -45,7 +46,9 @@ func set_lamp(lit: bool, wound: bool, daylight: float) -> void:
 	beam_spinning = lit and wound
 	for a in beam_arms:
 		a.visible = lit
-	beam_mat.albedo_color.a = lerpf(0.26, 0.07, daylight)
+	beam_mat.set_shader_parameter("intensity", lerpf(0.32, 0.05, daylight))
+	for sp in beam_spots:
+		sp.light_energy = lerpf(14.0, 3.0, daylight) if lit else 0.0
 	lantern_mat.albedo_color = Color("ffd27d") if lit else Color("2a2f33")
 	lamp_light.light_energy = 2.2 if lit else 0.0
 
@@ -153,13 +156,10 @@ func _build_lighthouse() -> void:
 	beam_pivot = Node3D.new()
 	beam_pivot.position = Vector3(0, 19.8, 0)
 	g.add_child(beam_pivot)
-	var cone := _cyl(14.0, 0.5, 95.0, 24)
-	beam_mat = StandardMaterial3D.new()
-	beam_mat.albedo_color = Color(1.0, 0.81, 0.44, 0.13)
-	beam_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	beam_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	beam_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	beam_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	var cone := _cyl(14.0, 0.5, 95.0, 32)
+	cone.rings = 8
+	beam_mat = ShaderMaterial.new()
+	beam_mat.shader = load("res://art/beam.gdshader")
 	for rot_y in [0.0, PI]:
 		var arm := Node3D.new()
 		arm.rotation.y = rot_y
@@ -167,6 +167,19 @@ func _build_lighthouse() -> void:
 		beam_arms.append(arm)
 		var m := _mesh(arm, cone, beam_mat, Vector3(0, 0, 47.5), Vector3(PI / 2.0, 0, 0))
 		m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		# The real light: lights the haze (volumetric fog), the water and the rock.
+		var sp := SpotLight3D.new()
+		sp.light_color = Color("ffd49a")
+		sp.spot_range = 160.0
+		sp.spot_angle = 7.5
+		sp.spot_angle_attenuation = 1.6
+		sp.spot_attenuation = 0.6
+		sp.light_volumetric_fog_energy = 6.0
+		sp.light_specular = 0.6
+		sp.rotation = Vector3(0.0, PI, 0.0)
+		sp.rotate_object_local(Vector3.RIGHT, -0.06)
+		arm.add_child(sp)
+		beam_spots.append(sp)
 	lamp_light = OmniLight3D.new()
 	lamp_light.light_color = Color("ffb84d")
 	lamp_light.light_energy = 0.0

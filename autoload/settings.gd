@@ -7,7 +7,23 @@ var assist_mode := false:
 		assist_mode = v
 		assist_changed.emit(v)
 
+## Graphics quality preset. HIGH is the PC target (SDFGI, SSIL, volumetric fog,
+## 4x MSAA); LOW is the Steam Deck / older-GPU preset. The M7 settings menu
+## writes this; `--quality=low|medium|high` on the command line overrides it.
+enum Quality { LOW, MEDIUM, HIGH }
+signal quality_changed(q: Quality)
+var quality: Quality = Quality.HIGH:
+	set(v):
+		quality = v
+		quality_changed.emit(v)
+
 func _ready() -> void:
+	for a in OS.get_cmdline_user_args() + OS.get_cmdline_args():
+		if a.begins_with("--quality="):
+			match a.get_slice("=", 1).to_lower():
+				"low": quality = Quality.LOW
+				"medium": quality = Quality.MEDIUM
+				_: quality = Quality.HIGH
 	_key("move_forward", KEY_W); _key("move_back", KEY_S)
 	_key("move_left", KEY_A); _key("move_right", KEY_D)
 	_axis("move_forward", JOY_AXIS_LEFT_Y, -1.0); _axis("move_back", JOY_AXIS_LEFT_Y, 1.0)

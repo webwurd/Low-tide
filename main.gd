@@ -4,17 +4,13 @@ extends Node3D
 ## forced-home, sleep, autosave.
 ## Tests set `autostart = true` before adding to the tree to skip the title.
 
-const NIGHT_FOG := Color("0d1520")
-const INDOOR_AMBIENT := Color("6a5846")
-
 var autostart := false
 var player: Player
 var island: Island
 var interiors: Interiors
 var ocean: Ocean
 var hud: HUD
-var env: Environment
-var sun: DirectionalLight3D
+var sky_rig: SkyRig
 var rain: CPUParticles3D
 var location := "cottage"          # outdoors | cottage | tower_base | tower_top
 var started := false
@@ -254,25 +250,12 @@ func _apply_island_lamp() -> void:
 # --- lighting / weather ---------------------------------------------------
 
 func _daylight() -> float:
-	var m := GameClock.minute_of_day
-	return smoothstep(390.0, 450.0, m) * (1.0 - smoothstep(945.0, 1020.0, m))
+	return sky_rig.daylight(GameClock.minute_of_day)
 
 func _build_environment() -> void:
-	env = Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	env.tonemap_exposure = 0.95
-	env.fog_enabled = true
-	var we := WorldEnvironment.new()
-	we.environment = env
-	add_child(we)
-	sun = DirectionalLight3D.new()
-	sun.shadow_enabled = true
-	sun.directional_shadow_max_distance = 160.0
-	sun.position = Vector3(-45, 75, 35)
-	add_child(sun)
-	sun.look_at(Vector3.ZERO)
+	sky_rig = SkyRig.new()
+	sky_rig.name = "SkyRig"
+	add_child(sky_rig)
 
 func _build_rain() -> void:
 	rain = CPUParticles3D.new()
@@ -299,26 +282,10 @@ func _build_rain() -> void:
 func _apply_lighting() -> void:
 	var dd := DayDirector.data()
 	var outdoors := location == "outdoors"
+	sky_rig.apply(outdoors, GameClock.minute_of_day, dd)
 	if not outdoors:
-		env.fog_enabled = false
-		env.background_color = Color.BLACK
-		env.ambient_light_color = INDOOR_AMBIENT
-		env.ambient_light_energy = 0.8
-		sun.visible = false
 		rain.emitting = false
 		return
-	var d := clampf(_daylight() * dd.light_scale, 0.0, 1.0)
-	var fog_col := NIGHT_FOG.lerp(dd.fog_tint, d)
-	env.fog_enabled = true
-	env.fog_density = dd.fog_density
-	env.fog_light_color = fog_col
-	env.background_color = fog_col
-	env.ambient_light_color = Color("6f84a6").lerp(Color("9fb4c7"), d)
-	env.ambient_light_energy = lerpf(0.3, 0.4, d)
-	sun.visible = true
-	sun.light_color = Color("5f78a8").lerp(Color("dce6f0"), d)
-	sun.light_energy = lerpf(0.14, 0.6, d)
-	sun.shadow_enabled = d > 0.15
 	island.set_lamp(DayDirector.lamp_lit, DayDirector.weights_wound, _daylight())
 	rain.emitting = dd.rain
 	rain.global_position = player.global_position + Vector3(0, 14, 0)
