@@ -60,6 +60,8 @@ func _ready() -> void:
 	menus.quit_requested.connect(func(): get_tree().quit())
 	_wire_interactables()
 	RadioSystem.hidden.connect(_on_radio_hidden)
+	RadioSystem.line_shown.connect(func(_sp, _tx, _op): _on_radio_line_for_sting())
+	TapePlayer.finished.connect(_on_tape_finished)
 	hud.ending_closed.connect(_on_ending_closed)
 	DayDirector.week_ended.connect(func(): hud.show_card("ONE WEEK ON GANNET ROCK", "End of the current build. Story content arrives in M6.", 6.0))
 	_place("cottage", interiors.spawn["cottage"], 0.0)
@@ -465,6 +467,21 @@ func _on_swept() -> void:
 
 # --- endings -----------------------------------------------------------------
 
+## Music is rare: only turning points get a sting (once each per run).
+const CONVERSATION_STINGS := {"evening_d6": "sting_confront"}
+const TAPE_STINGS := {"tape_2": "sting_june", "tape_4": "sting_walt"}
+
+func _on_radio_line_for_sting() -> void:
+	var id: String = RadioSystem.current.get("id", "")
+	if CONVERSATION_STINGS.has(id) and not GameState.has_flag("sting_" + id):
+		GameState.set_flag("sting_" + id)
+		AudioDirector.play_sting(CONVERSATION_STINGS[id])
+
+func _on_tape_finished(id: String) -> void:
+	if TAPE_STINGS.has(id) and not GameState.has_flag("sting_" + id):
+		GameState.set_flag("sting_" + id)
+		AudioDirector.play_sting(TAPE_STINGS[id])
+
 func _on_radio_hidden() -> void:
 	if ending_kind != "":
 		return
@@ -585,6 +602,7 @@ func _show_ending_card(kind: String) -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	SaveSystem.record_ending(kind)
 	SaveSystem.delete_save()
+	AudioDirector.play_sting("sting_end_" + kind)
 	hud.show_ending(kind, ENDINGS[kind]["name"], _ending_body(kind))
 
 func _on_ending_closed() -> void:

@@ -41,6 +41,20 @@ Checks: do surfaces sound clearly different? Does brisk walking feel faster (not
 | `hydrophone_ping` | 1400 Hz sonar blip | *(new in M6)* West echo cave, every 14 s until the buoy is switched off | Cold, faint, eerie |
 | `boat_engine` | Low diesel thump + noise, seamless loop | *(new in M6)* Relief boat in the ending scene | Distant, approaching; never harsh |
 
+## C2. Music stings (placeholder, synthesised: Karplus-Strong guitar + bowed cello + a little room)
+Rare by design (bible: no constant score). Each plays once per run, on the **Music** bus.
+| ID | Where | Listen for |
+|---|---|---|
+| `sting_end_a` | Ending A end card | Warm D-major arpeggio over a low cello: resolved, hopeful |
+| `sting_end_b` | Ending B end card | Open fifth swelling slowly, two soft high notes: hushed |
+| `sting_end_c` | Ending C end card | Three falling plucked notes (A, F, E) over a very low drone: lonely, unresolved |
+| `sting_confront` | Clara's Day 6 evening call opens | Minor second under a slow swell, one low pluck: unease |
+| `sting_june` | June's tape (tape 2) ends | Tender A-minor figure |
+| `sting_walt` | Walt's last tape (tape 4) ends | Two falling notes over a G cello |
+Check: do they sound like instruments or like a synth? Too long, too loud over the end-card text, too cheesy? These are **placeholders**:
+to use real music, drop `sting_end_a.ogg` (or `.wav`/`.mp3`) etc. into `res://audio/stings/` and it is used instead, with no code change.
+Tune in `audio/sting_synth.gd` (`render()` phrases, note timings, levels).
+
 ## D. Mixing questions
 - Is the bed (surf + wind) too loud under the radio voice-line text, or too quiet to feel alone?
 - Do indoors feel properly sheltered (-14 dB surf and wind)? Does the stove need its own crackle (see below)?
@@ -49,5 +63,5 @@ Checks: do surfaces sound clearly different? Does brisk walking feel faster (not
 
 ## E. Missing audio (known gaps; not bugs)
 Rain on the storm day (Day 4), door open/close, stove crackle, clockwork weights winding, lamp lighting, armchair/bench,
-page/journal turn, pocket-watch tick, radio static *between* lines, Clara's voice (text-only), music stings, the
-ending's closing sting. Plan: foley and stings in M7.
+page/journal turn, pocket-watch tick, radio static *between* lines, Clara's voice (text-only), menu click sounds.
+Stings now exist (see C2) but are placeholders. Plan: foley in M7.

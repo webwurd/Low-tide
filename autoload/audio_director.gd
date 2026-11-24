@@ -35,6 +35,10 @@ func _ready() -> void:
 	_variants["splash"] = [_splash(), _splash()]
 	_variants["squelch"] = [_squelch()]
 	_variants["foghorn"] = [_foghorn()]
+	_sting_player = AudioStreamPlayer.new()
+	_sting_player.bus = "Music"
+	add_child(_sting_player)
+	_start_sting_render()
 	_variants["clunk"] = [_thud(90.0, 40.0, 0.12, "triangle", 500.0, 1.0, 0.3)]
 	var hiss := PackedFloat32Array()
 	hiss.resize(RATE * 2)
@@ -85,6 +89,11 @@ func play_sfx(sfx_name: String, volume_db := 0.0, pitch := 1.0) -> void:
 
 var _bells: Dictionary = {}
 var _extra: Dictionary = {}
+var _sting_data: Dictionary = {}       # name -> PackedFloat32Array (rendered on worker threads)
+var _sting_tasks: Dictionary = {}      # name -> WorkerThreadPool task id
+var _sting_streams: Dictionary = {}
+var _sting_player: AudioStreamPlayer
+var _sting_mutex := Mutex.new()
 
 ## The four bell-buoy pitches (strike count = compass point).
 const BELL_PITCHES := {"bell_north_1": 440.0, "bell_east_2": 523.0, "bell_south_3": 349.0, "bell_west_4": 392.0}
@@ -100,7 +109,56 @@ func catalog() -> Dictionary:
 			out["%s_%d" % [k, i]] = arr[i]
 	for k in BELL_PITCHES:
 		out[k] = bell_stream(BELL_PITCHES[k])
+	for k in StingSynth.NAMES:
+		out[k] = sting_stream(k)
 	return out
+
+# ---- music stings (rendered in the background so startup does not stall) ----
+
+func _start_sting_render() -> void:
+	for n in StingSynth.NAMES:
+		_sting_tasks[n] = WorkerThreadPool.add_task(_render_sting.bind(n), false, "render " + n)
+
+func _render_sting(sting: String) -> void:
+	var data := StingSynth.render(sting)
+	_sting_mutex.lock()
+	_sting_data[sting] = data
+	_sting_mutex.unlock()
+
+## The stream for a sting. Prefers a composed file res://audio/stings/<name>.(ogg|wav|mp3) if present.
+func sting_stream(sting: String) -> AudioStream:
+	if _sting_streams.has(sting):
+		return _sting_streams[sting]
+	for ext in ["ogg", "wav", "mp3"]:
+		var path := "res://audio/stings/%s.%s" % [sting, ext]
+		if ResourceLoader.exists(path):
+			_sting_streams[sting] = load(path)
+			return _sting_streams[sting]
+	if _sting_tasks.has(sting):
+		WorkerThreadPool.wait_for_task_completion(_sting_tasks[sting])
+		_sting_tasks.erase(sting)
+	_sting_mutex.lock()
+	var data: PackedFloat32Array = _sting_data.get(sting, PackedFloat32Array())
+	_sting_mutex.unlock()
+	if data.is_empty():
+		return null
+	_sting_streams[sting] = _wav(data)
+	return _sting_streams[sting]
+
+func play_sting(sting: String, volume_db := -4.0) -> void:
+	var st := sting_stream(sting)
+	if st == null:
+		return
+	_sting_player.stream = st
+	_sting_player.volume_db = volume_db
+	_sting_player.play()
+
+func sting_playing() -> String:
+	if _sting_player.playing:
+		for k in _sting_streams:
+			if _sting_streams[k] == _sting_player.stream:
+				return k
+	return ""
 
 ## Hydrophone ping: short sonar-style blip, repeated by world/hydrophone.gd.
 func ping_stream() -> AudioStreamWAV:
