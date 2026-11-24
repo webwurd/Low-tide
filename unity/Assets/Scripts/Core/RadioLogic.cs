@@ -64,7 +64,7 @@ namespace LowTide.Core
             foreach (var f in opt.Clear) session.State.ClearFlag(f);
             pendingNext = opt.Next;
             Sfx?.Invoke("squelch");
-            ReplyShown?.Invoke("CH-16 // CLARA (REPLY)", opt.Reply);
+            ReplyShown?.Invoke("Clara, replying", opt.Reply);
             NextTimerSeconds = ReadingTime(opt.Reply);
         }
 

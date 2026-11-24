@@ -5,7 +5,7 @@ class_name BellBuoy extends Node3D
 
 @export var strikes := 1
 @export var pitch := 440.0
-@export var label := "BELL BUOY"
+@export var label := "Bell buoy"
 
 var _player: AudioStreamPlayer3D
 var _phase := 0.0

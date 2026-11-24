@@ -5,7 +5,6 @@ const BG := Color(0.05, 0.08, 0.11, 0.96)
 const BORDER := Color(0.85, 0.7, 0.42, 0.3)
 const AMBER := Color("ffb84d")
 const TEXT := Color("efe4c8")
-const POSTER_ORANGE := Color("e8742a")
 
 static func box(bg: Color, border := BORDER, radius := 3, margin := 10) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
@@ -22,15 +21,11 @@ static func build() -> Theme:
 	var f := UiFonts.get_font("ui")
 	if f:
 		t.default_font = f
-	# Buttons and tab headings use the poster voice; body text stays quiet.
-	var bold := UiFonts.get_font("ui_bold")
+	# Tab headings use the display face; body text stays quiet.
 	var disp := UiFonts.get_font("display")
-	for c in ["Button", "OptionButton", "CheckBox"]:
-		if bold:
-			t.set_font("font", c, bold)
 	if disp:
 		t.set_font("font", "TabContainer", disp)
-		t.set_font_size("font_size", "TabContainer", 17)
+		t.set_font_size("font_size", "TabContainer", 19)
 	t.set_color("font_color", "Label", TEXT)
 	for c in ["Button", "CheckBox", "OptionButton"]:
 		t.set_color("font_color", c, TEXT)

@@ -92,9 +92,9 @@ func sandbars_open(height: float) -> bool:
 func tide_label() -> String:
 	var h := current_height
 	var ahead := water_height_abs(GameClock.abs_minute() + 5.0)
-	if h <= 0.9: return "LOW TIDE"
-	if h >= 3.5: return "HIGH TIDE"
-	return "RISING" if ahead > h else "FALLING"
+	if h <= 0.9: return "Low tide"
+	if h >= 3.5: return "High tide"
+	return "Rising" if ahead > h else "Falling"
 
 func depth_band(depth: float) -> String:
 	if depth <= 0.0: return "dry"

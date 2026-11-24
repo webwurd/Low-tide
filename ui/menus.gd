@@ -49,7 +49,7 @@ func _build_pause() -> void:
 	v.add_theme_constant_override("separation", 10)
 	_pause.add_child(v)
 	var t := Label.new()
-	t.text = "PAUSED"
+	t.text = "Paused"
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	UiFonts.style(t, "display", 30)
 	v.add_child(t)

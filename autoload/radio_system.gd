@@ -53,7 +53,7 @@ func choose(index: int) -> void:
 		GameState.clear_flag(String(f))
 	_pending_next = String(opt.get("next", ""))
 	AudioDirector.play_sfx("squelch")
-	reply_shown.emit("CH-16 // CLARA (REPLY)", opt.get("reply", ""))
+	reply_shown.emit("Clara, replying", opt.get("reply", ""))
 	_timer.start(reading_time(opt.get("reply", "")))
 
 func dismiss() -> void:
