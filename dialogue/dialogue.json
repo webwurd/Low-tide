@@ -1327,35 +1327,79 @@
    "lines": [
     {
      "t": 0,
-     "text": "[Click. Tape hiss. Wind against the microphone.]"
+     "text": "[Click. Wind in a stone cave. Somewhere deeper in, water moves against rock.]"
     },
     {
-     "t": 3,
-     "text": "June. It's the nineteenth. The array's quiet tonight, so I thought I'd talk to you instead of the log."
+     "t": 4,
+     "text": "June. It's the nineteenth of January, nineteen seventy-six. I'm in the west cave, at your buoy, because I couldn't think of anywhere else to put you."
     },
     {
-     "t": 9,
-     "text": "The Navy men left on the Tuesday boat. They took the good coffee and left me the paperwork."
+     "t": 15,
+     "text": "I tried the cottage. I set the machine on the kitchen table, and every evening I sat down to tell you about my day, and every evening I found I'd been talking to the stove for an hour."
     },
     {
-     "t": 16,
-     "text": "I walked out to the stack this morning at low water. Your buoy's still ticking away in the arch, warm as a loaf. I don't think I'll ever get used to that."
+     "t": 29,
+     "text": "You used to say the only thing I ever said into a microphone was \"Is this on?\" [A short, unsteady laugh.] Well. It's on."
     },
     {
-     "t": 25,
-     "text": "I keep telling myself you'd laugh at me, talking to a machine."
+     "t": 39,
+     "text": "The Navy men left on the Tuesday boat. They took the good coffee, and the good chairs, and the cable charts. They left me a box of paperwork and a letter."
     },
     {
-     "t": 31,
-     "text": "They tell me you were never on the manifest. That there was no cable job that night. I've read their letter four times and I still don't believe it."
+     "t": 51,
+     "text": "I'll read you the letter. \"The Department regrets the loss of Mrs. June Haskell, civilian contractor, lost at sea in weather on the fourth of November, nineteen seventy-four. Mrs."
     },
     {
-     "t": 41,
-     "text": "[A long breath.] Goodnight, June."
+     "t": 65,
+     "text": "Haskell does not appear on the manifest for that date. No cable work was scheduled.\""
     },
     {
-     "t": 45,
-     "text": "[Click.]"
+     "t": 72,
+     "text": "You never went to sea in your life, June. You went to the reef, with a red toolbag and an egg sandwich, and I watched you go."
+    },
+    {
+     "t": 82,
+     "text": "I've read that letter four times. I read it to the stove. The stove had no opinion either."
+    },
+    {
+     "t": 89,
+     "text": "The array's finished, they say. The cable stays in the ground, because that's cheaper than pulling it. Lieutenant Hayes signed that line himself. He has beautiful handwriting."
+    },
+    {
+     "t": 102,
+     "text": "[Water drips. Walt breathes out.] I walked out at low water to see whether your buoy had gone dead, the way they promised. It hasn't. It's warm as a loaf, June."
+    },
+    {
+     "t": 115,
+     "text": "I put my hand on the casing and it's warm."
+    },
+    {
+     "t": 119,
+     "text": "And every fourteen seconds, listen, it picks up something off the reef."
+    },
+    {
+     "t": 125,
+     "text": "[A faint electronic ping, very far off.]"
+    },
+    {
+     "t": 134,
+     "text": "[Under his breath.] ...nine, ten, eleven, twelve, thirteen..."
+    },
+    {
+     "t": 139,
+     "text": "[A second ping, exactly where he said it would be.]"
+    },
+    {
+     "t": 142,
+     "text": "I asked Hayes what it was. He said a test tone. I said a test of what, now the array's finished? He said I wouldn't follow it. He's right about that. I don't."
+    },
+    {
+     "t": 155,
+     "text": "I'm going to leave this in the hatch with the battery, where it's dry. I can't keep it at the cottage. If I keep it I'll play it every night, and then I'll have nothing new to say to you."
+    },
+    {
+     "t": 169,
+     "text": "Goodnight, June. [A long breath.] I'll bring you the next one at the thaw. [Click.]"
     }
    ]
   },
@@ -1364,30 +1408,58 @@
    "lines": [
     {
      "t": 0,
-     "text": "[Click. Rushing water. A metal hatch clangs. Breathing.]"
+     "text": "[Click. A hollow, ringing space. Dripping water. Boots on iron rungs.]"
     },
     {
-     "t": 3,
-     "text": "Field recorder, J. Haskell, November the fourth. Cable vault, south reef. Splice number two has been dropping signal for a week, and the Navy wants it fixed before the weather turns."
+     "t": 4,
+     "text": "Field recorder, J. Haskell. Fourth of November, nineteen seventy-four. Oh-six-fifty-five, give or take my watch. Cable vault, south reef, splice number two."
     },
     {
-     "t": 13,
-     "text": "The tide table says I have an hour of low water. The Navy's schedule says two. I'm going with the table. Walt, if you're listening to this over your coffee, I know, I know."
+     "t": 16,
+     "text": "Splice two has been dropping signal for a week. The Navy wants it sealed before the weather turns, and the weather is turning, so here I am, talking to a tape recorder in a concrete box."
     },
     {
-     "t": 24,
-     "text": "It's cold down here. The hatch seal's salt-crusted solid. The whole vault smells of iron and old rope."
+     "t": 30,
+     "text": "For the record, the vault rings. I'm getting nearly two seconds of decay off these walls. Which is lovely, and no use to anyone."
     },
     {
-     "t": 33,
-     "text": "[Water against the hatch.] That's... earlier than the table said. Well. I'll finish the splice and be out before it matters."
+     "t": 40,
+     "text": "The table gives me an hour of low water. Lieutenant Hayes says the Navy's schedule gives two. I'm going with the table. Walt, if you're listening to this over your coffee: I know. I know."
     },
     {
-     "t": 41,
-     "text": "If this recorder ever ends up on someone else's shelf: tell Walt, the left pocket. He'll know."
+     "t": 54,
+     "text": "I copied it onto the card, same as you do every morning."
     },
     {
-     "t": 46,
+     "t": 59,
+     "text": "The technician's gone up. Poor lad hated the dark. The hatch seal's salt-crusted solid, I had to put my whole weight on the wheel, and the whole place smells of iron and old rope."
+    },
+    {
+     "t": 73,
+     "text": "[She works. A ratchet clicks, stops, clicks. Her breath, steady.]"
+    },
+    {
+     "t": 77,
+     "text": "My fingers have stopped being useful. Egg again, Walt. Too much pepper again. It's the only warm thing I've eaten all day, so I've forgiven you."
+    },
+    {
+     "t": 88,
+     "text": "[Water against the hatch. A sound like a hand laid flat on iron.] That's... earlier than the table said."
+    },
+    {
+     "t": 96,
+     "text": "The vault sits lower than the bar. I should have put that on the card. And there's a swell under it from the south-east, I can hear the room change. Well."
+    },
+    {
+     "t": 108,
+     "text": "Four minutes. The splice is nearly sealed. I'll finish, and I'll be out before it matters."
+    },
+    {
+     "t": 116,
+     "text": "If this recorder ends up on someone else's shelf, tell Walt: the left pocket. He'll know. And tell him I wasn't careless. I read the card."
+    },
+    {
+     "t": 127,
      "text": "[The hatch clangs. Static.]"
     }
    ]
@@ -1397,31 +1469,59 @@
    "lines": [
     {
      "t": 0,
-     "text": "[Click. A kettle somewhere behind him. The wind is down.]"
+     "text": "[Click. A kettle ticking as it cools. The wind is down. The room is small and close.]"
     },
     {
-     "t": 3,
-     "text": "June. Three years, give or take a week. A man came on the Tuesday boat with a briefcase. Commander something. Very polite."
+     "t": 4,
+     "text": "June. Three years, near enough. I'm doing this one in the cottage. I've stopped taking them to the cave."
     },
     {
-     "t": 11,
-     "text": "He had a settlement. Four pages, and a fifth for my signature. A pension, and a letter saying the Navy regrets, and one line at the bottom about not discussing the matter."
+     "t": 12,
+     "text": "The Navy sends a man twice a year to look at your buoy now, and I'd rather he found a battery and nothing else."
     },
     {
      "t": 21,
+     "text": "A man came on the Tuesday boat with a briefcase. A commander. I didn't catch the name, which I expect was the idea. Very polite. He took his cap off in the kitchen."
+    },
+    {
+     "t": 34,
+     "text": "He had a settlement. Four pages, and a fifth for my signature. A pension. A letter saying the Navy regrets. And one line, near the bottom, about not discussing the matter."
+    },
+    {
+     "t": 47,
      "text": "I asked him what I'd be not discussing. He said the schedule. I said, what schedule? He said it was classified."
     },
     {
-     "t": 29,
-     "text": "So there was a schedule. I said, your schedule said two hours at the reef. The table says one. Tom Dunmore, who ferried her out, said one. He said Tom was mistaken."
+     "t": 56,
+     "text": "So there was a schedule. [A dry breath.] I said, your schedule gave her two hours at the reef, and the table gave her one. And he didn't say a word, June. I've never been so glad of a man's silence."
     },
     {
-     "t": 40,
-     "text": "I didn't sign. I'll tell Ruth when I write. Her sister wrote again last week. I haven't answered. I don't know what to say to a woman who loved you as much as I did."
+     "t": 71,
+     "text": "I said Tom Dunmore ferried her out, and Tom says one hour. He said Tom was mistaken. He said it kindly. That's the part I can't forgive. He said it kindly."
     },
     {
-     "t": 52,
-     "text": "[A long breath.] Goodnight, June. [Click.]"
+     "t": 83,
+     "text": "I didn't sign. I turned the fifth page face down on the table and gave him a cup of tea, because he'd come a long way, and he drank it, and he left on the same boat."
+    },
+    {
+     "t": 96,
+     "text": "Ruth writes. Your sister. She wrote again last week, from Providence. Every letter asks me the same thing: what did June say, the last time you saw her? And every time I put the pen down."
+    },
+    {
+     "t": 110,
+     "text": "It was \"don't wait up.\" That's what you said, at the landing, with your toolbag. Don't wait up. [Pause.] And I waited all night with the lamp and the radio, and nobody told me anything until noon."
+    },
+    {
+     "t": 125,
+     "text": "I don't know how to put that in a letter to a woman who loved you nearly as much as I did."
+    },
+    {
+     "t": 132,
+     "text": "I'll answer her. I will. Some day I'll put these in an envelope and Ruth can hear it all, the Navy and the tea and me. But not tonight. The kettle's gone cold."
+    },
+    {
+     "t": 145,
+     "text": "Goodnight, June. [Click.]"
     }
    ]
   },
@@ -1430,31 +1530,67 @@
    "lines": [
     {
      "t": 0,
-     "text": "[Click. The tape wanders a little. A door bangs in the draught.]"
+     "text": "[Click. The tape wanders a little. A door bangs somewhere in a draught. Wind, high up, against round glass.]"
     },
     {
-     "t": 3,
-     "text": "Whoever you are, you've found the locker. Good. The lamp's easy once you know her. Wind the weights before you've had your coffee and she'll never let you down."
+     "t": 4,
+     "text": "Whoever you are, you've found the locker. Good. Then you've found the lamp room, so I'll say what I'd have wanted said to me."
     },
     {
-     "t": 12,
-     "text": "I'm leaving the rock tomorrow. It's been five winters. June would say that's four too many."
+     "t": 13,
+     "text": "The lamp's easy once you know her. Wind the weights before you've had your coffee and she'll never let you down. Trim the wick. Never trust the third stair."
     },
     {
-     "t": 19,
-     "text": "There are tapes. They're all addressed to her, and they're all in the same order I made them, so listen in order. If you decide to do something with them, take them to Ruth Whitcomb. Wickenden Street, Providence. She was June's sister. She's the only one who ever asked."
+     "t": 26,
+     "text": "And when the fog comes down, listen for the bells before you look for the beam."
     },
     {
      "t": 32,
-     "text": "Tom Dunmore left something in the cove hut for me, years ago. A tin, on a crate. I never could bring myself to play it. If you have a stronger stomach than I do, it's yours."
+     "text": "I'm leaving the rock tomorrow. Five winters. June would say that's four too many, and she'd be right, and she'd also be the one who stayed."
     },
     {
-     "t": 44,
+     "t": 43,
+     "text": "There are tapes. They're all addressed to her, so forgive the tone. There's one in the cave buoy and one under the bed, if you haven't found them. Listen in order, if you can bear it."
+    },
+    {
+     "t": 57,
+     "text": "I made them in an order."
+    },
+    {
+     "t": 60,
+     "text": "I've tried to post them to Ruth Whitcomb eleven times. Wickenden Street, Providence. June's sister. The only person who ever asked me how I was."
+    },
+    {
+     "t": 72,
+     "text": "I stand at the post office window with the envelope, and I think, she'll hear me grieving, and I'd rather she heard June."
+    },
+    {
+     "t": 81,
+     "text": "So they're here. If you've a steadier hand than mine, take them to her."
+    },
+    {
+     "t": 87,
+     "text": "Tom Dunmore left something in the cove hut for me, years ago. A tin, on a crate. I never could bring myself to play it. If you've a stronger stomach than I have, it's yours."
+    },
+    {
+     "t": 101,
+     "text": "A voice on sixteen asks after me at ten every night. Whoever has the watch. Never more than the weather, and never more than I answer. [A short breath.]"
+    },
+    {
+     "t": 112,
+     "text": "Two grown men, a radio, the same night on both our minds, and neither of us asks the one thing."
+    },
+    {
+     "t": 120,
+     "text": "Don't do what I did. If somebody's out there, answer them. Talk to a person. A machine is a poor place to keep a life."
+    },
+    {
+     "t": 130,
      "text": "The buoy in the cave is still ticking. I don't know who feeds it. Leave it be. Maybe someone needs it more than I did."
     },
     {
-     "t": 53,
-     "text": "[Click.]"
+     "t": 139,
+     "text": "[A long pause. The door bangs once.] Mind your head on the gallery door. Goodnight. [Click.]"
     }
    ]
   },
@@ -1463,35 +1599,51 @@
    "lines": [
     {
      "t": 0,
-     "text": "[Click. Engine idling. Gulls. A man clears his throat.]"
+     "text": "[Click. A diesel engine idling. Gulls. A man clears his throat.]"
     },
     {
-     "t": 3,
-     "text": "Boat log, Coast Guard, Gannet Rock run. Fourth of November, nineteen seventy-four. Oh-five-forty. Landed the Pelagic party at the south reef causeway. Mrs. Haskell, one technician, Lieutenant Hayes."
+     "t": 4,
+     "text": "Boat log. Coast Guard, Gannet Rock run. Monday, fourth of November, nineteen seventy-four. Oh-five-forty. Landed the Pelagic party at the south reef causeway. Mrs."
     },
     {
-     "t": 14,
-     "text": "I told the lieutenant the table gave one hour of low water. He said the Navy's schedule gave two. I said the table's the table, sir. He said, noted."
+     "t": 16,
+     "text": "Haskell, one technician, Lieutenant Hayes."
     },
     {
-     "t": 24,
-     "text": "Oh-six-fifty. The technician came off the reef. Mrs. Haskell stayed to finish the splice. Lieutenant Hayes said she had her time."
+     "t": 20,
+     "text": "Wind south-east, rising. Swell building. The table has the bar dry from oh-six-ten to about oh-seven-ten. One hour."
     },
     {
-     "t": 33,
-     "text": "Oh-seven-ten. Water's coming over the bar. I'm holding station off the reef with the engine running. I can see her light at the hatch."
+     "t": 29,
+     "text": "I told the lieutenant. He said the Navy's schedule gave two. I said the table's the table, sir. I said the vault sits lower than the bar and goes under first. He said, noted."
     },
     {
-     "t": 42,
-     "text": "[His voice drops.] I'm hailing the hatch. Oh God. I can't get in over the bar. The swell's too heavy."
+     "t": 43,
+     "text": "Oh-six-fifty. The technician has come off the reef. Mrs. Haskell has stayed to finish the splice. The lieutenant says she has her time."
     },
     {
-     "t": 52,
-     "text": "[A pause. The engine.] This isn't going in the report. I'll say it here instead, for whoever finds it. I said one hour."
+     "t": 53,
+     "text": "Oh-seven-oh-five. Water making on the bar, early, with the swell behind it. I'm holding station off the reef with the engine running. I can see her lamp in the hatch glass."
     },
     {
-     "t": 62,
-     "text": "[Click.]"
+     "t": 67,
+     "text": "Oh-seven-ten. Hailing the hatch. No answer. [His voice drops.] Hailing the hatch. Oh God. I can't get in over the bar. The swell's too heavy."
+    },
+    {
+     "t": 78,
+     "text": "[A pause. Only the engine.]"
+    },
+    {
+     "t": 81,
+     "text": "Oh-seven-twenty-one. Her lamp has gone out."
+    },
+    {
+     "t": 85,
+     "text": "[A long silence.] This isn't going in the report. The lieutenant is writing his own. I'll say it here instead, for whoever finds it. I said one hour."
+    },
+    {
+     "t": 97,
+     "text": "Boatswain T. Dunmore, signing off. [A long breath.] I've a girl at home who's four. She'll ask me tonight what I did at work. [Click.]"
     }
    ]
   },
@@ -1500,7 +1652,7 @@
    "lines": [
     {
      "t": 0,
-     "text": "[Click. Wind in a cave. Metal on stone. A woman's voice, close to the microphone.]"
+     "text": "[Click. Wind in a cave. Metal on stone. A woman close to the microphone, a little out of breath.]"
     },
     {
      "t": 4,
@@ -1508,18 +1660,46 @@
     },
     {
      "t": 12,
-     "text": "I know what you'd say. You'd say leave it. You'd say the sea doesn't owe us anything."
+     "text": "I signed it out as a spare for the Penobscot repeater. Don't laugh. If anyone counts, I'll go to prison for a battery."
     },
     {
-     "t": 19,
-     "text": "The hydrophone picks up a ping every fourteen seconds, from the reef. I tell myself it's her recorder. I know it isn't. The recorder's been dead since before I could read. It's the splice transponder, doing what it was built to do."
+     "t": 22,
+     "text": "I know what you'd say. You'd say leave it. You told me once the sea owed you something, and I've never known if you meant it as a debt or a warning."
     },
     {
      "t": 33,
+     "text": "The hydrophone picks up a ping every fourteen seconds, from the reef. Every one. I've timed it against the console clock. I tell myself it's her recorder. [Quieter.] I know it isn't."
+    },
+    {
+     "t": 47,
+     "text": "The recorder's been dead since before I could read. It's the splice transponder, doing exactly what it was built to do."
+    },
+    {
+     "t": 57,
      "text": "But if I stop listening, Dad, then nobody is. Somebody has to be listening."
     },
     {
-     "t": 41,
+     "t": 63,
+     "text": "Walt's tape is still in the main hatch. I've never taken it out. It felt like reading his mail, and it felt like putting him out of the room."
+    },
+    {
+     "t": 74,
+     "text": "So I'll leave mine here, under the service hatch, with the old battery. I can't keep it at the flat. It's too loud in there."
+    },
+    {
+     "t": 84,
+     "text": "They're sending someone out for the winter. A man on his own, I heard. I hope it's someone who minds his own business. [A short laugh.] I'll be on sixteen at ten, like always."
+    },
+    {
+     "t": 98,
+     "text": "That's all he'll get from me."
+    },
+    {
+     "t": 101,
+     "text": "I'm twenty-seven years old, and I talk to a cave. It'll be three years in December."
+    },
+    {
+     "t": 108,
      "text": "[A breath.] I miss you. [Click.]"
     }
    ]

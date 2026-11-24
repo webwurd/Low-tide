@@ -27,3 +27,14 @@ Trust is a hidden integer moved by honest answers (+) and withholds/lies (-). Ov
 
 ## Writing status
 Placeholder-quality: Day 1-2 convs were drafted in M4 and have been extended; Days 3-7, tapes 3-6 and all endings were drafted in M6. Everything is editable text in `dialogue/dialogue.json`. A polish/read-aloud pass is expected before release.
+
+## Tape continuity (beta rewrite)
+Planted threads the tapes now carry. Keep later writing consistent with them.
+- **The card / "the left pocket".** Walt copied the tide table onto a card for June each morning and she kept it in her left pocket. June's "tell Walt, the left pocket" means: *I followed your card.* Her last line is "I wasn't careless. I read the card."
+- **"Don't wait up."** June's last words to Walt at the landing (tape 3). He waited all night. Ruth keeps asking what June said. Good material for ending A, and for Ruth if she ever speaks.
+- **Egg sandwich, too much pepper.** Walt's sandwiches (tape 1) are the only warm thing June eats in the vault (tape 2).
+- **The vault sits lower than the bar.** Tom told Hayes it would go under first (tape 5). June finds out the hard way (tape 2). The swell also brought the water early, so the Navy's "weather" story is half true and wholly beside the point.
+- **The 14-second ping** is on tape 1 in Walt's own voice, counted aloud. He asks Hayes; Hayes says "test tone." Clara's tape 6 gives the true answer.
+- **Clara has heard tape 1.** She has serviced the buoy for years and has never taken Walt's tape out of the main hatch. On day 2 she knows exactly what Arthur has found, which is why she lies about the warmth. Her own tape is left under the *service* hatch so the two don't touch.
+- **Walt's advice (tape 4).** "If somebody's out there, answer them. A machine is a poor place to keep a life." A voice on sixteen asked after Walt at ten every night, never more than the weather. Clara does the same for Arthur ("I'll be on sixteen at ten, like always").
+- **Tom's tape** closes on "I've a girl at home who's four." Clara was four in 1974. She is 27 on tape 6 (October 1997) and 28 in the game.

@@ -397,7 +397,7 @@ func _run() -> void:
 	await _use(main, "cassette_player")
 	ok(not tapes.playing, "cassette player does nothing without a tape")
 	state.give_item("tape_1")
-	tapes.speed = 40.0
+	tapes.speed = 150.0
 	await _use(main, "cassette_player")
 	await _frames(3)
 	ok(tapes.playing, "cassette player starts the tape")
@@ -574,7 +574,7 @@ func _run() -> void:
 	ok(state.has_item("tape_2") and state.discovered.has("vault"), "June's cassette comes out of the vault")
 	_reset_radio(radio)
 	state.give_item("tape_1")
-	tapes.speed = 40.0
+	tapes.speed = 150.0
 	main._place("cottage", main.interiors.spawn["cottage"], 0.0)
 	await _frames(10)
 	await _use(main, "cassette_player")
@@ -651,7 +651,7 @@ func _run() -> void:
 		for l in Conv3.tape(tid).get("lines", []):
 			txt += String(l["text"]) + " "
 		ok(txt.contains(want[tid]), "%s transcript carries its story beat ('%s')" % [tid, want[tid]])
-	tapes.speed = 80.0
+	tapes.speed = 300.0
 	main._place("cottage", main.interiors.spawn["cottage"], 0.0)
 	state.reset()
 	for tid in ["tape_1", "tape_2", "tape_3", "tape_4", "tape_5", "tape_6"]:
