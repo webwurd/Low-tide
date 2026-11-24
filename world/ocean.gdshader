@@ -22,7 +22,7 @@ uniform vec4 foam_col : source_color = vec4(0.88, 0.91, 0.9, 1.0);
 uniform float wave_height = 0.14;      // from DayData; 0.06 still .. 0.45 storm
 uniform float clarity = 3.2;           // metres of water before it reads as deep
 uniform float detail_strength = 0.35;
-uniform float foam_width = 0.9;
+uniform float foam_width = 0.38;
 uniform float refraction = 0.025;
 
 varying vec3 v_world;
@@ -99,14 +99,14 @@ void fragment() {
 	vec3 transmit = refr * mix(vec3(0.75, 0.9, 0.88), vec3(0.3, 0.5, 0.55), absorb) * (1.0 - absorb);
 
 	// Foam: a lacy band at the shoreline, plus wind-whipped crests.
-	vec2 fuv = v_world.xz * 0.16 + vec2(TIME * 0.02, -TIME * 0.015);
-	float lace = texture(foam_tex, fuv).r;
-	float lace2 = texture(foam_tex, v_world.xz * 0.07 - TIME * 0.01).r;
-	float shore = 1.0 - smoothstep(0.0, foam_width, depth_m + (lace2 - 0.5) * 0.5);
-	shore *= smoothstep(0.0, 0.08, depth_m) * 0.4 + 0.6;
+	vec2 fuv = v_world.xz * 0.42 + vec2(TIME * 0.03, -TIME * 0.02);
+	float lace = mix(texture(foam_tex, fuv).r, texture(foam_tex, fuv * 1.9 + 0.37).r, 0.5);
+	float lace2 = texture(foam_tex, v_world.xz * 0.09 - TIME * 0.012).r;
+	float shore = 1.0 - smoothstep(0.0, foam_width, depth_m + (lace2 - 0.5) * 0.25);
+	shore *= shore;
 	float pulse = 0.65 + 0.35 * sin(TIME * 0.9 + v_world.x * 0.05 + v_world.z * 0.04);
 	float crest = smoothstep(0.55, 0.95, v_crest + lace2 * 0.2) * clamp(wave_height * 2.5, 0.0, 1.0);
-	float foam = clamp(shore * pulse * smoothstep(0.25, 0.6, lace + 0.25) + crest * smoothstep(0.4, 0.7, lace), 0.0, 1.0);
+	float foam = clamp(shore * pulse * smoothstep(0.2, 0.75, lace + shore * 0.35) * 0.85 + crest * smoothstep(0.4, 0.7, lace), 0.0, 1.0);
 
 	// Backlit crests glow towards the sun at golden hour.
 	vec3 view_w = normalize(v_world - CAMERA_POSITION_WORLD);

@@ -508,7 +508,7 @@ static func _wreck() -> void:
 	var k := MeshKit.new()
 	k.ao_ground_y = 0.0; k.ao_range = 1.2; k.ao_min = 0.55
 	var rng := RandomNumberGenerator.new(); rng.seed = 1974
-	k.push(Transform3D(Basis.from_euler(Vector3(0.32, 0.5, 0.06)), Vector3(-0.6, 0.15, -0.4)))
+	k.push(Transform3D(Basis.from_euler(Vector3(0.26, 0.5, 0.05)), Vector3(-0.6, -0.55, -0.4)))
 	# Keel and stem.
 	k.box("wood_wreck", Vector3(10.6, 0.22, 0.24), Vector3(0, 0.05, 0), 0.03)
 	var stem := PackedVector3Array()
@@ -564,7 +564,10 @@ static func _wreck() -> void:
 	k.box("rust_metal", Vector3(0.5, 0.35, 0.5), Vector3(-2.2, 0.25, 1.2), 0.05)
 	# Seaweed-draped stones around the hull.
 	for i in 7:
-		k.push(Transform3D(Basis.from_euler(Vector3(0, rng.randf() * TAU, 0)), Vector3(rng.randf_range(-4.5, 4.5), 0.0, rng.randf_range(-2.6, 3.4))))
+		var sx := rng.randf_range(-4.5, 4.5)
+		var sz := rng.randf_range(-2.6, 3.4)
+		var gy := Terrain.height(76.0 + sx, 6.0 + sz) - 5.4
+		k.push(Transform3D(Basis.from_euler(Vector3(0, rng.randf() * TAU, 0)), Vector3(sx, gy - 0.1, sz)))
 		k.rock("seaweed" if i % 2 == 0 else "granite_dark", 300 + i, rng.randf_range(0.35, 0.8), Vector3(1.2, 0.5, 1.0), 2, 6)
 		k.pop()
 	var mesh := SceneUtil.kit_mesh(k, "wreck")
@@ -584,13 +587,13 @@ static func _cave() -> void:
 	var k := MeshKit.new()
 	k.ao_ground_y = 0.0; k.ao_range = 3.0; k.ao_min = 0.55
 	var parts := [
-		[Vector3(0.2, 2.4, -4.4), 3.0, Vector3(0.95, 1.45, 0.8), 41],
-		[Vector3(0.2, 2.4, 4.4), 3.0, Vector3(0.9, 1.5, 0.85), 42],
-		[Vector3(-0.2, 6.2, 0.0), 3.3, Vector3(0.9, 0.55, 1.8), 43],
-		[Vector3(-3.6, 3.0, 0.0), 3.2, Vector3(0.75, 1.25, 1.4), 44],
+		[Vector3(0.2, 1.6, -4.4), 3.0, Vector3(0.95, 1.45, 0.8), 41],
+		[Vector3(0.2, 1.6, 4.4), 3.0, Vector3(0.9, 1.5, 0.85), 42],
+		[Vector3(-0.2, 5.5, 0.0), 3.3, Vector3(0.9, 0.55, 1.8), 43],
+		[Vector3(-3.6, 2.2, 0.0), 3.2, Vector3(0.75, 1.25, 1.4), 44],
 		[Vector3(2.6, 0.6, -6.2), 1.4, Vector3(1.2, 0.7, 1.0), 45],
 		[Vector3(3.2, 0.4, 5.8), 1.1, Vector3(1.1, 0.6, 1.2), 46],
-		[Vector3(-1.5, 8.2, -1.5), 1.6, Vector3(1.0, 0.6, 1.0), 47],
+		[Vector3(-1.5, 7.5, -1.5), 1.6, Vector3(1.0, 0.6, 1.0), 47],
 	]
 	for p in parts:
 		k.push(Transform3D(Basis.from_euler(Vector3(0, p[3] * 0.7, 0)), p[0]))

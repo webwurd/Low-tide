@@ -70,7 +70,10 @@ void fragment() {
 	float ax = abs(p.x);
 	float bars = smoothstep(21.0, 26.0, ax) * (1.0 - smoothstep(63.0, 69.0, ax));
 	float sand_m = max(1.0 - smoothstep(1.0, 1.7, h), bars * (1.0 - smoothstep(2.0, 2.7, h)));
-	float rock_m = smoothstep(0.24, 0.42, slope + (m.r - 0.5) * 0.25);
+	// The sea stacks are bare granite outcrops above the sand line.
+	float stack = max(1.0 - smoothstep(13.0, 18.0, length(p.xz - vec2(76.0, 6.0))),
+		1.0 - smoothstep(13.0, 19.0, length(p.xz - vec2(-74.0, -8.0))));
+	float rock_m = max(smoothstep(0.24, 0.42, slope + (m.r - 0.5) * 0.25), stack * smoothstep(0.6, 1.6, h));
 	float grass_m = smoothstep(3.4, 5.0, h) * (1.0 - rock_m);
 	float moss_m = smoothstep(7.6, 9.6, h) * smoothstep(0.35, 0.65, m.b) * grass_m;
 
