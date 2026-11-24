@@ -873,6 +873,7 @@ func _run() -> void:
 	var pl = main.player
 	main._place("outdoors", main.island.spawn_point, 0.0)
 	await _frames(30)
+	state.set_flag("binoculars_ready")      # Clara has mentioned them
 	cfg.set_v("toggle_binoculars", true)
 	_send_action("binoculars", true); await _frames(3); _send_action("binoculars", false); await _frames(3)
 	ok(pl.binoculars, "toggle mode: one tap raises the binoculars and they stay up")
@@ -1277,6 +1278,36 @@ func _run() -> void:
 	cfg.reset_defaults()
 	main.hud.apply_text_scale()
 	main.hud._radio.visible = false
+
+	print("== playtest 1: binoculars are unlocked by Clara's first check-in")
+	var bino_day: int = clock.day
+	var bino_flag: bool = state.has_flag("binoculars_ready")
+	state.clear_flag("binoculars_ready")
+	clock.day = 1
+	main.hud.close_modal()
+	main.player.locked = false
+	main.player.ui_lock = false
+	ok(not state.binoculars_ready(), "on Day 1 the binoculars are locked until the check-in")
+	Input.action_press("binoculars")
+	await _frames(6)
+	ok(not main.player.binoculars, "holding the binoculars key does nothing before Clara mentions them")
+	Input.action_release("binoculars")
+	await _frames(3)
+	main._unlock_binoculars()
+	ok(state.has_flag("binoculars_ready") and state.binoculars_ready(), "the first check-in unlocks them")
+	Input.action_press("binoculars")
+	await _frames(6)
+	ok(main.player.binoculars, "after the check-in the key raises them")
+	Input.action_release("binoculars")
+	await _frames(3)
+	state.clear_flag("binoculars_ready")
+	clock.day = 2
+	ok(state.binoculars_ready(), "older saves (past Day 1) keep their binoculars")
+	clock.day = bino_day
+	if bino_flag:
+		state.set_flag("binoculars_ready")
+	var conv_lib = load("res://story/conversations.gd")      # loaded at runtime: it needs the autoloads
+	ok(conv_lib.get_conv("morning_d1")["text"].contains("binoculars"), "Clara's first call mentions the binoculars")
 
 	print("== playtest 1: setup tutorial")
 	var hud = main.hud

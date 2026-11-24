@@ -223,6 +223,13 @@ func _on_weights() -> void:
 	_apply_island_lamp()
 	GameState.note("Weights wound. The lens will turn all night.")
 
+## Clara's first check-in mentions the binoculars; from then on Arthur can raise them.
+func _unlock_binoculars() -> void:
+	if GameState.has_flag("binoculars_ready"):
+		return
+	GameState.set_flag("binoculars_ready")
+	GameState.note("Binoculars ready: hold %s (or %s on a gamepad)." % [Settings.binding_text("binoculars", Settings.KB), Settings.binding_text("binoculars", Settings.PAD)])
+
 func _on_radio_desk() -> void:
 	var D := DayDirector
 	if D.phase == D.Phase.MORNING:
@@ -233,6 +240,7 @@ func _on_radio_desk() -> void:
 		else:
 			D.complete_ritual("checkin")
 			RadioSystem.play(Conversations.get_conv(D.data().morning_conv))
+			_unlock_binoculars()
 	elif D.phase == D.Phase.EVENING:
 		if D.evening_call_done and not D.final_pending():
 			GameState.note("Already spoke with Clara tonight.")
