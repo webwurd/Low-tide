@@ -227,17 +227,17 @@ static func _wood() -> Array:
 
 static func _granite() -> Array:
 	var a := _arrays()
-	var cells := _noise(61, 0.012, 1, N, N, FastNoiseLite.TYPE_CELLULAR, FastNoiseLite.RETURN_DISTANCE2_SUB)
-	var cellv := _noise(62, 0.012, 1, N, N, FastNoiseLite.TYPE_CELLULAR, FastNoiseLite.RETURN_CELL_VALUE)
+	var cells := _noise(61, 0.02, 1, N, N, FastNoiseLite.TYPE_CELLULAR, FastNoiseLite.RETURN_DISTANCE2_SUB)
+	var cellv := _noise(62, 0.02, 1, N, N, FastNoiseLite.TYPE_CELLULAR, FastNoiseLite.RETURN_CELL_VALUE)
 	var speck := _noise(63, 0.35, 1)
-	var macro := _noise(64, 0.005, 3)
+	var macro := _noise(64, 0.008, 4)
 	for i in N * N:
-		var crack := 1.0 - smoothstep(0.0, 0.07, cells[i])
+		var crack := (1.0 - smoothstep(0.0, 0.05, cells[i])) * smoothstep(0.35, 0.6, macro[i])
 		var sp := smoothstep(0.62, 0.8, speck[i]) * 0.1 - smoothstep(0.38, 0.2, speck[i]) * 0.06
-		var v := 0.5 + (cellv[i] - 0.5) * 0.1 + (macro[i] - 0.5) * 0.12 + sp - crack * 0.14
+		var v := 0.5 + (cellv[i] - 0.5) * 0.05 + (macro[i] - 0.5) * 0.16 + sp - crack * 0.07
 		var warm := (cellv[i] - 0.5) * 0.06
 		a[0][i] = Color(v * (1.0 + warm), v, v * (1.0 - warm * 0.5))
-		a[1][i] = (1.0 - crack) * 0.6 + macro[i] * 0.3 + speck[i] * 0.1
+		a[1][i] = (1.0 - crack) * 0.35 + macro[i] * 0.5 + speck[i] * 0.15
 	return [a[0], a[1], 3.0]
 
 static func _sand() -> Array:
@@ -257,14 +257,15 @@ static func _sand() -> Array:
 static func _grass() -> Array:
 	# Winter grass seen from above: streaky blades, mixed tan and olive.
 	var a := _arrays()
-	var streak := _noise(81, 0.08, 3, N, 24)
+	var streak := _noise(81, 0.08, 3, N, 128)
+	var clump := _noise(84, 0.04, 3)
 	var patch := _noise(82, 0.008, 3)
 	var fine := _noise(83, 0.3, 1)
 	for y in N:
 		for x in N:
 			var i := y * N + x
-			var s := _s(streak, N, 24, x, y * 24.0 / N)
-			var v := 0.5 + (s - 0.5) * 0.26 + (fine[i] - 0.5) * 0.08
+			var s := lerpf(_s(streak, N, 128, x, y * 128.0 / N), clump[i], 0.55)
+			var v := 0.5 + (s - 0.5) * 0.2 + (fine[i] - 0.5) * 0.1
 			var hue := patch[i]
 			var tint := Color(1.05, 1.0, 0.86).lerp(Color(0.9, 1.04, 0.92), hue)
 			a[0][i] = _v(v, tint)

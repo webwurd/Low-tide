@@ -210,6 +210,16 @@ func apply(outdoors: bool, minute: float, dd: DayData) -> void:
 	RenderingServer.global_shader_parameter_set("tide_height", TideSystem.current_height)
 	RenderingServer.global_shader_parameter_set("shadow_tint", (s.ambient_color as Color).darkened(0.45))
 
+## Sky colours for interior window views: [top, horizon, sea].
+func outside_colors(minute: float, dd: DayData) -> Array:
+	set_weather(dd)
+	var s := atmos.sample(minute)
+	var day := atmos.day_factor(minute)
+	var fog_col: Color = (s.fog_color as Color).lerp(dd.fog_tint, look.fog_tint_amount * day) * look.tint
+	var horizon: Color = (s.sky_horizon as Color).lerp(fog_col, look.sky_to_fog) * look.tint
+	var top: Color = (s.sky_top as Color).lerp(fog_col, look.cloud_cover * 0.5) * look.tint
+	return [top, horizon, fog_col.darkened(0.45)]
+
 func _apply_indoor(minute: float) -> void:
 	if _indoors != 1:
 		_indoors = 1

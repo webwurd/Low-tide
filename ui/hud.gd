@@ -47,12 +47,15 @@ var _tut_title: Label
 var _tut_body: VBoxContainer
 var _tut_next: Button
 var _tut_back: Button
-var _title_panel: PanelContainer
+var _title_panel: Control
 var _continue_btn: Button
+var title_screen: TitleScreen
+var prologue: ProloguePlayer
 var modal_open := false
 
 func _ready() -> void:
 	layer = 10
+	get_window().theme = UITheme.get_theme()
 	_build_reticle()
 	_build_binoculars()
 	_build_watch()
@@ -78,13 +81,7 @@ func _full(c: Control) -> void:
 	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func _style(bg := CARD_BG, border := Color(0.85, 0.7, 0.42, 0.35)) -> StyleBoxFlat:
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = bg
-	sb.border_color = border
-	sb.set_border_width_all(1)
-	sb.set_corner_radius_all(10)
-	sb.set_content_margin_all(12)
-	return sb
+	return UITheme.panel(bg, border)
 
 func _label(text: String, size := 14, color := Color("e8dfc8")) -> Label:
 	var l := Label.new()
@@ -181,7 +178,9 @@ func _build_radio() -> void:
 	v.add_theme_constant_override("separation", 8)
 	_radio.add_child(v)
 	_radio_speaker = _label("", 12, AMBER)
-	_radio_text = _label("", 17)
+	_radio_text = _label("", 18)
+	_radio_text.add_theme_font_override("font", UITheme.title_font(500))
+	_radio_text.add_theme_font_size_override("font_size", 22)
 	_radio_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_radio_text.custom_minimum_size = Vector2(650, 0)
 	_radio_opts = HBoxContainer.new()
@@ -210,38 +209,20 @@ func _build_fade() -> void:
 	_fade.add_child(_fade_label)
 
 func _build_title() -> void:
-	_title = ColorRect.new()
-	(_title as ColorRect).color = Color(0.03, 0.05, 0.07, 0.82)
-	_full(_title)
-	_title.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(_title)
-	var c := CenterContainer.new()
-	_full(c)
-	_title.add_child(c)
-	_title_panel = PanelContainer.new()
-	_title_panel.add_theme_stylebox_override("panel", _style(CARD_BG, Color(0.85, 0.7, 0.42, 0.5)))
-	c.add_child(_title_panel)
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 12)
-	v.custom_minimum_size = Vector2(480, 0)
-	_title_panel.add_child(v)
-	var t := _label("LOW TIDE", 40, Color.WHITE)
-	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var sub := _label("GANNET ROCK LIGHT STATION - MAINE COAST, WINTER 1998", 12, Color("9aa7b0"))
-	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var body := _label("You are Arthur, winter keeper on a fog-bound island. Read the tide, cross the sandbars while they last, and be back on high ground before the Atlantic returns.", 14)
-	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var b_new := Button.new()
-	b_new.text = "NEW WATCH"
-	b_new.pressed.connect(_open_tutorial)
-	_continue_btn = Button.new()
-	_continue_btn.text = "CONTINUE"
-	_continue_btn.pressed.connect(func():
+	title_screen = TitleScreen.new()
+	title_screen.z_index = 4
+	add_child(title_screen)
+	_title = title_screen
+	_title_panel = title_screen.panel
+	_continue_btn = title_screen.continue_btn
+	title_screen.new_watch.connect(_start_prologue)
+	prologue = ProloguePlayer.new()
+	prologue.z_index = 5
+	add_child(prologue)
+	prologue.finished.connect(_open_tutorial)
+	title_screen.continue_game.connect(func():
 		_title.visible = false
 		continue_pressed.emit())
-	_continue_btn.visible = SaveSystem.has_save()
-	for n in [t, sub, body, b_new, _continue_btn]:
-		v.add_child(n)
 
 # --- setup / tutorial (shown before Arthur steps onto the island) -------
 
@@ -252,12 +233,13 @@ func _build_tutorial() -> void:
 	_tut.custom_minimum_size = Vector2(760, 440)
 	_tut.position = Vector2(-380, -220)
 	_tut.visible = false
-	_tut.z_index = 5
+	_tut.z_index = 6
 	add_child(_tut)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	_tut.add_child(v)
-	_tut_title = _label("", 24, Color.WHITE)
+	_tut_title = _label("", 30, Color("f3ead6"))
+	_tut_title.add_theme_font_override("font", UITheme.title_font(600, 1))
 	_tut_body = VBoxContainer.new()
 	_tut_body.add_theme_constant_override("separation", 6)
 	_tut_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -296,7 +278,12 @@ func _build_tutorial() -> void:
 			"EVENING   Light the lamp in the lantern room, write the log at the cottage desk, call Clara, and turn in. Sitting in the armchair or on the lantern bench lets you wait for the tide."},
 	]
 
+func _start_prologue() -> void:
+	_title.visible = false
+	prologue.play()
+
 func _open_tutorial() -> void:
+	_title.visible = true
 	_title_panel.visible = false
 	_tut.visible = true
 	_tut_go(0)
@@ -374,7 +361,8 @@ func _build_modal() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	_modal.add_child(v)
-	_modal_title = _label("", 22, Color("2b2418"))
+	_modal_title = _label("", 28, Color("2b2418"))
+	_modal_title.add_theme_font_override("font", UITheme.title_font(700, 1))
 	_modal_body = _label("", 17, Color("2b2418"))
 	_modal_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_modal_body.custom_minimum_size = Vector2(480, 0)
@@ -433,9 +421,11 @@ func _build_card() -> void:
 	_card.add_child(c)
 	var v := VBoxContainer.new()
 	c.add_child(v)
-	_card_title = _label("", 44, Color.WHITE)
+	_card_title = _label("", 60, Color("f3ead6"))
+	_card_title.add_theme_font_override("font", UITheme.title_font(600, 6))
 	_card_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_card_sub = _label("", 16, AMBER)
+	_card_sub = _label("", 20, Color(1, 0.86, 0.62))
+	_card_sub.add_theme_font_override("font", UITheme.title_font(500, 1))
 	_card_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(_card_title)
 	v.add_child(_card_sub)

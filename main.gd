@@ -11,6 +11,16 @@ var interiors: Interiors
 var ocean: Ocean
 var hud: HUD
 var sky_rig: SkyRig
+var title_cam: Camera3D
+var tender: Node3D
+var _pro_shot := 0
+var _pro_t := 0.0
+var _pro_len := 8.0
+var _title_t := 0.0
+## Title backdrop: dusk on a clear day, lamp lit, beam sweeping. Purely
+## visual: the clock, director and save state are never touched.
+const TITLE_MINUTE := 978.0
+const TITLE_DAY := 5
 var rain: CPUParticles3D
 var location := "cottage"          # outdoors | cottage | tower_base | tower_top
 var started := false
@@ -41,6 +51,21 @@ func _ready() -> void:
 	_wire_interactables()
 	DayDirector.week_ended.connect(func(): hud.show_card("ONE WEEK ON GANNET ROCK", "End of the current build. Story content arrives in M6.", 6.0))
 	_place("cottage", interiors.spawn["cottage"], 0.0)
+	title_cam = Camera3D.new()
+	title_cam.name = "TitleCam"
+	title_cam.fov = 52.0
+	title_cam.far = 900.0
+	add_child(title_cam)
+	tender = Node3D.new()
+	tender.name = "Tender"
+	var hull := MeshInstance3D.new()
+	hull.mesh = load("res://assets/models/tender.res")
+	tender.add_child(hull)
+	tender.visible = false
+	add_child(tender)
+	hud.prologue.shot_requested.connect(func(i, secs):
+		_pro_shot = i; _pro_t = 0.0; _pro_len = secs + 2.5)
+	_set_title_mode(true)
 	if autostart:
 		hud.show_title(false)
 		new_game()
@@ -49,6 +74,7 @@ func _ready() -> void:
 
 func new_game() -> void:
 	GameState.reset()
+	hud.prologue.apply_to_state()
 	DayDirector.begin_day(1)
 	_forced_home_done = false
 	_place("cottage", interiors.spawn["cottage"], 0.0)
@@ -68,6 +94,7 @@ func continue_game() -> void:
 	hud.show_card("DAY %d" % GameClock.day, DayDirector.data().title + "  -  " + DayDirector.data().weather, 3.0)
 
 func _begin() -> void:
+	_set_title_mode(false)
 	started = true
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	hud.refresh_log()
@@ -285,6 +312,8 @@ func _apply_lighting() -> void:
 	sky_rig.apply(outdoors, GameClock.minute_of_day, dd)
 	if not outdoors:
 		rain.emitting = false
+		var o := sky_rig.outside_colors(GameClock.minute_of_day, dd)
+		interiors.set_outside(_daylight() * dd.light_scale, o[0], o[1], o[2])
 		return
 	island.set_lamp(DayDirector.lamp_lit, DayDirector.weights_wound, _daylight())
 	rain.emitting = dd.rain
@@ -292,10 +321,59 @@ func _apply_lighting() -> void:
 
 # --- frame -----------------------------------------------------------------
 
+func _set_title_mode(on: bool) -> void:
+	title_cam.current = on
+	player.cam.current = not on
+	tender.visible = false
+	if not on:
+		_apply_island_lamp()
+
+## Slow drift from the south-west shore towards the light, then back.
+func _update_title_backdrop(delta: float) -> void:
+	_title_t += delta
+	var a := sin(_title_t * 0.035) * 0.5 + 0.5
+	var pos := Vector3(-30.0, 3.4, 34.0).lerp(Vector3(-18.0, 4.2, 40.0), a)
+	title_cam.global_position = pos + Vector3(0, sin(_title_t * 0.21) * 0.15, 0)
+	title_cam.look_at(Vector3(-4.0, 13.5, -4.0).lerp(Vector3(0.0, 14.5, -6.0), a), Vector3.UP)
+	var dd := Days.get_day(TITLE_DAY)
+	sky_rig.apply(true, TITLE_MINUTE, dd)
+	ocean.set_wave_height(dd.wave_height)
+	island.set_lamp(true, true, sky_rig.daylight(TITLE_MINUTE))
+	rain.emitting = false
+
+## Prologue crossing: ride the tender through the dawn fog towards the light.
+func _update_prologue(delta: float) -> void:
+	_pro_t += delta
+	tender.visible = true
+	var path := Prologue.shot_path(_pro_shot)
+	var f := clampf(_pro_t / _pro_len, 0.0, 1.0)
+	var pos: Vector3 = (path[0] as Vector3).lerp(path[1], f)
+	var fwd: Vector3 = ((path[1] as Vector3) - (path[0] as Vector3)).normalized()
+	var bob := sin(_elapsed * 0.9) * 0.12
+	tender.global_position = pos + Vector3(0, TideSystem.current_height - 0.35 + bob, 0)
+	tender.look_at(tender.global_position + fwd, Vector3.UP)
+	tender.rotate_object_local(Vector3.FORWARD, sin(_elapsed * 0.7) * 0.035)
+	tender.rotate_object_local(Vector3.RIGHT, sin(_elapsed * 0.9 + 0.6) * 0.02)
+	title_cam.global_position = tender.global_transform * Vector3(0.35, 2.45, 1.0)
+	var look: Vector3 = (tender.global_position + fwd * 60.0 + Vector3(0, 2.0, 0)).lerp(path[2], 0.35 + 0.4 * f)
+	title_cam.look_at(look, Vector3.UP)
+	var minute := 402.0 + _pro_shot * 6.0 + f * 5.0
+	var dd := Days.get_day(1)
+	sky_rig.apply(true, minute, dd)
+	ocean.set_wave_height(0.22)
+	island.set_lamp(true, true, sky_rig.daylight(minute))
+	rain.emitting = false
+
 func _process(delta: float) -> void:
 	_elapsed += delta
 	if not started:
 		GameClock.paused = true
+		if title_cam.current:
+			if hud.prologue.visible:
+				_update_prologue(delta)
+			else:
+				tender.visible = false
+				_update_title_backdrop(delta)
 		return
 	GameClock.paused = location != "outdoors"
 	_apply_lighting()

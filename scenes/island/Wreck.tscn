@@ -15,15 +15,15 @@ metadata/prop = "wreck"
 transform = Transform3D(0.263085, -0.78682, 0.558302, 0.964767, 0.216547, -0.149438, -0.00331804, 0.577946, 0.816068, 2.5, 0.55, 2.2)
 mesh = ExtResource("2_4qq3b")
 metadata/prop = "canister"
-metadata/highlight_for = "shipwreck"
 
-[node name="@Node3D@2" type="Node3D" parent="."]
+[node name="UseCanister" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.8, 2.2)
 script = ExtResource("3_n4cg2")
 id = "shipwreck"
 title = "Inspect 1974 Waterproof Canister"
 radius = 5.5
 conversation = "shipwreck"
+highlight_paths = Array[NodePath]([NodePath("../Canister")])
 
 [node name="BinoTarget" type="Node3D" parent="." groups=["bino_target"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6, 0)

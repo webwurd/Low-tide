@@ -6,6 +6,7 @@ class_name IslandAssets
 const OUT := "res://scenes/island/"
 
 static func build_all() -> void:
+	_terrain()
 	_lighthouse()
 	_cottage()
 	_pier()
@@ -20,6 +21,12 @@ static func _ring(radius: float, y: float, n := 48) -> PackedVector3Array:
 		p.append(Vector3(cos(a) * radius, y, sin(a) * radius))
 	return p
 
+static func _glow(it: Interactable, nodes: Array) -> void:
+	var paths: Array[NodePath] = []
+	for n in nodes:
+		paths.append(it.get_path_to(n))
+	it.highlight_paths = paths
+
 static func _bino(parent: Node, label: String, pos: Vector3) -> void:
 	var n := Node3D.new()
 	n.name = "BinoTarget"
@@ -27,6 +34,33 @@ static func _bino(parent: Node, label: String, pos: Vector3) -> void:
 	n.set_meta("label", label)
 	n.add_to_group("bino_target", true)
 	parent.add_child(n)
+
+# --- terrain -----------------------------------------------------------------------
+
+## Render mesh (smooth, ~130k tris) + material, and the gameplay collision
+## shape (the coarse grid). Both derive from Terrain.height(): re-run the
+## factory after changing the height field.
+static func _terrain() -> void:
+	var T := "res://assets/textures/"
+	var m := ShaderMaterial.new()
+	m.shader = load("res://art/terrain.gdshader")
+	for pair in [["sand_tex", "sand_albedo"], ["rock_tex", "granite_albedo"], ["grass_tex", "grass_albedo"],
+			["moss_tex", "moss_albedo"], ["macro_tex", "macro_breakup"], ["sand_nrm", "sand_normal"],
+			["rock_nrm", "granite_normal"], ["grass_nrm", "grass_normal"]]:
+		m.set_shader_parameter(pair[0], load(T + pair[1] + ".png"))
+	ResourceSaver.save(m, "res://assets/materials/terrain.tres")
+	m.take_over_path("res://assets/materials/terrain.tres")
+	var mesh := Terrain.build_smooth_mesh()
+	mesh.surface_set_material(0, m)
+	SceneUtil.save_mesh(mesh, "terrain")
+	var shape := Terrain.build_mesh().create_trimesh_shape()
+	ResourceSaver.save(shape, SceneUtil.MODELS + "terrain_collision.res", ResourceSaver.FLAG_COMPRESS)
+	print("    model terrain (+ collision)")
+	var o := ShaderMaterial.new()
+	o.shader = load("res://world/ocean.gdshader")
+	o.set_shader_parameter("normal_tex", load(T + "water_normal.png"))
+	o.set_shader_parameter("foam_tex", load(T + "foam_albedo.png"))
+	ResourceSaver.save(o, "res://assets/materials/ocean.tres")
 
 # --- lighthouse ----------------------------------------------------------------
 
@@ -97,9 +131,6 @@ static func _lighthouse() -> void:
 	k.box("granite", Vector3(2.0, 2.95, 0.7), Vector3(0, 1.35, 4.0), 0.06, 2)
 	k.box("granite", Vector3(2.3, 0.28, 0.85), Vector3(0, 2.92, 4.08), 0.05)
 	k.box("granite", Vector3(2.2, 0.32, 1.0), Vector3(0, -0.02, 4.55), 0.05)
-	k.box("red_paint", Vector3(1.12, 2.2, 0.1), Vector3(0, 1.15, 4.36), 0.02)
-	for py in [0.62, 1.62]:
-		k.box("red_paint", Vector3(0.82, 0.78, 0.05), Vector3(0, py, 4.42), 0.03)
 	# Stair windows up the tower.
 	for w in [[6.6, 0.0], [10.8, PI * 0.75], [14.8, -PI * 0.6]]:
 		var wy: float = w[0]
@@ -117,16 +148,19 @@ static func _lighthouse() -> void:
 		Vector2(0.66, 20.0), Vector2(0.6, 20.32), Vector2(0.34, 20.7), Vector2(0.0, 20.8)]), 24, true)
 	var lens := SceneUtil.kit_mesh(lens_k, "lighthouse_lens", false)
 	var knob_k := MeshKit.new()
+	knob_k.box("red_paint", Vector3(1.12, 2.2, 0.1), Vector3(0, 1.15, 4.36), 0.02)
+	for py in [0.62, 1.62]:
+		knob_k.box("red_paint", Vector3(0.82, 0.78, 0.05), Vector3(0, py, 4.42), 0.03)
 	knob_k.push(Transform3D(Basis(Vector3.RIGHT, PI / 2.0), Vector3(0.38, 1.12, 4.45)))
 	knob_k.lathe("brass", PackedVector2Array([Vector2(0.0, -0.06), Vector2(0.03, -0.05), Vector2(0.03, 0.0), Vector2(0.055, 0.02), Vector2(0.05, 0.05), Vector2(0.0, 0.06)]), 10, true)
-	var knob := SceneUtil.kit_mesh(knob_k, "lighthouse_knob", false)
+	var knob := SceneUtil.kit_mesh(knob_k, "lighthouse_door", false)
 
 	var root := Node3D.new()
 	root.name = "Lighthouse"
 	root.position = Vector3(0, 10.1, -6)
 	SceneUtil.mesh_node(root, mesh, "Model", Transform3D.IDENTITY, true, "lighthouse")
 	SceneUtil.mesh_node(root, lens, "Lens", Transform3D.IDENTITY, false)
-	SceneUtil.mesh_node(root, knob, "Knob", Transform3D.IDENTITY, false)
+	var door_mi := SceneUtil.mesh_node(root, knob, "DoorPanel", Transform3D.IDENTITY, true, "lighthouse_door")
 	var col := CylinderShape3D.new(); col.radius = 4.2; col.height = 16.0
 	SceneUtil.body(root, "Body", [[col, Transform3D(Basis(), Vector3(0, 5, 0))]])
 	# Beam: two opposed shafts + real spot lights, and the lamp's own glow.
@@ -166,7 +200,7 @@ static func _lighthouse() -> void:
 	lamp.light_energy = 0.0
 	lamp.omni_range = 45.0
 	pivot.add_child(lamp)
-	SceneUtil.interactable(root, "Door", "lighthouse", "Enter the lighthouse", Vector3(0, 1.2, 4.8), 3.2, "lighthouse")
+	_glow(SceneUtil.interactable(root, "Door", "lighthouse", "Enter the lighthouse", Vector3(0, 1.2, 4.8), 3.2, "lighthouse"), [door_mi])
 	_bino(root, "GANNET ROCK LIGHTHOUSE (1884)", Vector3(0, 19.9, 0))
 	SceneUtil.save_scene(root, OUT + "Lighthouse.tscn")
 
@@ -240,9 +274,6 @@ static func _cottage() -> void:
 		_window(k, 0.6, 0.6, false)
 		k.pop()
 	k.box("trim_white", Vector3(1.35, 2.42, 0.1), Vector3(0, 1.5, 2.53), 0.02)
-	k.box("green_paint", Vector3(1.0, 2.0, 0.08), Vector3(0, 1.33, 2.58), 0.02)
-	for py in [0.85, 1.75]:
-		k.box("green_paint", Vector3(0.72, 0.6, 0.04), Vector3(0, py, 2.63), 0.025)
 	k.box("window_glow", Vector3(0.92, 0.22, 0.04), Vector3(0, 2.5, 2.585), 0.005)
 	k.box("granite", Vector3(1.7, 0.32, 0.85), Vector3(0, 0.2, 2.95), 0.05)
 	# Porch lamp bracket.
@@ -269,12 +300,21 @@ static func _cottage() -> void:
 			k.pop()
 	k.tint = Color(1, 1, 1)
 	var mesh := SceneUtil.kit_mesh(k, "cottage")
+	var dk := MeshKit.new()
+	dk.box("green_paint", Vector3(1.0, 2.0, 0.08), Vector3(0, 1.33, 2.58), 0.02)
+	for py in [0.85, 1.75]:
+		dk.box("green_paint", Vector3(0.72, 0.6, 0.04), Vector3(0, py, 2.63), 0.025)
+	dk.push(Transform3D(Basis(Vector3.RIGHT, PI / 2.0), Vector3(0.36, 1.3, 2.64)))
+	dk.lathe("brass", PackedVector2Array([Vector2(0.0, -0.05), Vector2(0.03, -0.04), Vector2(0.03, 0.0), Vector2(0.05, 0.02), Vector2(0.045, 0.05), Vector2(0.0, 0.06)]), 10, true)
+	dk.pop()
+	var door_mesh := SceneUtil.kit_mesh(dk, "cottage_door", false)
 
 	var root := Node3D.new()
 	root.name = "Cottage"
 	root.position = Vector3(Terrain.COTTAGE_POS.x, Terrain.COTTAGE_Y, Terrain.COTTAGE_POS.y)
 	root.rotation.y = Terrain.COTTAGE_YAW
 	SceneUtil.mesh_node(root, mesh, "Model", Transform3D.IDENTITY, true, "cottage")
+	var cdoor := SceneUtil.mesh_node(root, door_mesh, "DoorPanel", Transform3D.IDENTITY, true, "cottage_door")
 	SceneUtil.body(root, "Body", [[SceneUtil.box_shape(Vector3(6.5, 3.6, 5.0)), Transform3D(Basis(), Vector3(0, 1.8, 0))]])
 	var light := OmniLight3D.new()
 	light.name = "PorchLight"
@@ -288,7 +328,7 @@ static func _cottage() -> void:
 	spill.position = Vector3(0, 1.8, 3.4)
 	root.add_child(spill)
 	root.add_child(_smoke())
-	SceneUtil.interactable(root, "Door", "cottage", "Enter the cottage", Vector3(0, 1.25, 3.8), 2.6, "cottage")
+	_glow(SceneUtil.interactable(root, "Door", "cottage", "Enter the cottage", Vector3(0, 1.25, 3.8), 2.6, "cottage"), [cdoor])
 	SceneUtil.save_scene(root, OUT + "Cottage.tscn")
 
 static func _smoke() -> GPUParticles3D:
@@ -534,8 +574,7 @@ static func _wreck() -> void:
 	SceneUtil.mesh_node(root, mesh, "Model", Transform3D.IDENTITY, true, "wreck")
 	var canister: Mesh = load(SceneUtil.MODELS + "canister.res")
 	var can := SceneUtil.mesh_node(root, canister, "Canister", Transform3D(Basis.from_euler(Vector3(0.15, 0.6, 1.35)), Vector3(2.5, 0.55, 2.2)), true, "canister")
-	can.set_meta("highlight_for", "shipwreck")
-	SceneUtil.interactable(root, "Canister", "shipwreck", "Inspect 1974 Waterproof Canister", Vector3(2.5, 0.8, 2.2), 5.5, "shipwreck")
+	_glow(SceneUtil.interactable(root, "UseCanister", "shipwreck", "Inspect 1974 Waterproof Canister", Vector3(2.5, 0.8, 2.2), 5.5, "shipwreck"), [can])
 	_bino(root, "EAST SEA STACK // UNCHARTED WRECK", Vector3(0, 2.6, 0))
 	SceneUtil.save_scene(root, OUT + "Wreck.tscn")
 
@@ -568,8 +607,8 @@ static func _cave() -> void:
 		[pillar, Transform3D(Basis(), Vector3(0.2, 2.5, 4.6))],
 		[SceneUtil.box_shape(Vector3(2.4, 7.0, 6.0)), Transform3D(Basis(), Vector3(-4.2, 2.5, 0))]])
 	var buoy: Mesh = load(SceneUtil.MODELS + "acoustic_buoy.res")
-	SceneUtil.mesh_node(root, buoy, "Buoy", Transform3D(Basis.from_euler(Vector3(0.0, 0.4, 0.42)), Vector3(1.5, 0.15, 0)), true, "acoustic_buoy")
-	SceneUtil.interactable(root, "Buoy", "seacave", "Examine Washed-Up Acoustic Buoy", Vector3(1.5, 1.0, 0), 6.0, "seacave")
+	var bmi := SceneUtil.mesh_node(root, buoy, "Buoy", Transform3D(Basis.from_euler(Vector3(0.0, 0.4, 0.42)), Vector3(1.5, 0.15, 0)), true, "acoustic_buoy")
+	_glow(SceneUtil.interactable(root, "UseBuoy", "seacave", "Examine Washed-Up Acoustic Buoy", Vector3(1.5, 1.0, 0), 6.0, "seacave"), [bmi])
 	_bino(root, "WEST SEA STACK // ECHO SEA CAVE", Vector3(0, 3.5, 0))
 	SceneUtil.save_scene(root, OUT + "SeaCave.tscn")
 

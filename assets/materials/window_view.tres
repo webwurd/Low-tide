@@ -1,0 +1,12 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3]
+
+[ext_resource type="Shader" path="res://art/window_view.gdshader" id="1_s8is8"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_s8is8")
+shader_parameter/sky_top = Color(0.4, 0.55, 0.7, 1)
+shader_parameter/sky_horizon = Color(0.75, 0.8, 0.82, 1)
+shader_parameter/sea = Color(0.15, 0.25, 0.3, 1)
+shader_parameter/energy = 1.0
+shader_parameter/horizon = 0.38

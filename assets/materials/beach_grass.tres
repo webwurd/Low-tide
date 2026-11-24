@@ -1,0 +1,17 @@
+[gd_resource type="ShaderMaterial" load_steps=3 format=3]
+
+[ext_resource type="Shader" path="res://art/foliage.gdshader" id="1_l34jg"]
+[ext_resource type="Texture2D" path="res://assets/textures/grass_card.png" id="2_xsm60"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_l34jg")
+shader_parameter/wrap = 0.45
+shader_parameter/shadow_fill = 0.55
+shader_parameter/rim_strength = 0.35
+shader_parameter/spec_strength = 0.5
+shader_parameter/card_tex = ExtResource("2_xsm60")
+shader_parameter/tint_a = Color(0.82, 0.74, 0.52, 1)
+shader_parameter/tint_b = Color(0.7, 0.66, 0.44, 1)
+shader_parameter/alpha_cut = 0.45
+shader_parameter/sway = 0.2

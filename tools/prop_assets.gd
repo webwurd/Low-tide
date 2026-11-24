@@ -25,6 +25,7 @@ static func build_all() -> void:
 	_table_chairs()
 	_shelf_books()
 	_small_props()
+	_tender()
 
 static func _save(k: MeshKit, name: String) -> void:
 	SceneUtil.kit_mesh(k, name)
@@ -510,3 +511,81 @@ static func _small_props() -> void:
 		var a := folds[i]; var b := folds[i + 1]
 		cu.quad("linen", Vector3(a.x, -1.2, a.y), Vector3(b.x, -1.2, b.y), Vector3(b.x, 0, b.y), Vector3(a.x, 0, a.y), true)
 	_save(cu, "curtain")
+
+# --- the Coast Guard tender (prologue crossing) -----------------------------------------
+
+## Hull cross-section point: station `t` (0 stern .. 1 bow), angle `th`
+## (-PI/2 port sheer .. PI/2 starboard sheer). Bow points to -Z.
+static func _tender_pt(t: float, th: float) -> Vector3:
+	var len := 11.0
+	var z := lerpf(len * 0.5, -len * 0.5, t)
+	var beam := 1.9 * (1.0 - pow(maxf(0.0, t - 0.45) / 0.55, 1.6)) * (0.9 + 0.1 * sin(t * PI))
+	var sheer := 1.1 + pow(t, 2.5) * 0.55
+	var depth := 0.9 * (1.0 - pow(t, 3.0) * 0.4)
+	return Vector3(beam * sin(th), lerpf(sheer, -depth, cos(th)), z)
+
+static func _tender() -> void:
+	var k := MeshKit.new()
+	var st := 18
+	var ring := 13
+	for band in [["trim_white", -PI / 2.0, -0.62], ["keeper_red", -0.62, -0.42], ["iron", -0.42, 0.42], ["keeper_red", 0.42, 0.62], ["trim_white", 0.62, PI / 2.0]]:
+		var verts := PackedVector3Array(); var norms := PackedVector3Array(); var idx := PackedInt32Array()
+		var n := 4
+		for i in st + 1:
+			var t := float(i) / st
+			for j in n + 1:
+				var th := lerpf(band[1], band[2], float(j) / n)
+				var p := _tender_pt(t, th)
+				verts.append(p)
+				var outward := Vector3(sin(th), -cos(th) * 0.8, 0.0).normalized()
+				norms.append(outward)
+		for i in st:
+			for j in n:
+				var a := i * (n + 1) + j
+				var b := a + n + 1
+				idx.append_array([a, a + 1, b + 1, a, b + 1, b])
+		k.emit(band[0], verts, norms, idx)
+	# Transom.
+	var tr := PackedVector2Array()
+	for j in 9:
+		var p := _tender_pt(0.0, lerpf(PI / 2.0, -PI / 2.0, j / 8.0))
+		tr.append(Vector2(p.x, p.y))
+	k.push(Transform3D(Basis(), Vector3(0, 0, 5.5)))
+	k.extrude("trim_white", tr, 0.06)
+	k.pop()
+	# Deck planks + gunwale rails.
+	var z := 5.3
+	while z > -4.2:
+		var t := inverse_lerp(5.5, -5.5, z)
+		var w := absf(_tender_pt(t, PI / 2.0).x) * 2.0 - 0.18
+		k.box("wood_weathered", Vector3(w, 0.05, 0.2), Vector3(0, 1.08, z), 0.01)
+		z -= 0.23
+	for side in [-1.0, 1.0]:
+		var rail := PackedVector3Array()
+		for i in 13:
+			var t := float(i) / 12.0
+			rail.append(_tender_pt(t, side * PI / 2.0) + Vector3(0, 0.08, 0))
+		k.tube("trim_white", rail, 0.05, 6)
+	# Bow pulpit.
+	var pulpit := PackedVector3Array()
+	var ts := [0.72, 0.82, 0.9, 0.96, 1.0, 0.96, 0.9, 0.82, 0.72]
+	for i in ts.size():
+		var side := -1.0 if i < 4 else 1.0
+		pulpit.append(_tender_pt(ts[i], side * PI / 2.0) + Vector3(0, 0.72, 0))
+	k.tube("iron", pulpit, 0.03, 6)
+	# Wheelhouse with lit windows, mast and a coil of line forward.
+	k.box("trim_white", Vector3(2.6, 1.7, 2.4), Vector3(0, 1.95, 2.9), 0.05, 2)
+	k.box("keeper_red", Vector3(2.9, 0.14, 2.8), Vector3(0, 2.86, 2.9), 0.04)
+	for wx in [-0.72, 0.0, 0.72]:
+		k.box("window_glow", Vector3(0.6, 0.55, 0.04), Vector3(wx, 2.3, 1.69), 0.01)
+	k.cylinder("iron", 0.05, 0.035, 2.4, 8, 2.93)
+	k.push(Transform3D(Basis(), Vector3(0, 2.93, 2.9)))
+	k.box("iron", Vector3(0.9, 0.05, 0.05), Vector3(0, 1.8, 0), 0.01)
+	k.pop()
+	var coil := PackedVector3Array()
+	for i in 70:
+		var a := i * 0.4
+		coil.append(Vector3(0.5 + cos(a) * (0.14 + i * 0.003), 1.13 + (i / 24) * 0.035, -2.6 + sin(a) * (0.14 + i * 0.003)))
+	k.tube("rope", coil, 0.022, 5)
+	k.box("iron", Vector3(0.22, 0.12, 0.12), Vector3(0, 1.16, -3.9), 0.02)
+	_save(k, "tender")

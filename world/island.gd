@@ -8,6 +8,7 @@ const SCENES := [
 	"res://scenes/island/Lighthouse.tscn", "res://scenes/island/Cottage.tscn",
 	"res://scenes/island/Pier.tscn", "res://scenes/island/Wreck.tscn",
 	"res://scenes/island/SeaCave.tscn", "res://scenes/island/Rocks.tscn",
+	"res://scenes/island/Vegetation.tscn", "res://scenes/island/Horizon.tscn",
 ]
 
 var beam_pivot: Node3D
@@ -28,6 +29,8 @@ var _lamp_off_mat: Material
 func build() -> void:
 	_build_terrain()
 	for path in SCENES:
+		if not ResourceLoader.exists(path):
+			continue
 		var scene: PackedScene = load(path)
 		var inst := scene.instantiate()
 		add_child(inst)
@@ -92,18 +95,28 @@ func set_lamp(lit: bool, wound: bool, daylight: float) -> void:
 
 # --- terrain -----------------------------------------------------------
 
+## Terrain: the generated render mesh + collision assets when present
+## (tools/build_assets.sh), otherwise built from the height field at runtime.
 func _build_terrain() -> void:
-	var mesh := Terrain.build_mesh()
-	var mat := StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo = true
-	mat.vertex_color_is_srgb = true
-	mat.roughness = 0.88
 	var mi := MeshInstance3D.new()
-	mi.mesh = mesh
-	mi.material_override = mat
+	mi.name = "Terrain"
+	var shape: Shape3D
+	if ResourceLoader.exists("res://assets/models/terrain.res"):
+		mi.mesh = load("res://assets/models/terrain.res")
+		shape = load("res://assets/models/terrain_collision.res")
+	else:
+		var mesh := Terrain.build_mesh()
+		var mat := StandardMaterial3D.new()
+		mat.vertex_color_use_as_albedo = true
+		mat.vertex_color_is_srgb = true
+		mat.roughness = 0.88
+		mi.mesh = mesh
+		mi.material_override = mat
+		shape = mesh.create_trimesh_shape()
 	add_child(mi)
 	var body := StaticBody3D.new()
+	body.name = "TerrainBody"
 	var cs := CollisionShape3D.new()
-	cs.shape = mesh.create_trimesh_shape()
+	cs.shape = shape
 	body.add_child(cs)
 	add_child(body)

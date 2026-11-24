@@ -37,13 +37,14 @@ transform = Transform3D(0.841011, -0.375572, 0.389418, 0.40776, 0.913089, 0, -0.
 mesh = ExtResource("2_aeq6s")
 metadata/prop = "acoustic_buoy"
 
-[node name="@Node3D@3" type="Node3D" parent="."]
+[node name="UseBuoy" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 1, 0)
 script = ExtResource("3_vw65r")
 id = "seacave"
 title = "Examine Washed-Up Acoustic Buoy"
 radius = 6.0
 conversation = "seacave"
+highlight_paths = Array[NodePath]([NodePath("../Buoy")])
 
 [node name="BinoTarget" type="Node3D" parent="." groups=["bino_target"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 0)

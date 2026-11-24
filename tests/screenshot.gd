@@ -24,10 +24,29 @@ func _run() -> void:
 	var dd := root.get_node("DayDirector")
 	main = load("res://main.tscn").instantiate()
 	root.add_child(main)
-	await _wait(10)
+	await _wait(40)
 	await _snap("00_title")
-	main.hud._open_tutorial()
-	await _wait(4)
+	# Prologue: the first crossing shot, then the first typed card (fully typed).
+	var pro = main.hud.prologue
+	main.hud._start_prologue()
+	await _wait(60)
+	await _snap("02_prologue_crossing")
+	pro._shot_left = 0.0
+	pro._next()
+	await _wait(50)
+	if pro._typing:
+		pro._typing.kill()
+	pro._show_choices(pro._beats[pro._i])
+	await _wait(30)
+	await _snap("03_prologue_card")
+	while pro._i < pro._beats.size() - 2:
+		pro._next()
+	pro._shot_left = 0.0
+	pro._next()
+	await _wait(80)
+	await _snap("04_prologue_arrival")
+	pro._finish()
+	await _wait(60)
 	await _snap("01_tutorial_controls")
 	main.hud._tut_go(3)
 	await _wait(10)

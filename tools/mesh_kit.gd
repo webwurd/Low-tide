@@ -155,6 +155,11 @@ func box(mat: String, size: Vector3, center := Vector3.ZERO, bevel := 0.03, seg 
 func lathe(mat: String, profile: PackedVector2Array, sides := 24, smooth := false,
 		cap_bottom := false, cap_top := false, phase := 0.0) -> void:
 	var verts := PackedVector3Array(); var norms := PackedVector3Array(); var idx := PackedInt32Array()
+	var uvs := PackedVector2Array()
+	var y_lo := INF; var y_hi := -INF
+	for pr in profile:
+		y_lo = minf(y_lo, pr.y); y_hi = maxf(y_hi, pr.y)
+	var y_span := maxf(0.0001, y_hi - y_lo)
 	var seg_n := PackedVector2Array()
 	for k in profile.size() - 1:
 		var d := profile[k + 1] - profile[k]
@@ -174,6 +179,7 @@ func lathe(mat: String, profile: PackedVector2Array, sides := 24, smooth := fals
 				var pn := n0 if e == 0 else n1
 				verts.append(dir * pr.x + Vector3(0, pr.y, 0))
 				norms.append((dir * pn.x + Vector3(0, pn.y, 0)).normalized())
+				uvs.append(Vector2(float(s) / sides, 1.0 - (pr.y - y_lo) / y_span))
 		for s in sides:
 			var a0 := start + s * 2
 			idx.append_array([a0, a0 + 3, a0 + 1, a0, a0 + 2, a0 + 3])
@@ -181,7 +187,7 @@ func lathe(mat: String, profile: PackedVector2Array, sides := 24, smooth := fals
 		_cap(verts, norms, idx, profile[0], sides, phase, false)
 	if cap_top:
 		_cap(verts, norms, idx, profile[profile.size() - 1], sides, phase, true)
-	emit(mat, verts, norms, idx)
+	emit(mat, verts, norms, idx, PackedColorArray(), uvs)
 
 func _cap(verts: PackedVector3Array, norms: PackedVector3Array, idx: PackedInt32Array, pr: Vector2, sides: int, phase: float, top: bool) -> void:
 	var c := verts.size()
