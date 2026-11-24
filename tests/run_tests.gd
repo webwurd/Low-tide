@@ -746,6 +746,246 @@ func _run() -> void:
 	ok(clock.day == 1 and state.discovered.is_empty() and state.ending == "", "closing the end card resets the game to a fresh Day 1")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(save2.endings_path))
 
+	print("== M7: settings, rebinding, menus")
+	var cfg := root.get_node("Settings")
+	cfg.path = "user://test_settings.cfg"
+	cfg.delete_saved_settings()
+	cfg.reset_defaults(); cfg.reset_bindings()
+	main.ending_kind = ""
+	main.started = true
+	main._busy = false
+	main.player.locked = false
+	main.player.ui_lock = false
+	paused = false
+	_reset_radio(radio)
+	state.reset()
+	director.begin_day(1)
+	main._place("outdoors", main.island.spawn_point, 0.0)
+	await _frames(20)
+
+	cfg.set_v("vol_master", 7.0)
+	near(cfg.v("vol_master"), 1.0, 0.0001, "settings are clamped to their range")
+	cfg.set_v("nonsense", 1)
+	ok(not cfg.values.has("nonsense"), "unknown settings are ignored")
+	cfg.set_v("invert_y", 1)
+	ok(cfg.v("invert_y") == true, "booleans are coerced")
+	cfg.set_v("msaa", 9)
+	ok(cfg.v("msaa") == 3, "integer settings are clamped (msaa 9 -> 3)")
+	cfg.reset_defaults()
+
+	cfg.set_preset(0)
+	ok(cfg.v("quality_preset") == 0 and cfg.v("shadow_quality") == 1 and absf(cfg.v("render_scale") - 0.75) < 0.001, "Low preset applies its bundle")
+	cfg.set_v("msaa", 3)
+	ok(cfg.v("quality_preset") == 4, "changing one graphics setting by hand switches the preset to Custom")
+	cfg.set_preset(3)
+	ok(cfg.v("fps_cap") == 60 and Engine.max_fps == 60, "Steam Deck preset caps the frame rate at 60 and applies it to the engine")
+	cfg.set_preset(2)
+	ok(Engine.max_fps == 0 and cfg.v("shadow_quality") == 3, "High preset removes the cap")
+
+	cfg.set_v("vol_ambience", 0.5)
+	var amb: int = AudioServer.get_bus_index("Ambience")
+	ok(amb >= 0 and absf(AudioServer.get_bus_volume_db(amb) - linear_to_db(0.5)) < 0.01, "ambience slider sets the Ambience bus volume (%.2f dB)" % AudioServer.get_bus_volume_db(amb))
+	cfg.set_v("vol_sfx", 0.0)
+	ok(AudioServer.is_bus_mute(AudioServer.get_bus_index("SFX")), "volume 0 mutes the bus")
+	cfg.set_v("vol_master", 0.25)
+	ok(absf(AudioServer.get_bus_volume_db(0) - linear_to_db(0.25)) < 0.01, "master volume drives the Master bus")
+	var audio := root.get_node("AudioDirector")
+	ok(audio._surf.bus == "Ambience" and audio._hiss.bus == "Radio", "ambient beds are on Ambience, tape hiss on Radio")
+	audio.play_sfx("wood_0")
+	cfg.reset_defaults()
+
+	cfg.set_v("ui_scale", 1.25)
+	near(root.content_scale_factor, 1.25, 0.001, "interface size scales the window content")
+	cfg.set_v("ui_scale", 1.0)
+
+	print("-- bindings")
+	ok(cfg.binding_text("interact", "kb") == "E" and cfg.binding_text("interact", "pad") == "A", "defaults: interact = E / A")
+	var f_key := InputEventKey.new(); f_key.physical_keycode = KEY_F
+	var cleared: Array = cfg.rebind("interact", f_key)
+	ok(cfg.binding_text("interact", "kb") == "F" and cleared.is_empty(), "interact rebinds to F")
+	ok(InputMap.action_has_event("interact", f_key) and not InputMap.action_has_event("interact", _key_ev(KEY_E)), "InputMap really changed (F in, E out)")
+	cleared = cfg.rebind("watch", _key_ev(KEY_F))
+	ok(cleared == ["Inspect / use"] and cfg.binding_text("interact", "kb") == "(unbound)", "binding a key already in use unbinds the other action and says so")
+	var x_btn := InputEventJoypadButton.new(); x_btn.button_index = JOY_BUTTON_X
+	cfg.rebind("interact", x_btn)
+	ok(cfg.binding_text("interact", "pad") == "X", "gamepad button rebinds independently of the keyboard")
+	var stick := InputEventJoypadButton.new(); stick.button_index = JOY_BUTTON_Y
+	ok(cfg.rebind("move_forward", stick).is_empty() and cfg.binding_text("move_forward", "pad").begins_with("Left stick"), "movement stays fixed to the stick on gamepad")
+	cfg.save_settings()
+	cfg.reset_bindings()
+	ok(cfg.binding_text("interact", "kb") == "E" and cfg.binding_text("watch", "kb") == "Q" and cfg.binding_text("interact", "pad") == "A", "reset restores every default binding")
+	cfg.load_settings()
+	ok(cfg.binding_text("watch", "kb") == "F" and cfg.binding_text("interact", "pad") == "X", "custom bindings survive a save/load round trip")
+	cfg.reset_bindings()
+	for ev in [_key_ev(KEY_G), x_btn, f_key]:
+		ok(cfg.ev_to_dict(cfg.dict_to_ev(cfg.ev_to_dict(ev))) == cfg.ev_to_dict(ev), "event serialisation round-trips (%s)" % cfg.event_text(ev))
+
+	print("-- persistence")
+	cfg.reset_defaults()
+	cfg.set_v("mouse_sens", 1.7); cfg.set_v("brightness", 1.2); cfg.set_v("toggle_hold", true); cfg.set_v("subtitle_scale", 1.4); cfg.set_v("vol_music", 0.3)
+	ok(cfg.save_settings() and FileAccess.file_exists(cfg.path), "settings file is written")
+	cfg.values = cfg.DEFAULTS.duplicate()
+	ok(cfg.load_settings() and absf(cfg.v("mouse_sens") - 1.7) < 0.001 and cfg.v("toggle_hold") == true and absf(cfg.v("subtitle_scale") - 1.4) < 0.001 and absf(cfg.v("vol_music") - 0.3) < 0.001, "settings survive a save/load round trip")
+	cfg.reset_defaults()
+
+	print("-- effects in play")
+	var pl = main.player
+	main._place("outdoors", main.island.spawn_point, 0.0)
+	await _frames(30)
+	cfg.set_v("toggle_binoculars", true)
+	_send_action("binoculars", true); await _frames(3); _send_action("binoculars", false); await _frames(3)
+	ok(pl.binoculars, "toggle mode: one tap raises the binoculars and they stay up")
+	_send_action("binoculars", true); await _frames(3); _send_action("binoculars", false); await _frames(3)
+	ok(not pl.binoculars, "...and a second tap lowers them")
+	cfg.set_v("toggle_binoculars", false)
+	await _frames(5)
+	ok(not pl.binoculars, "hold mode: released means down")
+
+	cfg.set_v("reduce_motion", false)
+	Input.action_press("move_forward")
+	var span := [999.0, -999.0]
+	for i in 60:
+		await process_frame
+		span[0] = minf(span[0], pl.cam.position.y); span[1] = maxf(span[1], pl.cam.position.y)
+	Input.action_release("move_forward")
+	ok(span[1] - span[0] > 0.02, "walking bobs the camera (range %.3f m)" % (span[1] - span[0]))
+	cfg.set_v("reduce_motion", true)
+	main._place("outdoors", main.island.spawn_point, 0.0)
+	await _frames(20)
+	span = [999.0, -999.0]
+	Input.action_press("move_forward")
+	for i in 60:
+		await process_frame
+		span[0] = minf(span[0], pl.cam.position.y); span[1] = maxf(span[1], pl.cam.position.y)
+	Input.action_release("move_forward")
+	ok(span[1] - span[0] < 0.005, "reduce motion removes the head-bob (range %.4f m)" % (span[1] - span[0]))
+	cfg.set_v("reduce_motion", false)
+
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	var mouse_ok := Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	if mouse_ok:
+		pl.pitch = 0.0
+		var mm := InputEventMouseMotion.new(); mm.relative = Vector2(0, 100)
+		pl._unhandled_input(mm)
+		var normal: float = pl.pitch
+		pl.pitch = 0.0
+		cfg.set_v("invert_y", true)
+		pl._unhandled_input(mm)
+		ok(normal < 0.0 and pl.pitch > 0.0 and absf(absf(normal) - absf(pl.pitch)) < 1e-6, "invert Y flips the vertical look direction")
+		cfg.set_v("invert_y", false)
+		pl.pitch = 0.0
+		cfg.set_v("mouse_sens", 2.0)
+		pl._unhandled_input(mm)
+		ok(absf(pl.pitch) > absf(normal) * 1.9, "mouse sensitivity scales look speed (%.4f vs %.4f)" % [absf(pl.pitch), absf(normal)])
+		cfg.set_v("mouse_sens", 1.0)
+	else:
+		print("  (skipped: this display driver will not capture the mouse)")
+
+	state.reset(); director.begin_day(1)
+	main._place("tower_base", main.interiors.spawn["tower_base"], 0.0)
+	await _frames(10)
+	cfg.set_v("toggle_hold", true)
+	await _use(main, "weights")
+	await create_timer(3.6).timeout
+	ok(director.weights_wound, "toggle hold-to-use: a single press winds the weights by itself")
+	cfg.set_v("toggle_hold", false)
+
+	main._place("cottage", main.interiors.spawn["cottage"], 0.0)
+	await _frames(10)
+	cfg.set_v("toggle_watch", true)
+	_send_action("watch", true); await _frames(3); _send_action("watch", false); await _frames(3)
+	ok(main.hud._watch.visible, "toggle mode: tapping the watch key leaves the watch up")
+	_send_action("watch", true); await _frames(3); _send_action("watch", false); await _frames(3)
+	ok(not main.hud._watch.visible, "...and tapping again puts it away")
+	cfg.set_v("toggle_watch", false)
+
+	cfg.set_v("subtitle_scale", 1.5)
+	ok(main.hud._radio_text.get_theme_font_size("font_size") == int(17 * 1.5) and main.hud._tape_text.get_theme_font_size("font_size") == int(17 * 1.5), "subtitle size scales the radio and tape text")
+	cfg.set_v("subtitle_scale", 1.0)
+
+	cfg.set_v("brightness", 1.3); cfg.set_v("exposure", 1.2); cfg.set_v("glow", true)
+	main._apply_lighting()
+	ok(absf(main.env.adjustment_brightness - 1.3) < 0.001 and absf(main.env.tonemap_exposure - 0.95 * 1.2) < 0.001 and main.env.glow_enabled, "brightness, exposure and bloom reach the environment")
+	cfg.reset_defaults()
+	cfg.set_v("shadow_quality", 0)
+	main._place("outdoors", main.island.spawn_point, 0.0)
+	clock.set_time(1, 700.0)
+	main._apply_lighting()
+	ok(not main.sun.shadow_enabled, "shadows off turns the sun's shadows off")
+	cfg.set_v("shadow_quality", 3)
+	main._apply_lighting()
+	ok(main.sun.shadow_enabled and main.sun.directional_shadow_max_distance >= 220.0, "high shadow quality draws shadows farther")
+	cfg.reset_defaults()
+	cfg.set_v("ocean_detail", 0)
+	ok(main.ocean.mesh.subdivide_width == 36, "ocean detail Low halves the wave mesh")
+	cfg.set_v("ocean_detail", 2)
+	ok(main.ocean.mesh.subdivide_width == 72, "...and High restores it")
+	cfg.set_v("night_assist", 1.0)
+	clock.set_time(1, 1200.0)
+	main._apply_lighting()
+	var assisted: float = main.env.ambient_light_energy
+	cfg.set_v("night_assist", 0.0)
+	main._apply_lighting()
+	ok(assisted > main.env.ambient_light_energy + 0.3, "night brightness assist lifts the dark (%.2f vs %.2f)" % [assisted, main.env.ambient_light_energy])
+	cfg.reset_defaults()
+	clock.set_time(1, 700.0)
+
+	print("-- menus")
+	var menus = main.menus
+	ok(not menus.is_open() and not paused, "menus start closed")
+	_send_action("pause", true); await _frames(3); _send_action("pause", false); await _frames(3)
+	ok(menus.is_open() and paused, "Esc opens the pause menu and pauses the game")
+	var t_paused0: float = clock.minute_of_day
+	await create_timer(0.8).timeout
+	ok(clock.minute_of_day == t_paused0, "the clock does not run while paused")
+	_send_action("pause", true); await _frames(3); _send_action("pause", false); await _frames(3)
+	ok(not menus.is_open() and not paused, "Esc again resumes")
+	main.hud.show_tide_table(1, tide.extremes_for_day(1))
+	_send_action("pause", true); await _frames(3); _send_action("pause", false); await _frames(3)
+	ok(not main.hud.modal_open and not menus.is_open(), "Esc closes an open journal page first, without pausing")
+
+	menus.open_pause()
+	menus._show_only("settings")
+	var sm = menus.settings_menu()
+	ok(sm.visible and sm.tabs.get_tab_count() == 5, "Settings has five tabs")
+	sm.controls["vol_radio"].value = 0.4
+	near(cfg.v("vol_radio"), 0.4, 0.001, "a slider writes straight to Settings")
+	sm.controls["shadow_quality"].select(1)
+	sm.controls["shadow_quality"].item_selected.emit(1)
+	ok(cfg.v("shadow_quality") == 1 and cfg.v("quality_preset") == 4, "a dropdown writes to Settings (and flips the preset to Custom)")
+	sm.controls["quality_preset"].select(3)
+	sm.controls["quality_preset"].item_selected.emit(3)
+	ok(cfg.v("quality_preset") == 3 and cfg.v("fps_cap") == 60 and sm.controls["fps_cap"].selected == FPS_CAPS_IDX_60, "choosing a preset in the menu applies it and updates the other controls")
+	sm.controls["glow"].button_pressed = true
+	ok(cfg.v("glow") == true, "a checkbox writes to Settings")
+	cfg.set_v("vol_master", 0.9)
+	near(sm.controls["vol_master"].value, 0.9, 0.001, "changes from elsewhere refresh the menu controls")
+	sm.tabs.current_tab = 2
+	sm._reset_tab()
+	ok(cfg.v("glow") == false and absf(cfg.v("brightness") - 1.0) < 0.001 and absf(cfg.v("vol_master") - 0.9) < 0.001, "Reset this tab restores only that tab's settings")
+	sm.tabs.current_tab = 3
+	sm._begin_capture("binoculars", "kb", sm.bind_buttons["binoculars|kb"])
+	ok(sm.is_capturing() and sm.bind_buttons["binoculars|kb"].text.begins_with("Press"), "clicking a binding waits for a key")
+	sm.apply_capture(_key_ev(KEY_V))
+	ok(not sm.is_capturing() and sm.bind_buttons["binoculars|kb"].text.contains("V") and sm.bind_buttons["binoculars|pad"].text == "LT", "capturing a key rebinds it and refreshes the labels")
+	ok(sm.bind_buttons["move_forward|pad"].disabled and not sm.bind_buttons["interact|pad"].disabled, "gamepad movement bindings are locked, button bindings are not")
+	cfg.reset_bindings()
+	menus.back()
+	ok(menus.is_open() and paused, "Back from Settings returns to the pause menu")
+	menus.back()
+	ok(not menus.is_open() and not paused, "Back from the pause menu resumes")
+	menus.open_settings_from_title()
+	ok(menus.is_open() and not paused, "Settings opened from the title does not pause the game")
+	menus.back()
+	ok(not menus.is_open(), "...and closes cleanly")
+	menus.open_pause()
+	menus._open_controls()
+	ok(menus._ctl_title.text.contains("Moving about"), "the pause menu shows the controls reference")
+	menus.resume()
+	ok(not paused, "resume unpauses")
+	cfg.reset_defaults(); cfg.reset_bindings()
+	cfg.delete_saved_settings()
+
 	print("\n%d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -921,6 +1161,13 @@ func _settle(main) -> void:
 			return
 		await process_frame
 	await process_frame
+
+func _key_ev(code: int) -> InputEventKey:
+	var e := InputEventKey.new()
+	e.physical_keycode = code as Key
+	return e
+
+const FPS_CAPS_IDX_60 := 2
 
 func _reset_radio(radio) -> void:
 	radio._queue.clear()

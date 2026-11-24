@@ -124,6 +124,26 @@ func _run() -> void:
 	await _wait(10)
 	await _snap(out, "27_ending_card_a")
 	Engine.time_scale = 1.0
+	# M7: menus
+	Engine.time_scale = 1.0
+	main.hud._ending_panel.visible = false
+	main.hud._card.modulate.a = 0.0
+	main.hud._tape_panel.visible = false
+	main._place("cottage", main.interiors.spawn["cottage"], 0.6)
+	var menus = main.menus
+	menus.open_pause()
+	await _wait(6)
+	await _snap(out, "30_pause_menu")
+	menus._show_only("settings")
+	var sm = menus.settings_menu()
+	for t in 5:
+		sm.tabs.current_tab = t
+		await _wait(5)
+		await _snap(out, "31_settings_%d_%s" % [t, sm.tabs.get_child(t).name])
+	menus._open_controls()
+	await _wait(5)
+	await _snap(out, "36_controls_reference")
+	menus.resume()
 	quit(0)
 
 func _shoot(shot: String, loc: String, pos: Vector3, yaw: float, pitch: float) -> void:

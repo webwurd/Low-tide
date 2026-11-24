@@ -1,3 +1,10 @@
+# Unity port plan: PARKED
+
+> **Decision (project owner): stay with Godot.** The Unity port is parked, not deleted. The engine-free C# core
+> and its Godot-fixture parity tests remain in `unity/` as a verified starting point if the decision is ever
+> revisited. Nothing in the Godot build depends on `unity/`, and the main test gate treats the C# tests as optional.
+> The original plan follows for reference.
+
 # Unity port plan (final build: Unity 6 LTS + URP, C#)
 
 **Status:** Godot 4.4 build (M1-M6) is the reference and is frozen apart from shared data and fixture export.

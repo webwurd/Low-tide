@@ -1,3 +1,5 @@
+> **PARKED.** The project owner decided to stay with Godot. This folder is a verified but dormant C# port of the game logic. See `docs/unity_port_plan.md`.
+
 # Low Tide: Unity project
 
 Final build target: **Unity 6 LTS (6000.0.x), Universal Render Pipeline, C# 9**.

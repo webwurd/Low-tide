@@ -11,6 +11,7 @@ var _t := 6.0
 func _ready() -> void:
 	add_to_group("hydrophone")
 	_player = AudioStreamPlayer3D.new()
+	_player.bus = "Ambience"
 	_player.stream = AudioDirector.ping_stream()
 	_player.unit_size = 10.0
 	_player.max_distance = 140.0

@@ -13,6 +13,7 @@ var island: Island
 var interiors: Interiors
 var ocean: Ocean
 var hud: HUD
+var menus: Menus
 var env: Environment
 var sun: DirectionalLight3D
 var rain: CPUParticles3D
@@ -51,6 +52,12 @@ func _ready() -> void:
 	add_child(hud)
 	hud.new_game_pressed.connect(new_game)
 	hud.continue_pressed.connect(continue_game)
+	menus = Menus.new()
+	add_child(menus)
+	hud.settings_requested.connect(menus.open_settings_from_title)
+	menus.resumed.connect(_on_resumed)
+	menus.title_requested.connect(_return_to_title)
+	menus.quit_requested.connect(func(): get_tree().quit())
 	_wire_interactables()
 	RadioSystem.hidden.connect(_on_radio_hidden)
 	hud.ending_closed.connect(_on_ending_closed)
@@ -317,6 +324,13 @@ func _build_environment() -> void:
 	add_child(sun)
 	sun.look_at(Vector3.ZERO)
 
+## Brightness / exposure / bloom from the Lighting settings.
+func _apply_display_settings() -> void:
+	env.adjustment_enabled = true
+	env.adjustment_brightness = float(Settings.v("brightness"))
+	env.tonemap_exposure = 0.95 * float(Settings.v("exposure"))
+	env.glow_enabled = bool(Settings.v("glow"))
+
 func _build_rain() -> void:
 	rain = CPUParticles3D.new()
 	rain.amount = 900
@@ -340,6 +354,7 @@ func _build_rain() -> void:
 	add_child(rain)
 
 func _apply_lighting() -> void:
+	_apply_display_settings()
 	var dd := DayDirector.data()
 	var outdoors := location == "outdoors"
 	if not outdoors:
@@ -353,15 +368,16 @@ func _apply_lighting() -> void:
 	var d := clampf(_daylight() * dd.light_scale, 0.0, 1.0)
 	var fog_col := NIGHT_FOG.lerp(dd.fog_tint, d)
 	env.fog_enabled = true
-	env.fog_density = dd.fog_density * lerpf(1.5, 1.0, smoothstep(390.0, 660.0, GameClock.minute_of_day))   # morning mist burns off
+	env.fog_density = dd.fog_density * lerpf(1.5, 1.0, smoothstep(390.0, 660.0, GameClock.minute_of_day)) * float(Settings.v("fog_scale"))   # morning mist burns off
 	env.fog_light_color = fog_col
 	env.background_color = fog_col
 	env.ambient_light_color = Color("6f84a6").lerp(Color("9fb4c7"), d)
-	env.ambient_light_energy = lerpf(0.3, 0.4, d)
+	env.ambient_light_energy = lerpf(0.3, 0.4, d) + float(Settings.v("night_assist")) * (1.0 - d) * 0.45
 	sun.visible = true
 	sun.light_color = Color("5f78a8").lerp(Color("dce6f0"), d)
 	sun.light_energy = lerpf(0.14, 0.6, d)
-	sun.shadow_enabled = d > 0.15
+	sun.shadow_enabled = d > 0.15 and Settings.shadow_distance() > 0.0
+	sun.directional_shadow_max_distance = maxf(Settings.shadow_distance(), 1.0)
 	island.set_lamp(DayDirector.lamp_lit, DayDirector.weights_wound, _daylight())
 	rain.emitting = dd.rain
 	rain.global_position = player.global_position + Vector3(0, 14, 0)
@@ -384,8 +400,6 @@ func _process(delta: float) -> void:
 	AudioDirector.update_ambient(_elapsed, player.global_position.y if location == "outdoors" else 0.0, TideSystem.current_height)
 	if Input.is_action_just_pressed("debug_skip") and OS.is_debug_build():
 		GameClock.advance(60.0)
-	if Input.is_action_just_pressed("pause"):
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_check_day_events()
 	_update_ending_scene(delta)
 
@@ -402,8 +416,35 @@ func _check_day_events() -> void:
 		RadioSystem.play(Conversations.get_conv("forced_home"))
 		travel("cottage", interiors.spawn["cottage"], 0.0)
 
+func _unhandled_input(event: InputEvent) -> void:
+	if not event.is_action_pressed("pause"):
+		return
+	get_viewport().set_input_as_handled()
+	if hud.modal_open:
+		hud.close_modal()
+	elif menus.is_open():
+		menus.back()
+	elif started and ending_kind == "" and not _busy:
+		open_pause()
+
+func open_pause() -> void:
+	if not started or menus.is_open():
+		return
+	menus.open_pause()
+
+func _on_resumed() -> void:
+	if started and not hud.modal_open:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+func _return_to_title() -> void:
+	# Leaving mid-expedition means heading home: Continue always resumes indoors.
+	SaveSystem.save_game(location if location != "outdoors" else "cottage")
+	GameState.reset()
+	DayDirector.begin_day(1)
+	get_tree().reload_current_scene()
+
 func _input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and started and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not hud.modal_open:
+	if event is InputEventMouseButton and event.pressed and started and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not hud.modal_open and not menus.is_open():
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 ## Swept by the tide: fade, return to the pier, lose 45 minutes, Clara reacts.
@@ -496,6 +537,7 @@ func _spawn_boat() -> void:
 	omni.position = lamp.position
 	_boat.add_child(omni)
 	_boat_player = AudioStreamPlayer3D.new()
+	_boat_player.bus = "Ambience"
 	_boat_player.stream = AudioDirector.boat_engine_stream()
 	_boat_player.unit_size = 20.0
 	_boat_player.max_distance = 300.0

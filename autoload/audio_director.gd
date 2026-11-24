@@ -40,7 +40,7 @@ func _ready() -> void:
 	hiss.resize(RATE * 2)
 	for i in hiss.size():
 		hiss[i] = (_rng.randf() * 2.0 - 1.0) * 0.12
-	_hiss = _loop_player(_bandpass(hiss, 3200.0, 0.6), -200.0)
+	_hiss = _loop_player(_bandpass(hiss, 3200.0, 0.6), -200.0, "Radio")
 	_hiss.stop()
 	_hiss.volume_db = -21.5   # hiss stream is now unclipped (22 dB quieter at source)
 
@@ -65,13 +65,19 @@ func set_tape(on: bool) -> void:
 	elif not on:
 		_hiss.stop()
 
+## Which mixer bus each one-shot plays on (see Settings AUDIO_BUSES).
+const SFX_BUS := {"squelch": "Radio", "foghorn": "Ambience", "sting": "Music"}
+
 func play_sfx(sfx_name: String, volume_db := 0.0, pitch := 1.0) -> void:
 	var list: Array = _variants.get(sfx_name, [])
 	if list.is_empty():
 		return
+	if sfx_name == "squelch":
+		volume_db += Settings.vol_to_db(float(Settings.v("radio_static")))
 	for p in _pool:
 		if not p.playing:
 			p.stream = list[_rng.randi() % list.size()]
+			p.bus = SFX_BUS.get(sfx_name, "SFX")
 			p.volume_db = volume_db
 			p.pitch_scale = pitch
 			p.play()
@@ -168,8 +174,9 @@ func _wav(samples: PackedFloat32Array, loop := false) -> AudioStreamWAV:
 		w.loop_end = samples.size()
 	return w
 
-func _loop_player(samples: PackedFloat32Array, db: float) -> AudioStreamPlayer:
+func _loop_player(samples: PackedFloat32Array, db: float, bus := "Ambience") -> AudioStreamPlayer:
 	var p := AudioStreamPlayer.new()
+	p.bus = bus
 	p.stream = _wav(samples, true)
 	p.volume_db = db
 	add_child(p)

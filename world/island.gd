@@ -48,7 +48,7 @@ func set_lamp(lit: bool, wound: bool, daylight: float) -> void:
 	beam_spinning = lit and wound
 	for a in beam_arms:
 		a.visible = lit
-	beam_mat.albedo_color.a = lerpf(0.26, 0.07, daylight)
+	beam_mat.albedo_color.a = lerpf(0.26, 0.07, daylight) * float(Settings.v("beam_scale"))
 	lantern_mat.albedo_color = Color("ffd27d") if lit else Color("2a2f33")
 	lamp_light.light_energy = 2.2 if lit else 0.0
 

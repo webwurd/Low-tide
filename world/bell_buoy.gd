@@ -34,6 +34,7 @@ func _ready() -> void:
 	cage.position.y = 1.2
 	add_child(cage)
 	_player = AudioStreamPlayer3D.new()
+	_player.bus = "Ambience"
 	_player.stream = AudioDirector.bell_stream(pitch)
 	_player.unit_size = 30.0
 	_player.max_distance = 450.0
