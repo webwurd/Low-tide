@@ -20,6 +20,7 @@ var yaw := 0.0
 var pitch := 0.0
 var stamina := 100.0
 var binoculars := false
+var _bino_hint_shown := false
 var locked := false              # true during swept / cutscenes
 var nearby: Interactable = null
 var bino_label := ""
@@ -77,7 +78,13 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector3.ZERO
 		hold_progress = 0.0
 		return
-	if Settings.v("toggle_binoculars"):
+	if not GameState.binoculars_ready():
+		# Not told about them yet: they stay in the satchel.
+		binoculars = false
+		if Input.is_action_just_pressed("binoculars") and not _bino_hint_shown:
+			_bino_hint_shown = true
+			GameState.note("Nothing out there I need the binoculars for yet.")
+	elif Settings.v("toggle_binoculars"):
 		if Input.is_action_just_pressed("binoculars"):
 			binoculars = not binoculars
 	else:

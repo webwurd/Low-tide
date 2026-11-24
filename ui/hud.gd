@@ -56,6 +56,7 @@ var _tut: PanelContainer
 var _tut_title: Label
 var _tut_body: VBoxContainer
 var _tut_next: Button
+var _tut_device := ""
 var _tut_back: Button
 var _title_panel: Control
 var title_screen: TitleScreen
@@ -403,55 +404,117 @@ func _build_tutorial() -> void:
 	_tut_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
-	_tut_back = Button.new()
-	_tut_back.text = "Back"
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 18)
+	_tut_back = _tut_button("Back", Vector2(150, 56), false)
 	_tut_back.pressed.connect(func(): _tut_go(_tut_idx - 1))
-	_tut_next = Button.new()
+	_tut_next = _tut_button("Next", Vector2(280, 56), true)
 	_tut_next.pressed.connect(func(): _tut_go(_tut_idx + 1))
 	row.add_child(_tut_back)
 	row.add_child(_tut_next)
 	for n in [_tut_title, _tut_body, row]:
 		v.add_child(n)
-	_tut_pages = TutorialData.pages()
+	_tut_pages = TutorialData.pages_for("kb")
+
+## A clearly visible button: filled, with a hover and focus state, sized to be easy to hit.
+func _tut_button(text: String, min_size: Vector2, primary: bool) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.custom_minimum_size = min_size
+	b.focus_mode = Control.FOCUS_ALL
+	UiFonts.style(b, "ui_bold", 20 if primary else 17)
+	var fill := Color(0.85, 0.62, 0.22, 0.95) if primary else Color(1, 1, 1, 0.10)
+	var hover := Color(0.95, 0.72, 0.3, 1.0) if primary else Color(1, 1, 1, 0.2)
+	var text_col := Color("1a1308") if primary else CREAM
+	b.add_theme_color_override("font_color", text_col)
+	b.add_theme_color_override("font_hover_color", text_col)
+	b.add_theme_color_override("font_focus_color", text_col)
+	b.add_theme_color_override("font_pressed_color", text_col)
+	b.add_theme_stylebox_override("normal", _flat_box(fill, Color(0, 0, 0, 0), 20, 12))
+	b.add_theme_stylebox_override("hover", _flat_box(hover, Color(0, 0, 0, 0), 20, 12))
+	b.add_theme_stylebox_override("pressed", _flat_box(hover, Color(0, 0, 0, 0), 20, 12))
+	var focus := _flat_box(hover, Color(0, 0, 0, 0), 20, 12)
+	focus.set_border_width_all(2)
+	focus.border_color = Color.WHITE
+	b.add_theme_stylebox_override("focus", focus)
+	return b
 
 func _open_tutorial() -> void:
 	_title.visible = true
 	_title_panel.visible = false
 	_tut.visible = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE      # the buttons need a cursor
+	_tut_device = ""
 	_tut_go(0)
 
+## Esc / B steps back through the setup pages, so there is always a way out.
+func _unhandled_input(event: InputEvent) -> void:
+	if _tut != null and _tut.visible and event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		_tut_go(_tut_idx - 1)
+
+func _tut_pick(device: String) -> void:
+	_tut_device = device
+	_tut_pages = TutorialData.pages_for(device)
+	_tut_go(1)
+
+## Page 0 asks how the player is playing; pages 1..n show only that device's controls.
 func _tut_go(i: int) -> void:
 	if i < 0:
 		_tut.visible = false
 		_title_panel.visible = true
 		return
-	if i >= _tut_pages.size():
+	if i > 0 and i - 1 >= _tut_pages.size():
 		_tut.visible = false
 		_title.visible = false
 		new_game_pressed.emit()
 		return
 	_tut_idx = i
-	var pg: Dictionary = _tut_pages[i]
-	_tut_title.text = pg["title"]
 	for ch in _tut_body.get_children():
 		ch.queue_free()
+	_tut_back.text = "Back" if i > 0 else "Title"
+	if i == 0:
+		_tut_title.text = "How are you playing?"
+		_tut_next.visible = false
+		var intro := _label("Pick one and the next pages show only those controls. You can change this any time in Settings.", 16, Color("cfd6d6"))
+		intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		intro.custom_minimum_size = Vector2(820, 0)
+		_tut_body.add_child(intro)
+		var gap := Control.new()
+		gap.custom_minimum_size = Vector2(0, 24)
+		_tut_body.add_child(gap)
+		var choices := HBoxContainer.new()
+		choices.alignment = BoxContainer.ALIGNMENT_CENTER
+		choices.add_theme_constant_override("separation", 24)
+		var kb := _tut_button("Keyboard and mouse", Vector2(320, 84), true)
+		kb.pressed.connect(_tut_pick.bind("kb"))
+		var pad := _tut_button("Gamepad", Vector2(320, 84), true)
+		pad.pressed.connect(_tut_pick.bind("pad"))
+		choices.add_child(kb)
+		choices.add_child(pad)
+		_tut_body.add_child(choices)
+		kb.grab_focus.call_deferred()
+		return
+	var pg: Dictionary = _tut_pages[i - 1]
+	_tut_title.text = pg["title"]
+	_tut_next.visible = true
 	var rows: Array = pg["rows"]
 	if rows.size() > 0:
 		var grid := GridContainer.new()
-		grid.columns = 3
-		grid.add_theme_constant_override("h_separation", 28)
-		grid.add_theme_constant_override("v_separation", 8)
+		grid.columns = 2
+		grid.add_theme_constant_override("h_separation", 48)
+		grid.add_theme_constant_override("v_separation", 10)
 		for r in rows.size():
 			for cell in rows[r]:
-				grid.add_child(_label(cell, 15, AMBER if r == 0 else Color("e8dfc8")))
+				grid.add_child(_label(cell, 17, AMBER if r == 0 else Color("e8dfc8")))
 		_tut_body.add_child(grid)
 	if pg["text"] != "":
-		var t := _label(pg["text"], 15)
+		var t := _label(pg["text"], 16)
 		t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		t.custom_minimum_size = Vector2(820, 0)
 		_tut_body.add_child(t)
-	_tut_back.text = "Back" if i > 0 else "Title"
-	_tut_next.text = "Next" if i < _tut_pages.size() - 1 else "Step into the cottage"
+	_tut_next.text = "Next" if i < _tut_pages.size() else "Step into the cottage"
+	_tut_next.grab_focus.call_deferred()      # Enter / Space / A advance without the mouse
 
 # --- toasts, modal panel, day card --------------------------------------
 

@@ -561,25 +561,37 @@ static func _tender() -> void:
 		var w := absf(_tender_pt(t, PI / 2.0).x) * 2.0 - 0.18
 		k.box("wood_weathered", Vector3(w, 0.05, 0.2), Vector3(0, 1.08, z), 0.01)
 		z -= 0.23
+	# Bulwarks: a solid painted wall up each side so, seen from the deck, the boat has
+	# sides instead of rails floating over open water. The rail sits on top of it.
+	const BULWARK := 0.38
 	for side in [-1.0, 1.0]:
 		var rail := PackedVector3Array()
 		for i in 13:
 			var t := float(i) / 12.0
-			rail.append(_tender_pt(t, side * PI / 2.0) + Vector3(0, 0.08, 0))
+			rail.append(_tender_pt(t, side * PI / 2.0) + Vector3(0, BULWARK + 0.04, 0))
+			if i > 0:
+				var a := _tender_pt(float(i - 1) / 12.0, side * PI / 2.0)
+				var b := _tender_pt(t, side * PI / 2.0)
+				k.quad("trim_white", a, b, b + Vector3(0, BULWARK, 0), a + Vector3(0, BULWARK, 0), true)
 		k.tube("trim_white", rail, 0.05, 6)
 	# Bow pulpit.
 	var pulpit := PackedVector3Array()
 	var ts := [0.72, 0.82, 0.9, 0.96, 1.0, 0.96, 0.9, 0.82, 0.72]
 	for i in ts.size():
 		var side := -1.0 if i < 4 else 1.0
-		pulpit.append(_tender_pt(ts[i], side * PI / 2.0) + Vector3(0, 0.72, 0))
+		pulpit.append(_tender_pt(ts[i], side * PI / 2.0) + Vector3(0, BULWARK + 0.4, 0))
 	k.tube("iron", pulpit, 0.03, 6)
+	for i in [0, 2, 4, 6, 8]:                       # stanchions tie the pulpit to the bulwark
+		var base: Vector3 = pulpit[i] - Vector3(0, 0.4, 0)
+		k.tube("iron", PackedVector3Array([base, pulpit[i]]), 0.025, 6)
 	# Wheelhouse with lit windows, mast and a coil of line forward.
 	k.box("trim_white", Vector3(2.6, 1.7, 2.4), Vector3(0, 1.95, 2.9), 0.05, 2)
 	k.box("keeper_red", Vector3(2.9, 0.14, 2.8), Vector3(0, 2.86, 2.9), 0.04)
 	for wx in [-0.72, 0.0, 0.72]:
 		k.box("window_glow", Vector3(0.6, 0.55, 0.04), Vector3(wx, 2.3, 1.69), 0.01)
+	k.push(Transform3D(Basis(), Vector3(0, 0, 2.9)))     # the mast stands on the wheelhouse roof
 	k.cylinder("iron", 0.05, 0.035, 2.4, 8, 2.93)
+	k.pop()
 	k.push(Transform3D(Basis(), Vector3(0, 2.93, 2.9)))
 	k.box("iron", Vector3(0.9, 0.05, 0.05), Vector3(0, 1.8, 0), 0.01)
 	k.pop()

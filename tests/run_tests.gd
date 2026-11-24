@@ -873,6 +873,7 @@ func _run() -> void:
 	var pl = main.player
 	main._place("outdoors", main.island.spawn_point, 0.0)
 	await _frames(30)
+	state.set_flag("binoculars_ready")      # Clara has mentioned them
 	cfg.set_v("toggle_binoculars", true)
 	_send_action("binoculars", true); await _frames(3); _send_action("binoculars", false); await _frames(3)
 	ok(pl.binoculars, "toggle mode: one tap raises the binoculars and they stay up")
@@ -1277,6 +1278,64 @@ func _run() -> void:
 	cfg.reset_defaults()
 	main.hud.apply_text_scale()
 	main.hud._radio.visible = false
+
+	print("== playtest 1: binoculars are unlocked by Clara's first check-in")
+	var bino_day: int = clock.day
+	var bino_flag: bool = state.has_flag("binoculars_ready")
+	state.clear_flag("binoculars_ready")
+	clock.day = 1
+	main.hud.close_modal()
+	main.player.locked = false
+	main.player.ui_lock = false
+	ok(not state.binoculars_ready(), "on Day 1 the binoculars are locked until the check-in")
+	Input.action_press("binoculars")
+	await _frames(6)
+	ok(not main.player.binoculars, "holding the binoculars key does nothing before Clara mentions them")
+	Input.action_release("binoculars")
+	await _frames(3)
+	main._unlock_binoculars()
+	ok(state.has_flag("binoculars_ready") and state.binoculars_ready(), "the first check-in unlocks them")
+	Input.action_press("binoculars")
+	await _frames(6)
+	ok(main.player.binoculars, "after the check-in the key raises them")
+	Input.action_release("binoculars")
+	await _frames(3)
+	state.clear_flag("binoculars_ready")
+	clock.day = 2
+	ok(state.binoculars_ready(), "older saves (past Day 1) keep their binoculars")
+	clock.day = bino_day
+	if bino_flag:
+		state.set_flag("binoculars_ready")
+	var conv_lib = load("res://story/conversations.gd")      # loaded at runtime: it needs the autoloads
+	ok(conv_lib.get_conv("morning_d1")["text"].contains("binoculars"), "Clara's first call mentions the binoculars")
+
+	print("== playtest 1: setup tutorial")
+	var hud = main.hud
+	hud._open_tutorial()
+	await _frames(2)
+	ok(hud._tut.visible and hud._tut_idx == 0 and not hud._tut_next.visible, "tutorial opens on the 'how are you playing' choice")
+	ok(TutorialData.pages_for("kb")[0]["rows"][1].size() == 2 and TutorialData.pages_for("pad")[0]["rows"][1].size() == 2, "per-device tutorial pages carry one controls column")
+	hud._tut_pick("pad")
+	await _frames(3)
+	var tut_text := ""
+	for ch in hud._tut_body.get_children():
+		for l in ch.get_children():
+			if l is Label:
+				tut_text += (l as Label).text + "|"
+	ok(hud._tut_idx == 1 and "Left stick" in tut_text and not ("W A S D" in tut_text), "gamepad choice shows only gamepad controls (%s)" % tut_text.left(60))
+	ok(hud._tut_next.custom_minimum_size.x >= 240.0 and hud._tut_next.custom_minimum_size.y >= 48.0 and hud._tut_next.visible, "the Next button is large and visible")
+	var tut_esc := InputEventAction.new()
+	tut_esc.action = "ui_cancel"
+	tut_esc.pressed = true
+	hud._unhandled_input(tut_esc)
+	ok(hud._tut_idx == 0, "Esc / B steps back to the choice, so there is always a way out")
+	hud._tut_pick("kb")
+	for _i in 2:
+		hud._tut_go(hud._tut_idx + 1)
+	await _frames(2)
+	ok(hud._tut_next.text == "Step into the cottage" and hud._tut.visible, "the last tutorial page offers 'Step into the cottage'")
+	hud._tut.visible = false
+	hud._title.visible = false
 
 	print("\n%d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)
