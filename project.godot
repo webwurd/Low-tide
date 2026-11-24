@@ -15,6 +15,7 @@ DayDirector="*res://autoload/day_director.gd"
 SaveSystem="*res://autoload/save_system.gd"
 RadioSystem="*res://autoload/radio_system.gd"
 AudioDirector="*res://autoload/audio_director.gd"
+MusicDirector="*res://autoload/music_director.gd"
 TapePlayer="*res://autoload/tape_player.gd"
 ReactiveDirector="*res://autoload/reactive_director.gd"
 

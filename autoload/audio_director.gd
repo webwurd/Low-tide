@@ -15,6 +15,8 @@ var _foghorn_timer := 14.0
 var foghorn_enabled := true
 var indoors := false
 var weather_db := 0.0
+## The sea swell, 0..1 (the score's pad breathes with it).
+var swell := 0.5
 var _hiss: AudioStreamPlayer
 
 func _ready() -> void:
@@ -58,7 +60,7 @@ func _process(delta: float) -> void:
 
 ## time: seconds (for swell), altitude: player y, tide: water height (m).
 func update_ambient(time: float, altitude: float, tide: float) -> void:
-	var swell := 0.5 + 0.5 * sin(time * 0.65)
+	swell = 0.5 + 0.5 * sin(time * 0.65)
 	var muffle := -14.0 if indoors else 0.0
 	_surf.volume_db = -20.0 + swell * 5.0 + clampf(tide - 1.0, 0.0, 3.0) * 1.0 + muffle + weather_db * 0.5
 	_wind.volume_db = -30.0 + clampf(altitude, 0.0, 25.0) * 0.45 + muffle + weather_db
@@ -158,6 +160,9 @@ func play_sting(sting: String, volume_db := -4.0) -> void:
 	_sting_player.stream = st
 	_sting_player.volume_db = volume_db
 	_sting_player.play()
+
+func sting_active() -> bool:
+	return _sting_player.playing
 
 func sting_playing() -> String:
 	if _sting_player.playing:
