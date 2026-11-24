@@ -16,7 +16,8 @@ if [[ "${1:-all}" == all || "${1:-}" == textures ]]; then
   run "$G" --headless --import >/dev/null 2>&1 || true
 fi
 if [[ "${1:-all}" != textures ]]; then
-  # The asset stage bakes VoxelGI for the interiors, which needs a renderer.
+  # The asset stage runs under a real (software) renderer so generated
+  # resources match what the game renders.
   if [[ -f /opt/lavapipe/lvp_icd.json && "${LAVAPIPE:-1}" == 1 ]]; then
     unset VK_DRIVER_FILES; export VK_ICD_FILENAMES=/opt/lavapipe/lvp_icd.json
   fi

@@ -21,7 +21,7 @@ var _title_t := 0.0
 ## visual: the clock, director and save state are never touched.
 const TITLE_MINUTE := 978.0
 const TITLE_DAY := 5
-var rain: CPUParticles3D
+var rain: GPUParticles3D
 var location := "cottage"          # outdoors | cottage | tower_base | tower_top
 var started := false
 var _busy := false
@@ -284,27 +284,50 @@ func _build_environment() -> void:
 	sky_rig.name = "SkyRig"
 	add_child(sky_rig)
 
+## Rain: velocity-aligned streaks (GPU), plus a soft film layer under the HUD.
 func _build_rain() -> void:
-	rain = CPUParticles3D.new()
-	rain.amount = 900
-	rain.lifetime = 0.8
-	rain.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
-	rain.emission_box_extents = Vector3(22, 0.5, 22)
-	rain.direction = Vector3(0.15, -1, 0)
-	rain.spread = 3.0
-	rain.initial_velocity_min = 22.0
-	rain.initial_velocity_max = 26.0
-	rain.gravity = Vector3.ZERO
-	var bm := BoxMesh.new()
-	bm.size = Vector3(0.015, 0.45, 0.015)
+	rain = GPUParticles3D.new()
+	rain.name = "Rain"
+	rain.amount = 2800 if Settings.quality >= Settings.Quality.MEDIUM else 1200
+	rain.lifetime = 0.9
+	rain.visibility_aabb = AABB(Vector3(-16, -24, -16), Vector3(32, 30, 32))
+	var pm := ParticleProcessMaterial.new()
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	pm.emission_box_extents = Vector3(15, 0.5, 15)
+	pm.direction = Vector3(0.22, -1, 0.05)
+	pm.spread = 4.0
+	pm.initial_velocity_min = 22.0
+	pm.initial_velocity_max = 28.0
+	pm.gravity = Vector3.ZERO
+	pm.particle_flag_align_y = true
+	pm.scale_min = 0.7
+	pm.scale_max = 1.2
+	rain.process_material = pm
+	var streak := QuadMesh.new()
+	streak.size = Vector2(0.018, 0.75)
 	var m := StandardMaterial3D.new()
-	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	m.albedo_color = Color(0.75, 0.82, 0.9, 0.5)
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	bm.material = m
-	rain.mesh = bm
+	m.albedo_color = Color(0.8, 0.86, 0.92, 0.32)
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+	m.roughness = 0.2
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.disable_receive_shadows = true
+	streak.material = m
+	rain.draw_pass_1 = streak
+	rain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	rain.emitting = false
 	add_child(rain)
+	var film := CanvasLayer.new()
+	film.name = "Film"
+	film.layer = 5
+	var rect := ColorRect.new()
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var fm := ShaderMaterial.new()
+	fm.shader = load("res://ui/post.gdshader")
+	rect.material = fm
+	film.add_child(rect)
+	add_child(film)
 
 func _apply_lighting() -> void:
 	var dd := DayDirector.data()

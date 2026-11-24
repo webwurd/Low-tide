@@ -9,6 +9,7 @@ global uniform vec3 sun_dir;
 global uniform vec4 sun_color;
 global uniform float daylight;
 global uniform float wind;
+global uniform float wetness;
 
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
 uniform sampler2D screen_tex : hint_screen_texture, filter_linear_mipmap;
@@ -71,6 +72,11 @@ void fragment() {
 	vec2 dn = (texture(normal_tex, uv1).xy * 2.0 - 1.0) + (texture(normal_tex, uv2).xy * 2.0 - 1.0) * 0.6;
 	float dist = length(VERTEX);
 	dn *= detail_strength * mix(1.0, 0.35, smoothstep(30.0, 220.0, dist));
+	// Rain: a fast, fine third layer pocks the surface near the camera.
+	if (wetness > 0.01) {
+		vec2 r1 = texture(normal_tex, v_world.xz * 0.9 + vec2(TIME * 0.37, -TIME * 0.29)).xy * 2.0 - 1.0;
+		dn += r1 * 0.22 * wetness * (1.0 - smoothstep(10.0, 60.0, dist));
+	}
 	vec3 wn = normalize(v_nrm + vec3(dn.x, 0.0, -dn.y));
 	NORMAL = normalize((VIEW_MATRIX * vec4(wn, 0.0)).xyz);
 
