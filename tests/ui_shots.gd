@@ -74,7 +74,7 @@ func _surfaces() -> void:
 	hud.show_note("Coffee. Black, strong, a little burnt.")
 	await _wait(4)
 	await _snap("20_toast")
-	hud._note.modulate.a = 0.0
+	hud._note_box.modulate.a = 0.0
 
 	# Day card.
 	hud.show_card("Day 5", "Spring Low, clear", 6.0)
@@ -123,7 +123,8 @@ func _surfaces() -> void:
 	pro._next()
 	if pro._typing: pro._typing.kill()
 	pro._show_choices(pro._beats[pro._i])
-	await _wait(30)
+	await create_timer(1.6).timeout
+	await _wait(6)
 	await _snap("70_prologue_card")
 	pro._finish()
 	await _wait(60)

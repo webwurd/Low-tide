@@ -439,56 +439,48 @@ func _start_prologue() -> void:
 # --- setup / tutorial (shown before Arthur steps onto the island) -------
 
 func _build_tutorial() -> void:
-	_tut = PanelContainer.new()
-	_tut.add_theme_stylebox_override("panel", _style(Color(0.06, 0.09, 0.12, 0.96), Color(0.85, 0.7, 0.42, 0.5)))
-	_tut.set_anchors_preset(Control.PRESET_CENTER)
-	_tut.custom_minimum_size = Vector2(860, 460)
-	_tut.position = Vector2(-430, -230)
+	# Frosted glass over the title backdrop, sized to its content.
+	var kit := UiTheme.glass_panel(Vector2(40, 32), UiTheme.RADIUS, Color(0.035, 0.05, 0.065, 0.74))
+	_tut = kit[0]
+	_tut.anchor_left = 0.5
+	_tut.anchor_right = 0.5
+	_tut.anchor_top = 0.5
+	_tut.anchor_bottom = 0.5
+	_tut.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_tut.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_tut.custom_minimum_size = Vector2(880, 0)
 	_tut.visible = false
 	_tut.z_index = 5
 	add_child(_tut)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 10)
-	_tut.add_child(v)
-	_tut_title = _label("", 26, Color.WHITE, "display")
+	v.add_theme_constant_override("separation", 16)
+	(kit[1] as Control).add_child(v)
+	_tut_title = _label("", 34, UiTheme.CREAM, "display")
 	_tut_body = VBoxContainer.new()
-	_tut_body.add_theme_constant_override("separation", 6)
-	_tut_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_tut_body.add_theme_constant_override("separation", 10)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 18)
-	_tut_back = _tut_button("Back", Vector2(150, 56), false)
+	row.alignment = BoxContainer.ALIGNMENT_END
+	row.add_theme_constant_override("separation", 14)
+	_tut_back = _tut_button("Back", Vector2(150, 52), false)
 	_tut_back.pressed.connect(func(): _tut_go(_tut_idx - 1))
-	_tut_next = _tut_button("Next", Vector2(280, 56), true)
+	_tut_next = _tut_button("Next", Vector2(280, 52), true)
 	_tut_next.pressed.connect(func(): _tut_go(_tut_idx + 1))
 	row.add_child(_tut_back)
 	row.add_child(_tut_next)
-	for n in [_tut_title, _tut_body, row]:
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 6)
+	for n in [_tut_title, _tut_body, gap, row]:
 		v.add_child(n)
 	_tut_pages = TutorialData.pages_for("kb")
 
-## A clearly visible button: filled, with a hover and focus state, sized to be easy to hit.
+## A clearly visible button, sized to be easy to hit. Primary = the amber
+## "do this next" button; the rest are quiet glass chips (UiTheme).
 func _tut_button(text: String, min_size: Vector2, primary: bool) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.custom_minimum_size = min_size
 	b.focus_mode = Control.FOCUS_ALL
-	UiFonts.style(b, "ui_bold", 20 if primary else 17)
-	var fill := Color(0.85, 0.62, 0.22, 0.95) if primary else Color(1, 1, 1, 0.10)
-	var hover := Color(0.95, 0.72, 0.3, 1.0) if primary else Color(1, 1, 1, 0.2)
-	var text_col := Color("1a1308") if primary else CREAM
-	b.add_theme_color_override("font_color", text_col)
-	b.add_theme_color_override("font_hover_color", text_col)
-	b.add_theme_color_override("font_focus_color", text_col)
-	b.add_theme_color_override("font_pressed_color", text_col)
-	b.add_theme_stylebox_override("normal", _flat_box(fill, Color(0, 0, 0, 0), 20, 12))
-	b.add_theme_stylebox_override("hover", _flat_box(hover, Color(0, 0, 0, 0), 20, 12))
-	b.add_theme_stylebox_override("pressed", _flat_box(hover, Color(0, 0, 0, 0), 20, 12))
-	var focus := _flat_box(hover, Color(0, 0, 0, 0), 20, 12)
-	focus.set_border_width_all(2)
-	focus.border_color = Color.WHITE
-	b.add_theme_stylebox_override("focus", focus)
+	UiTheme.style_button(b, "primary" if primary else "secondary", 19 if primary else 17)
 	return b
 
 func _open_tutorial() -> void:
@@ -530,24 +522,31 @@ func _tut_go(i: int) -> void:
 		return
 	_tut_idx = i
 	for ch in _tut_body.get_children():
+		_tut_body.remove_child(ch)
 		ch.queue_free()
+	_tut.offset_left = 0.0
+	_tut.offset_right = 0.0
+	_tut.offset_top = 0.0
+	_tut.offset_bottom = 0.0
 	_tut_back.text = "Back" if i > 0 else "Title"
 	if i == 0:
 		_tut_title.text = "How are you playing?"
 		_tut_next.visible = false
-		var intro := _label("Pick one and the next pages show only those controls. You can change this any time in Settings.", 16, Color("cfd6d6"))
+		var intro := _label("Pick one and the next pages show only those controls. You can change this any time in Settings.", 18, UiTheme.MUTED)
 		intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		intro.custom_minimum_size = Vector2(820, 0)
+		intro.custom_minimum_size = Vector2(800, 0)
 		_tut_body.add_child(intro)
 		var gap := Control.new()
-		gap.custom_minimum_size = Vector2(0, 24)
+		gap.custom_minimum_size = Vector2(0, 14)
 		_tut_body.add_child(gap)
 		var choices := HBoxContainer.new()
 		choices.alignment = BoxContainer.ALIGNMENT_CENTER
-		choices.add_theme_constant_override("separation", 24)
-		var kb := _tut_button("Keyboard and mouse", Vector2(320, 84), true)
+		choices.add_theme_constant_override("separation", 20)
+		var kb := _tut_button("Keyboard and mouse", Vector2(360, 96), false)
+		kb.add_theme_font_size_override("font_size", 21)
 		kb.pressed.connect(_tut_pick.bind("kb"))
-		var pad := _tut_button("Gamepad", Vector2(320, 84), true)
+		var pad := _tut_button("Gamepad", Vector2(360, 96), false)
+		pad.add_theme_font_size_override("font_size", 21)
 		pad.pressed.connect(_tut_pick.bind("pad"))
 		choices.add_child(kb)
 		choices.add_child(pad)
@@ -561,16 +560,21 @@ func _tut_go(i: int) -> void:
 	if rows.size() > 0:
 		var grid := GridContainer.new()
 		grid.columns = 2
-		grid.add_theme_constant_override("h_separation", 48)
-		grid.add_theme_constant_override("v_separation", 10)
+		grid.add_theme_constant_override("h_separation", 56)
+		grid.add_theme_constant_override("v_separation", 12)
 		for r in rows.size():
-			for cell in rows[r]:
-				grid.add_child(_label(cell, 17, AMBER if r == 0 else Color("e8dfc8")))
+			for c in rows[r].size():
+				var cell: String = rows[r][c]
+				if r == 0:
+					grid.add_child(_label(cell, 15, UiTheme.ACCENT, "ui_bold"))
+				else:
+					grid.add_child(_label(cell, 18, UiTheme.CREAM, "ui_bold" if c == 1 else "ui"))
 		_tut_body.add_child(grid)
 	if pg["text"] != "":
-		var t := _label(pg["text"], 16)
+		var t := _label(pg["text"], 18, UiTheme.CREAM)
 		t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		t.custom_minimum_size = Vector2(820, 0)
+		t.add_theme_constant_override("line_spacing", 4)
+		t.custom_minimum_size = Vector2(800, 0)
 		_tut_body.add_child(t)
 	_tut_next.text = "Next" if i < _tut_pages.size() else "Step into the cottage"
 	_tut_next.grab_focus.call_deferred()      # Enter / Space / A advance without the mouse
