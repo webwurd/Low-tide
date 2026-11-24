@@ -22,6 +22,7 @@ var _lamp_lit_mat: Material
 var _lamp_off_mat: Material
 var _window_view: ShaderMaterial
 var _window_lights: Array[Light3D] = []
+var _uni_logs: Node3D
 
 func build() -> void:
 	for path in ROOMS:
@@ -43,6 +44,19 @@ func build() -> void:
 	for n in find_children("*", "Light3D", true, false):
 		if n.is_in_group("window_light"):
 			_window_lights.append(n)
+	_configure_pickups()
+
+## M4-M6 story pickups: when each one can be found (the rules are code, so
+## they live here rather than in the scenes; give_item is set in the scene).
+func _configure_pickups() -> void:
+	its["shelf_logs"].visible_fn = func(): return not GameState.has_item("uni_logs")
+	its["floorboard"].visible_fn = func(): return GameClock.day >= 3 and not GameState.has_item("tape_3")
+	its["locker"].visible_fn = func(): return GameClock.day >= 4 and not GameState.has_item("tape_4")
+	_uni_logs = get_child(0).get_node_or_null("UniLogbooks")
+
+func _process(_delta: float) -> void:
+	if _uni_logs:
+		_uni_logs.visible = not GameState.has_item("uni_logs")
 
 ## Called by Main when the lamp state changes.
 func set_lamp(lit: bool) -> void:

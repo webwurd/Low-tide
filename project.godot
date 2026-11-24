@@ -15,10 +15,14 @@ DayDirector="*res://autoload/day_director.gd"
 SaveSystem="*res://autoload/save_system.gd"
 RadioSystem="*res://autoload/radio_system.gd"
 AudioDirector="*res://autoload/audio_director.gd"
+TapePlayer="*res://autoload/tape_player.gd"
+ReactiveDirector="*res://autoload/reactive_director.gd"
 
 [display]
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 
 [rendering]
 environment/defaults/default_clear_color=Color(0.086, 0.125, 0.165, 1)

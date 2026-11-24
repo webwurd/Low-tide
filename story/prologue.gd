@@ -47,7 +47,7 @@ static func beats() -> Array:
 			{"text": "You called the number before you could change your mind.", "flag": "arthur_impulsive", "trust": 0},
 		]},
 		{"shot": 3, "caption": "Gannet Rock Light  ·  est. 1884", "seconds": 9.0},
-		{"radio": "CH-16 // COAST GUARD DISPATCH", "line": "Morning, Gannet Rock. This is Clara. Glad you made it across. You'll be hearing a lot of me this week, so I hope you like talking."},
+		{"radio": "Channel 16, Coast Guard dispatch", "line": "Morning, Gannet Rock. This is Clara. Glad you made it across. You'll be hearing a lot of me this week, so I hope you like talking."},
 	]
 
 ## The tender's track through the fog for each shot: [from, to, look_ahead].

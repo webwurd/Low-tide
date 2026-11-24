@@ -26,6 +26,7 @@ static func build_all() -> void:
 	_shelf_books()
 	_small_props()
 	_tender()
+	_story_props()
 
 static func _save(k: MeshKit, name: String) -> void:
 	SceneUtil.kit_mesh(k, name)
@@ -589,3 +590,74 @@ static func _tender() -> void:
 	k.tube("rope", coil, 0.022, 5)
 	k.box("iron", Vector3(0.22, 0.12, 0.12), Vector3(0, 1.16, -3.9), 0.02)
 	_save(k, "tender")
+
+# --- M4-M6 story pickups in the interiors -------------------------------------------
+
+static func _story_props() -> void:
+	# Tall bookcase (faces +Z) and, as its own mesh, the run of 1970s
+	# university logbooks Arthur can take (hidden once taken).
+	var bc := MeshKit.new()
+	bc.ao_ground_y = 0.0; bc.ao_range = 0.5; bc.ao_min = 0.6
+	bc.box("wood_warm", Vector3(1.0, 1.9, 0.04), Vector3(0, 0.95, -0.17), 0.01)
+	for sx in [-0.48, 0.48]:
+		bc.box("wood_warm", Vector3(0.04, 1.9, 0.38), Vector3(sx, 0.95, 0.0), 0.01)
+	for sy in [0.04, 0.5, 0.96, 1.42, 1.88]:
+		bc.box("wood_warm", Vector3(1.0, 0.035, 0.38), Vector3(0, sy, 0.0), 0.008)
+	var rng := RandomNumberGenerator.new(); rng.seed = 74
+	var colors := [Color("6a2e28"), Color("2e4a5a"), Color("4e5a32"), Color("8a6a3a"), Color("3a3030")]
+	for shelf in [0.06, 0.52]:
+		var x := -0.44
+		while x < 0.42:
+			var w := rng.randf_range(0.03, 0.06)
+			var h := rng.randf_range(0.22, 0.36)
+			bc.tint = colors[rng.randi() % colors.size()]
+			bc.box("book", Vector3(w, h, rng.randf_range(0.2, 0.28)), Vector3(x + w * 0.5, shelf + h * 0.5, 0.02), 0.005)
+			x += w + 0.004
+	bc.tint = Color(1, 1, 1)
+	_save(bc, "bookcase")
+	var logs := MeshKit.new()
+	for i in 7:
+		var w := 0.075
+		logs.tint = Color("2f3e52") if i % 2 == 0 else Color("3a4a3a")
+		logs.box("leather", Vector3(w, 0.34, 0.27), Vector3(-0.3 + i * (w + 0.006), 0.98 + 0.17, 0.02), 0.01)
+		logs.tint = Color(1, 1, 1)
+		logs.box("paint_white", Vector3(w * 0.7, 0.05, 0.005), Vector3(-0.3 + i * (w + 0.006), 1.22, 0.157), 0.0)
+	_save(logs, "uni_logbooks")
+	# Side table + a portable cassette player and a few tapes.
+	var st := MeshKit.new()
+	st.box("wood_warm", Vector3(0.78, 0.04, 0.56), Vector3(0, 0.78, 0), 0.012)
+	for lx in [-0.34, 0.34]:
+		for lz in [-0.23, 0.23]:
+			st.box("wood_warm", Vector3(0.04, 0.76, 0.04), Vector3(lx, 0.38, lz), 0.008)
+	st.box("wood_warm", Vector3(0.7, 0.025, 0.48), Vector3(0, 0.22, 0), 0.006)
+	_save(st, "side_table")
+	var cp := MeshKit.new()
+	cp.box("iron", Vector3(0.42, 0.13, 0.22), Vector3(0, 0.065, 0), 0.02, 2)
+	cp.box("bakelite", Vector3(0.18, 0.08, 0.01), Vector3(0.08, 0.07, 0.112), 0.004)
+	cp.box("glass", Vector3(0.14, 0.05, 0.004), Vector3(0.08, 0.075, 0.118), 0.0)
+	for gx in 6:
+		cp.box("bakelite", Vector3(0.008, 0.08, 0.008), Vector3(-0.16 + gx * 0.018, 0.07, 0.112), 0.002)
+	for bx in 5:
+		cp.box("paint_white" if bx != 1 else "keeper_red", Vector3(0.028, 0.015, 0.03), Vector3(-0.04 + bx * 0.032, 0.137, 0.06), 0.004)
+	cp.tube("iron", PackedVector3Array([Vector3(-0.18, 0.13, 0), Vector3(-0.16, 0.2, 0), Vector3(0.16, 0.2, 0), Vector3(0.18, 0.13, 0)]), 0.008, 5)
+	for t in 3:
+		cp.tint = [Color(1, 1, 1), Color("c8b89a"), Color("9aa8b0")][t]
+		cp.box("bakelite", Vector3(0.1, 0.016, 0.064), Vector3(0.3, 0.008 + t * 0.017, 0.02 + t * 0.006), 0.003)
+	cp.tint = Color(1, 1, 1)
+	_save(cp, "cassette_player")
+	# A loose floorboard, a shade darker and proud of its neighbours.
+	var lb := MeshKit.new()
+	lb.box("wood_dark", Vector3(1.1, 0.035, 0.2), Vector3(0, 0.012, 0), 0.006)
+	lb.box("iron", Vector3(0.02, 0.01, 0.02), Vector3(-0.48, 0.032, 0), 0.003)
+	lb.box("iron", Vector3(0.02, 0.01, 0.02), Vector3(0.48, 0.032, 0), 0.003)
+	_save(lb, "loose_board")
+	# Keeper's steel locker (faces +Z): louvres, a hasp and a stencilled number.
+	var lk := MeshKit.new()
+	lk.box("radio_case", Vector3(0.88, 1.4, 0.36), Vector3(0, 0.7, 0), 0.02, 2)
+	lk.box("radio_case", Vector3(0.82, 1.32, 0.02), Vector3(0, 0.72, 0.185), 0.008)
+	for lv in 5:
+		lk.box("iron", Vector3(0.36, 0.015, 0.012), Vector3(0, 1.2 - lv * 0.035, 0.198), 0.003)
+	lk.box("iron", Vector3(0.04, 0.16, 0.03), Vector3(0.3, 0.72, 0.205), 0.006)
+	lk.box("brass", Vector3(0.05, 0.05, 0.02), Vector3(0.3, 0.64, 0.22), 0.006)
+	lk.box("paint_white", Vector3(0.12, 0.07, 0.003), Vector3(0, 1.05, 0.198), 0.0)
+	_save(lk, "locker")

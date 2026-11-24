@@ -1,15 +1,17 @@
 class_name TitleScreen extends Control
 ## Title menu over a live view of Gannet Rock at dusk (Main drives the 3D
-## backdrop while this is visible). New Watch opens the setup tutorial;
-## Continue appears when a save exists; Settings holds the options that exist
-## today (more arrive in M7); Quit leaves the game.
+## backdrop while this is visible). New Watch starts the prologue; Continue
+## appears when a save exists; Settings opens the full settings menu (Menus);
+## Quit leaves the game.
 
 signal new_watch
 signal continue_game
+signal settings
 
 var panel: Control                 # the menu column (hidden while a sub-panel is open)
 var continue_btn: Button
-var _settings: PanelContainer
+var endings_label: Label           # "Endings found: ..." (set by the HUD)
+var _new_btn: Button
 var _first_focus: Button
 
 func _ready() -> void:
@@ -44,10 +46,10 @@ func _ready() -> void:
 	margin.add_child(col)
 	panel = col
 
-	var kicker := _label("GANNET ROCK LIGHT STATION", UITheme.ui_font(500), 13, Color(1, 0.86, 0.62, 0.85))
+	var kicker := _label("Gannet Rock Light Station", UiTheme.ui_font(500), 13, Color(1, 0.86, 0.62, 0.85))
 	kicker.add_theme_constant_override("outline_size", 0)
-	var title := _label("Low Tide", UITheme.title_font(600, 2), 96, Color("f3ead6"))
-	var sub := _label("Maine coast  ·  winter, 1998", UITheme.title_font(500, 1), 22, Color(0.85, 0.82, 0.76, 0.85))
+	var title := _label("Low Tide", UiTheme.title_font(600, 2), 96, Color("f3ead6"))
+	var sub := _label("Maine coast  ·  winter, 1998", UiTheme.title_font(500, 1), 22, Color(0.85, 0.82, 0.76, 0.85))
 	col.add_child(kicker)
 	col.add_child(title)
 	col.add_child(sub)
@@ -62,18 +64,19 @@ func _ready() -> void:
 	col.add_child(menu)
 	continue_btn = _button(menu, "Continue the watch", func(): continue_game.emit())
 	continue_btn.visible = SaveSystem.has_save()
-	var new_btn := _button(menu, "New watch", func(): new_watch.emit())
-	_button(menu, "Settings", _open_settings)
+	_new_btn = _button(menu, "New watch", func(): new_watch.emit())
+	_button(menu, "Settings", func(): settings.emit())
 	_button(menu, "Quit", func(): get_tree().quit())
-	_first_focus = continue_btn if continue_btn.visible else new_btn
+	_first_focus = continue_btn if continue_btn.visible else _new_btn
 
+	endings_label = _label("", UiTheme.ui_font(420), 13, Color(0.85, 0.82, 0.76, 0.6))
+	col.add_child(endings_label)
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_child(spacer)
-	var foot := _label("Mouse, keyboard or gamepad  ·  Enter / A to choose", UITheme.ui_font(400), 12, Color(0.85, 0.82, 0.76, 0.5))
+	var foot := _label("Mouse, keyboard or gamepad  ·  Enter / A to choose", UiTheme.ui_font(400), 12, Color(0.85, 0.82, 0.76, 0.5))
 	col.add_child(foot)
-	_build_settings()
 	visibility_changed.connect(_on_visible)
 	_on_visible()
 
@@ -91,7 +94,7 @@ func _button(parent: Control, text: String, cb: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.add_theme_font_override("font", UITheme.title_font(600, 1))
+	b.add_theme_font_override("font", UiTheme.title_font(600, 1))
 	b.add_theme_font_size_override("font_size", 28)
 	b.pressed.connect(cb)
 	parent.add_child(b)
@@ -100,60 +103,9 @@ func _button(parent: Control, text: String, cb: Callable) -> Button:
 func _on_visible() -> void:
 	if visible and is_inside_tree():
 		continue_btn.visible = SaveSystem.has_save()
-		_first_focus = continue_btn if continue_btn.visible else _first_focus
+		# Re-pick every time: the save can appear or disappear between visits.
+		_first_focus = continue_btn if continue_btn.visible else _new_btn
 		modulate.a = 0.0
 		create_tween().tween_property(self, "modulate:a", 1.0, 1.2)
 		if _first_focus:
 			_first_focus.grab_focus.call_deferred()
-
-# --- settings (what exists today; the full menu arrives in M7) -----------------
-
-func _build_settings() -> void:
-	_settings = PanelContainer.new()
-	_settings.set_anchors_preset(Control.PRESET_CENTER_LEFT)
-	_settings.position = Vector2(96, -150)
-	_settings.custom_minimum_size = Vector2(440, 0)
-	_settings.visible = false
-	add_child(_settings)
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 14)
-	_settings.add_child(v)
-	v.add_child(_label("Settings", UITheme.title_font(600, 1), 34, Color("f3ead6")))
-	var q := OptionButton.new()
-	for n in ["Low  (Steam Deck)", "Medium", "High"]:
-		q.add_item(n)
-	q.selected = Settings.quality
-	q.item_selected.connect(func(i): Settings.quality = i)
-	v.add_child(_row("Graphics quality", q))
-	var a := CheckButton.new()
-	a.button_pressed = Settings.assist_mode
-	a.toggled.connect(func(on): Settings.assist_mode = on)
-	v.add_child(_row("Assist readout (clock + tide)", a))
-	var back := Button.new()
-	back.text = "Back"
-	back.pressed.connect(_close_settings)
-	v.add_child(back)
-	v.add_child(_label("Audio, controls and accessibility options arrive with the full settings menu.", UITheme.ui_font(400), 12, Color(0.85, 0.82, 0.76, 0.55)))
-
-func _row(text: String, ctl: Control) -> HBoxContainer:
-	var h := HBoxContainer.new()
-	var l := _label(text, UITheme.ui_font(420), 16, UITheme.INK)
-	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	h.add_child(l)
-	h.add_child(ctl)
-	return h
-
-func _open_settings() -> void:
-	panel.visible = false
-	_settings.visible = true
-	(_settings.get_child(0).get_child(1).get_child(1) as Control).grab_focus()
-
-func _close_settings() -> void:
-	_settings.visible = false
-	panel.visible = true
-	_first_focus.grab_focus()
-
-func _unhandled_input(event: InputEvent) -> void:
-	if visible and _settings.visible and event.is_action_pressed("ui_cancel"):
-		_close_settings()
-		get_viewport().set_input_as_handled()

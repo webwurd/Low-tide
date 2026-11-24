@@ -48,4 +48,4 @@ highlight_paths = Array[NodePath]([NodePath("../Buoy")])
 
 [node name="BinoTarget" type="Node3D" parent="." groups=["bino_target"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 0)
-metadata/label = "WEST SEA STACK // ECHO SEA CAVE"
+metadata/label = "West sea stack: echo cave"

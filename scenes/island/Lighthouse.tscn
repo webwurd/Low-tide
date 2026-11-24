@@ -95,4 +95,4 @@ highlight_paths = Array[NodePath]([NodePath("../DoorPanel")])
 
 [node name="BinoTarget" type="Node3D" parent="." groups=["bino_target"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 19.9, 0)
-metadata/label = "GANNET ROCK LIGHTHOUSE (1884)"
+metadata/label = "Gannet Rock lighthouse (1884)"

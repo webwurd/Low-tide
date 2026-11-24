@@ -1,0 +1,26 @@
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+/Packages/packages-lock.json.bak
+*.csproj.user
+*.sln
+*.suo
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.apk
+*.unitypackage
+crashlytics-build.properties
+# dotnet command-line tests (any project folder under dotnet/)
+dotnet/**/bin/
+dotnet/**/obj/
+dotnet/**/TestResults/

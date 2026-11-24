@@ -131,6 +131,15 @@ static func _clear(x: float, z: float, margin := 0.0) -> bool:
 			return false
 	if p.distance_to(Vector2(76, 6)) < 7.0 + margin or p.distance_to(Vector2(-74, -8)) < 8.0 + margin:
 		return false
+	# M5 content: cove cable hut, reef vault and both causeway lanes stay clear.
+	if p.distance_to(Vector2(-13.5, -50.0)) < 6.0 + margin or p.distance_to(Terrain.COVE_C) < 5.0 + margin:
+		return false
+	if p.distance_to(Terrain.VAULT_C) < 6.0 + margin:
+		return false
+	if _seg_dist(p, Terrain.NORTH_A, Terrain.NORTH_B) < Terrain.LANE_HALF_WIDTH + 1.5 + margin:
+		return false
+	if _seg_dist(p, Terrain.SOUTH_A, Terrain.SOUTH_B) < Terrain.LANE_HALF_WIDTH + 1.5 + margin:
+		return false
 	return true
 
 static func _scatter(meshes: Dictionary) -> void:

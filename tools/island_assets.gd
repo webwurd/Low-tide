@@ -201,7 +201,7 @@ static func _lighthouse() -> void:
 	lamp.omni_range = 45.0
 	pivot.add_child(lamp)
 	_glow(SceneUtil.interactable(root, "Door", "lighthouse", "Enter the lighthouse", Vector3(0, 1.2, 4.8), 3.2, "lighthouse"), [door_mi])
-	_bino(root, "GANNET ROCK LIGHTHOUSE (1884)", Vector3(0, 19.9, 0))
+	_bino(root, "Gannet Rock lighthouse (1884)", Vector3(0, 19.9, 0))
 	SceneUtil.save_scene(root, OUT + "Lighthouse.tscn")
 
 # --- keeper's cottage ------------------------------------------------------------
@@ -578,7 +578,7 @@ static func _wreck() -> void:
 	var canister: Mesh = load(SceneUtil.MODELS + "canister.res")
 	var can := SceneUtil.mesh_node(root, canister, "Canister", Transform3D(Basis.from_euler(Vector3(0.15, 0.6, 1.35)), Vector3(2.5, 0.55, 2.2)), true, "canister")
 	_glow(SceneUtil.interactable(root, "UseCanister", "shipwreck", "Inspect 1974 Waterproof Canister", Vector3(2.5, 0.8, 2.2), 5.5, "shipwreck"), [can])
-	_bino(root, "EAST SEA STACK // UNCHARTED WRECK", Vector3(0, 2.6, 0))
+	_bino(root, "East sea stack: uncharted wreck", Vector3(0, 2.6, 0))
 	SceneUtil.save_scene(root, OUT + "Wreck.tscn")
 
 # --- west stack: the echo cave ------------------------------------------------------
@@ -612,7 +612,7 @@ static func _cave() -> void:
 	var buoy: Mesh = load(SceneUtil.MODELS + "acoustic_buoy.res")
 	var bmi := SceneUtil.mesh_node(root, buoy, "Buoy", Transform3D(Basis.from_euler(Vector3(0.0, 0.4, 0.42)), Vector3(1.5, 0.15, 0)), true, "acoustic_buoy")
 	_glow(SceneUtil.interactable(root, "UseBuoy", "seacave", "Examine Washed-Up Acoustic Buoy", Vector3(1.5, 1.0, 0), 6.0, "seacave"), [bmi])
-	_bino(root, "WEST SEA STACK // ECHO SEA CAVE", Vector3(0, 3.5, 0))
+	_bino(root, "West sea stack: echo cave", Vector3(0, 3.5, 0))
 	SceneUtil.save_scene(root, OUT + "SeaCave.tscn")
 
 # --- scattered boulders -------------------------------------------------------------

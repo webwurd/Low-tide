@@ -52,7 +52,7 @@ func _ready() -> void:
 	_lines = Label.new()
 	_lines.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_lines.custom_minimum_size = Vector2(720, 0)
-	_lines.add_theme_font_override("font", UITheme.title_font(500))
+	_lines.add_theme_font_override("font", UiTheme.title_font(500))
 	_lines.add_theme_font_size_override("font_size", 28)
 	_lines.add_theme_color_override("font_color", Color("ede4cf"))
 	_lines.add_theme_constant_override("line_spacing", 6)
@@ -63,7 +63,7 @@ func _ready() -> void:
 	_caption = Label.new()
 	_caption.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	_caption.position = Vector2(72, -96)
-	_caption.add_theme_font_override("font", UITheme.title_font(500, 2))
+	_caption.add_theme_font_override("font", UiTheme.title_font(500, 2))
 	_caption.add_theme_font_size_override("font_size", 22)
 	_caption.add_theme_color_override("font_color", Color(0.95, 0.91, 0.82, 0.9))
 	_caption.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
@@ -80,11 +80,11 @@ func _ready() -> void:
 	_radio.add_child(rv)
 	_radio_who = Label.new()
 	_radio_who.add_theme_font_size_override("font_size", 12)
-	_radio_who.add_theme_color_override("font_color", UITheme.AMBER)
+	_radio_who.add_theme_color_override("font_color", UiTheme.AMBER)
 	_radio_line = Label.new()
 	_radio_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_radio_line.custom_minimum_size = Vector2(650, 0)
-	_radio_line.add_theme_font_override("font", UITheme.title_font(500))
+	_radio_line.add_theme_font_override("font", UiTheme.title_font(500))
 	_radio_line.add_theme_font_size_override("font_size", 22)
 	rv.add_child(_radio_who)
 	rv.add_child(_radio_line)
@@ -107,6 +107,8 @@ func play() -> void:
 	_next()
 
 func _next() -> void:
+	if _done:
+		return   # a pending timer/tween from before a skip
 	_i += 1
 	if _i >= _beats.size():
 		_finish()
@@ -150,13 +152,15 @@ func _show_text(b: Dictionary) -> void:
 	_typing.tween_callback(_show_choices.bind(b))
 
 func _show_choices(b: Dictionary) -> void:
+	if _done:
+		return
 	_lines.visible_characters = -1
 	var first: Button = null
 	for ch in b.get("choices", []):
 		var btn := Button.new()
 		btn.text = ch["text"]
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		btn.add_theme_font_override("font", UITheme.title_font(600))
+		btn.add_theme_font_override("font", UiTheme.title_font(600))
 		btn.add_theme_font_size_override("font_size", 24)
 		btn.add_theme_color_override("font_color", Color(1, 0.86, 0.62))
 		btn.pressed.connect(_choose.bind(ch))
@@ -171,7 +175,7 @@ func _show_choices(b: Dictionary) -> void:
 		first.grab_focus.call_deferred()
 
 func _choose(ch: Dictionary) -> void:
-	if not _waiting_choice:
+	if not _waiting_choice or _done:
 		return
 	_waiting_choice = false
 	if ch.get("flag", "") != "":
@@ -187,6 +191,10 @@ func _finish() -> void:
 	if _done:
 		return
 	_done = true
+	_waiting_choice = false
+	_shot_left = 0.0
+	if _typing and _typing.is_valid():
+		_typing.kill()
 	var tw := create_tween()
 	tw.tween_property(self, "modulate:a", 0.0, 0.8)
 	tw.tween_callback(func():

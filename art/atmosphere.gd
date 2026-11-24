@@ -7,7 +7,7 @@ class_name Atmosphere extends Resource
 ## Sun: rises ~07:05 (SE), sets ~16:05 (SW), peaks ~24 deg in the south.
 
 @export var minutes := PackedFloat32Array([
-	0.0, 380.0, 405.0, 428.0, 470.0, 600.0, 720.0, 840.0, 915.0, 962.0, 990.0, 1030.0, 1440.0])
+	0.0, 360.0, 405.0, 428.0, 470.0, 600.0, 720.0, 840.0, 915.0, 962.0, 990.0, 1030.0, 1440.0])
 @export var sky_top := PackedColorArray([
 	Color("060b14"), Color("08101c"), Color("232c48"), Color("3a4a70"), Color("4f7399"), Color("5a82ab"),
 	Color("5b84ad"), Color("587ea6"), Color("4d6a92"), Color("3a4670"), Color("232a48"), Color("0a1220"), Color("060b14")])
@@ -101,6 +101,24 @@ func sun_direction(minute: float) -> Vector3:
 	var az := deg_to_rad(lerpf(sunrise_azimuth, sunset_azimuth, t))
 	var el := deg_to_rad(maxf(2.5, sin(clampf(t, 0.0, 1.0) * PI) * noon_elevation))
 	return _dir(az, el)
+
+## Minutes either side of a sun/moon swap over which the key light fades to
+## nothing, so the swap (opposite sides of the sky) never shows as a jump in
+## shadow direction or colour. 42 keeps the per-minute change of
+## direction*fade and colour*fade under 0.06 (checked in tests/run_tests.gd).
+const HANDOVER := 42.0
+
+## The key light at `minute`: {"dir": towards the light, "fade": 0..1,
+## "is_sun": bool}. The swap happens at the dark centre of each twilight band
+## (just before sunrise and just after sunset), while `fade` is 0.
+func key_light(minute: float) -> Dictionary:
+	var m := fposmod(minute, 1440.0)
+	var c_rise := sunrise_minute - 20.0
+	var c_set := sunset_minute + 25.0
+	var is_sun := m >= c_rise and m < c_set
+	var d := minf(absf(m - c_rise), absf(m - c_set))
+	var fade := smoothstep(0.0, HANDOVER, d)
+	return {"dir": sun_direction(m) if is_sun else moon_direction(m), "fade": fade, "is_sun": is_sun}
 
 func moon_direction(minute: float) -> Vector3:
 	# Drifts slowly west through the night.

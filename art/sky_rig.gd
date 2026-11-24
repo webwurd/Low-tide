@@ -100,27 +100,30 @@ func _ready() -> void:
 	key_light.light_angular_distance = 0.6
 	key_light.light_volumetric_fog_energy = 1.3
 	add_child(key_light)
-	Settings.quality_changed.connect(func(_q): _apply_quality())
+	Settings.changed.connect(func(_k): _apply_quality())
 	_apply_quality()
 
+## Effect tier from the Settings quality preset: 0 = Low / Steam Deck,
+## 1 = Medium, 2 = High; a Custom preset follows the shadow quality.
+## Anti-aliasing and render scale are applied by Settings itself.
+static func tier() -> int:
+	match int(Settings.v("quality_preset")):
+		0, 3: return 0
+		1: return 1
+		2: return 2
+		_: return clampi(int(Settings.v("shadow_quality")) - 1, 0, 2)
+
 func _apply_quality() -> void:
-	var q: int = Settings.quality
-	_quality = q
-	var hi := q == Settings.Quality.HIGH
-	var mid := q >= Settings.Quality.MEDIUM
-	env.sdfgi_enabled = hi
-	env.ssil_enabled = hi
-	env.ssao_enabled = mid
-	env.volumetric_fog_enabled = mid
-	key_light.directional_shadow_max_distance = 220.0 if hi else (160.0 if mid else 110.0)
-	key_light.light_angular_distance = 0.6 if hi else 0.0
-	cam_attr.dof_blur_far_enabled = mid
-	var vp := get_viewport()
-	if vp:
-		vp.msaa_3d = Viewport.MSAA_4X if hi else (Viewport.MSAA_2X if mid else Viewport.MSAA_DISABLED)
-		vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_DISABLED if mid else Viewport.SCREEN_SPACE_AA_FXAA
-		vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR if mid else Viewport.SCALING_3D_MODE_FSR
-		vp.scaling_3d_scale = 1.0 if mid else 0.77
+	var t := tier()
+	env.sdfgi_enabled = t == 2
+	env.ssil_enabled = t == 2
+	env.ssao_enabled = t >= 1
+	env.volumetric_fog_enabled = t >= 1
+	cam_attr.dof_blur_far_enabled = t >= 1 and not bool(Settings.v("reduce_motion"))
+	key_light.light_angular_distance = 0.6 if t == 2 else 0.0
+	key_light.directional_shadow_max_distance = maxf(Settings.shadow_distance(), 1.0)
+	env.glow_enabled = bool(Settings.v("glow"))
+	env.adjustment_brightness = float(Settings.v("brightness"))
 
 ## Day factor: 0 at night .. 1 in full daylight.
 func daylight(minute: float) -> float:
@@ -167,15 +170,20 @@ func apply(outdoors: bool, minute: float, dd: DayData) -> void:
 	sky_mat.set_shader_parameter("stars", s.stars * (1.0 - cover))
 
 	# Key light: the sun while it is up, the moon after dusk.
-	var is_sun := minute > atmos.sunrise_minute - 30.0 and minute < atmos.sunset_minute + 28.0
-	var dir := atmos.sun_direction(minute) if is_sun else atmos.moon_direction(minute)
+	# Key light: the sun while it is up, the moon after dusk. It fades to zero
+	# across each twilight swap so shadows and colour never jump.
+	var kl := atmos.key_light(minute)
+	var is_sun: bool = kl["is_sun"]
+	var fade: float = kl["fade"]
+	var dir: Vector3 = kl["dir"]
 	var sun_vis := clampf(1.0 - (cover - 0.55) * 2.6, 0.0, 1.0)
-	var key_e: float = s.sun_energy * dd.light_scale * (w.sun_scale if is_sun else lerpf(1.0, 0.45, cover))
+	var key_e: float = s.sun_energy * dd.light_scale * (w.sun_scale if is_sun else lerpf(1.0, 0.45, cover)) * fade
 	var key_c: Color = s.sun_color
 	key_light.basis = Basis.looking_at(-dir, Vector3.UP if absf(dir.y) < 0.99 else Vector3.FORWARD)
 	key_light.light_color = key_c
 	key_light.light_energy = key_e
-	key_light.shadow_enabled = key_e > 0.06
+	key_light.shadow_enabled = key_e > 0.06 and fade > 0.02 and Settings.shadow_distance() > 0.0
+	key_light.directional_shadow_max_distance = maxf(Settings.shadow_distance(), 1.0)
 	sky_mat.set_shader_parameter("sun_dir", atmos.sun_direction(minute))
 	sky_mat.set_shader_parameter("sun_color", key_c if is_sun else Color("ff9a5c"))
 	sky_mat.set_shader_parameter("sun_visible", sun_vis * (1.0 if is_sun else 0.0))
@@ -186,16 +194,20 @@ func apply(outdoors: bool, minute: float, dd: DayData) -> void:
 	# Ambient: mostly sky, tinted so shadows stay slate-violet.
 	env.ambient_light_sky_contribution = 0.7
 	env.ambient_light_color = s.ambient_color
-	env.ambient_light_energy = s.ambient_energy * w.ambient_scale * lerpf(0.75, 1.0, dd.light_scale)
-	env.tonemap_exposure = s.exposure
+	env.ambient_light_energy = s.ambient_energy * w.ambient_scale * lerpf(0.75, 1.0, dd.light_scale) \
+		+ float(Settings.v("night_assist")) * (1.0 - day) * 0.45
+	env.tonemap_exposure = s.exposure * float(Settings.v("exposure"))
+	env.adjustment_brightness = float(Settings.v("brightness"))
+	env.glow_enabled = bool(Settings.v("glow"))
 
 	env.fog_light_color = fog_col
 	env.fog_light_energy = 1.0
-	env.fog_density = dd.fog_density * w.fog_scale
+	var fog_k := float(Settings.v("fog_scale"))
+	env.fog_density = dd.fog_density * w.fog_scale * fog_k
 	env.fog_sun_scatter = 0.35 * day * sun_vis
 	env.fog_height = TideSystem.current_height + 2.5
 	env.fog_height_density = w.height_fog
-	env.volumetric_fog_density = w.volumetric_density
+	env.volumetric_fog_density = w.volumetric_density * fog_k
 	env.volumetric_fog_albedo = fog_col.lightened(0.3)
 	env.volumetric_fog_emission = fog_col
 	env.volumetric_fog_emission_energy = 0.04
@@ -230,7 +242,9 @@ func _apply_indoor(minute: float) -> void:
 		key_light.visible = false
 	env.ambient_light_color = INDOOR_AMBIENT
 	env.ambient_light_energy = 0.35
-	env.tonemap_exposure = 1.0
+	env.tonemap_exposure = float(Settings.v("exposure"))
+	env.adjustment_brightness = float(Settings.v("brightness"))
+	env.glow_enabled = bool(Settings.v("glow"))
 	env.volumetric_fog_density = 0.006
 	env.volumetric_fog_albedo = Color("d8c8b0")
 	env.volumetric_fog_emission_energy = 0.0

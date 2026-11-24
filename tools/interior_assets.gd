@@ -99,8 +99,9 @@ static func _walls_body(root: Node, size: Vector3) -> void:
 		[SceneUtil.box_shape(Vector3(0.2, h, size.z)), Transform3D(Basis(), Vector3(-hx - 0.1, h / 2, 0))],
 		[SceneUtil.box_shape(Vector3(0.2, h, size.z)), Transform3D(Basis(), Vector3(hx + 0.1, h / 2, 0))]])
 
-static func _it(root: Node, id: String, title: String, pos: Vector3, radius := 2.2, hold := 0.0, glow: Array = []) -> void:
+static func _it(root: Node, id: String, title: String, pos: Vector3, radius := 2.2, hold := 0.0, glow: Array = [], give := "") -> void:
 	var it := SceneUtil.interactable(root, "It_" + id, id, title, pos, radius, "", hold)
+	it.give_item = give
 	var paths: Array[NodePath] = []
 	for g in glow:
 		paths.append(it.get_path_to(g))
@@ -147,13 +148,24 @@ static func _cottage() -> void:
 	_place(root, "curtain", Vector3(-2.15, 2.35, 2.9), PI, "CurtainL")
 	_place(root, "curtain", Vector3(-1.05, 2.35, 2.9), PI, "CurtainR")
 	_place(root, "mug", Vector3(-0.55, 1.79, -2.88), 0.3, "ShelfMug")
+	# M4-M6 pickups: university logbooks, cassette player, loose floorboard.
+	_place(root, "bookcase", Vector3(-3.78, 0.0, 2.4), PI / 2.0, "Bookcase")
+	var logs := _place(root, "uni_logbooks", Vector3(-3.78, 0.0, 2.4), PI / 2.0, "UniLogbooks")
+	_place(root, "side_table", Vector3(-0.8, 0.0, 2.3), 0.0, "SideTable")
+	var deck := _place(root, "cassette_player", Vector3(-0.85, 0.8, 2.28), 0.15, "CassettePlayer")
+	var board := _place(root, "loose_board", Vector3(0.0, 0.0, -1.0), 0.0, "LooseBoard")
 	SceneUtil.body(root, "Furniture", [
 		[SceneUtil.box_shape(Vector3(0.9, 1.0, 0.8)), Transform3D(Basis(), Vector3(-3.3, 0.5, -2.3))],
 		[SceneUtil.box_shape(Vector3(1.6, 0.8, 0.8)), Transform3D(Basis(), Vector3(2.7, 0.4, -2.4))],
 		[SceneUtil.box_shape(Vector3(0.8, 0.8, 1.2)), Transform3D(Basis(), Vector3(3.5, 0.4, 0.4))],
 		[SceneUtil.box_shape(Vector3(0.9, 0.6, 0.9)), Transform3D(Basis(), Vector3(-2.4, 0.3, 1.6))],
 		[SceneUtil.box_shape(Vector3(1.8, 0.6, 1.0)), Transform3D(Basis(), Vector3(-3.0, 0.3, 0.0))],
-		[SceneUtil.box_shape(Vector3(1.1, 0.78, 0.75)), Transform3D(Basis(), Vector3(0.4, 0.39, 0.5))]])
+		[SceneUtil.box_shape(Vector3(1.1, 0.78, 0.75)), Transform3D(Basis(), Vector3(0.4, 0.39, 0.5))],
+		[SceneUtil.box_shape(Vector3(0.4, 1.8, 1.0)), Transform3D(Basis(), Vector3(-3.8, 0.9, 2.4))],
+		[SceneUtil.box_shape(Vector3(0.8, 0.8, 0.6)), Transform3D(Basis(), Vector3(-0.8, 0.4, 2.3))]])
+	_it(root, "shelf_logs", "Take the old university logbooks", Vector3(-3.0, 1.3, 2.4), 1.8, 0.0, [logs], "uni_logs")
+	_it(root, "cassette_player", "Cassette player", Vector3(-0.8, 1.1, 1.8), 1.8, 0.0, [deck])
+	_it(root, "floorboard", "Lift the loose floorboard", Vector3(0.0, 1.0, -1.0), 1.6, 0.0, [board], "tape_3")
 	_it(root, "stove", "Brew coffee on the stove", Vector3(-2.7, 1.0, -1.7), 2.2, 0.0, [stove])
 	_it(root, "tide_table", "Read the tide table", Vector3(-1.2, 1.4, -2.2), 2.2, 0.0, [tide])
 	_it(root, "barometer", "Check the barometer", Vector3(0.7, 1.5, -2.2), 2.2, 0.0, [baro])
@@ -261,10 +273,13 @@ static func _lantern_room() -> void:
 	var bench := _place(root, "bench", Vector3(-1.45, 0.0, 1.0), -0.6, "Bench")
 	var hatch := _place(root, "floor_hatch", Vector3(1.25, 0.0, 1.35), 0.4, "Hatch")
 	_place(root, "oil_can", Vector3(0.9, 0.0, -1.5), 2.0, "OilCan")
+	var locker := _place(root, "locker", Vector3(-1.35, 0.0, -1.55), atan2(1.35, 1.55), "Locker")
 	_place(root, "hand_lantern", Vector3(-1.5, 0.49, 0.75), 0.2, "HandLantern")
 	SceneUtil.body(root, "Furniture", [
 		[SceneUtil.box_shape(Vector3(0.9, 1.7, 0.9)), Transform3D(Basis(), Vector3(0, 0.85, 0))],
-		[SceneUtil.box_shape(Vector3(0.42, 0.5, 1.3)), Transform3D(Basis(Vector3.UP, -0.6), Vector3(-1.45, 0.25, 1.0))]])
+		[SceneUtil.box_shape(Vector3(0.42, 0.5, 1.3)), Transform3D(Basis(Vector3.UP, -0.6), Vector3(-1.45, 0.25, 1.0))],
+		[SceneUtil.box_shape(Vector3(0.88, 1.4, 0.36)), Transform3D(Basis(Vector3.UP, atan2(1.35, 1.55)), Vector3(-1.35, 0.7, -1.55))]])
+	_it(root, "locker", "Open the keeper's locker", Vector3(-1.5, 1.1, -1.4), 1.8, 0.0, [locker], "tape_4")
 	_it(root, "lamp", "Light the lamp", Vector3(0.0, 1.2, 0.9), 2.2, 2.0, [lens, burner])
 	_it(root, "bench", "Sit and wait", Vector3(-1.0, 0.9, 1.2), 2.2, 0.0, [bench])
 	_it(root, "stairs_down", "Go down the stairs", Vector3(1.4, 1.0, 1.6), 2.0, 0.0, [hatch])

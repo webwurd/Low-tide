@@ -8,6 +8,7 @@ class_name DayData extends Resource
 @export var fog_density := 0.011
 @export var fog_tint := Color("526373")
 @export var light_scale := 1.0         # overall daylight strength (storms are dark)
+@export var cloud := 0.5               # sky cover: 0 clear .. 1 overcast
 @export var rain := false
 @export var wave_height := 0.14
 @export var wind_db := 0.0             # extra wind loudness
