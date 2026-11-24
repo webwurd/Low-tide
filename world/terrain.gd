@@ -128,7 +128,7 @@ static func surface_at(x: float, z: float, y: float) -> String:
 		return "wet"          # barnacled intertidal rock
 	return "rock"
 
-static func color_for(h: float, x: float, z := 0.0) -> Color:
+static func _base_color(h: float, x: float, z := 0.0) -> Color:
 	var cp := Vector2(x, z)
 	if cp.distance_to(VAULT_C) < 7.0 and h > 0.3:
 		return Color("8a8d8f")                       # concrete pad
@@ -147,6 +147,43 @@ static func color_for(h: float, x: float, z := 0.0) -> Color:
 	if h < 7.5:
 		return granite
 	return granite.lerp(moss, minf(1.0, (h - 7.5) / 3.0))
+
+static func _hash(ix: int, iz: int) -> float:
+	var n := ix * 374761393 + iz * 668265263
+	n = (n ^ (n >> 13)) * 1274126177
+	return float((n ^ (n >> 16)) & 0xffff) / 65535.0
+
+static func _vnoise(x: float, z: float) -> float:
+	var ix := floori(x)
+	var iz := floori(z)
+	var fx := x - ix
+	var fz := z - iz
+	fx = fx * fx * (3.0 - 2.0 * fx)
+	fz = fz * fz * (3.0 - 2.0 * fz)
+	return lerpf(lerpf(_hash(ix, iz), _hash(ix + 1, iz), fx), lerpf(_hash(ix, iz + 1), _hash(ix + 1, iz + 1), fx), fz)
+
+## Painted ground colour: the base zones, broken up by patches of moss, straw
+## grass, warm rust-stained rock and per-face brush variation.
+static func color_for(h: float, x: float, z := 0.0) -> Color:
+	var base := _base_color(h, x, z)
+	var cp := Vector2(x, z)
+	var man_made := cp.distance_to(VAULT_C) < 7.0 or cp.distance_to(COVE_C) < 9.0
+	if man_made or h < 1.35:
+		var f := 0.94 + _vnoise(x * 0.5, z * 0.5) * 0.12     # sand ripples: only brightness
+		return base * Color(f, f, f, 1.0)
+	var patch := _vnoise(x * 0.11 + 31.0, z * 0.11 - 7.0)
+	var fine := _vnoise(x * 0.9, z * 0.9)
+	var col := base
+	if h > 3.4:
+		var grass := Color("73804f").lerp(Color("a39a62"), _vnoise(x * 0.23, z * 0.23))   # moss to straw
+		var amt := smoothstep(3.4, 6.5, h) * smoothstep(0.3, 0.6, patch)
+		col = base.lerp(grass, amt * 0.85)
+		var rust := Color("8a6a52")
+		col = col.lerp(rust, smoothstep(0.7, 0.85, _vnoise(x * 0.17 - 12.0, z * 0.17 + 5.0)) * 0.45 * (1.0 - amt))
+	elif h > 1.35:
+		col = col.lerp(Color("4a6355"), smoothstep(0.55, 0.8, patch) * 0.5)   # green weed on the splash zone
+	var v := 0.9 + fine * 0.2
+	return Color(col.r * v, col.g * v, col.b * v, 1.0)
 
 ## Builds the flat-shaded terrain ArrayMesh (per-face colour).
 static func build_mesh(size := 210.0, seg := 300) -> ArrayMesh:   # 0.7 m cells so the 2 m causeway lane is honoured by the physical mesh

@@ -53,6 +53,31 @@ func _run() -> void:
 	ok(tide.sandbars_open(2.1) and not tide.sandbars_open(2.11), "sandbar gate at 2.1 m")
 	near(tide.speed_multiplier(0.5), 0.6, 0.001, "knee-deep speed x0.6")
 
+	print("== sky model")
+	ok(SkyModel.sun_dir(700.0).y > 0.2 and SkyModel.sun_dir(1200.0).y < -0.2, "sun is up at 11:40 and well below the horizon at 20:00")
+	ok(SkyModel.sun_dir(410.0).x > 0.9 and SkyModel.sun_dir(990.0).x < -0.9, "sun rises in the east (+x) and sets in the west (-x)")
+	ok(SkyModel.sun_dir(700.0).z > 0.5, "noon sun is in the south")
+	ok(SkyModel.moon_dir(1200.0).y > 0.2 and SkyModel.moon_dir(700.0).y < 0.0, "moon is up at night and down at noon")
+	var sky_jump := 0.0
+	var prev: Dictionary = SkyModel.describe(0.0, 0.5, Color("526373"), 0.011, 1.0)
+	for m in range(1, 1440):
+		var cur: Dictionary = SkyModel.describe(float(m), 0.5, Color("526373"), 0.011, 1.0)
+		for k in ["zenith", "horizon", "fog_color"]:
+			var a: Color = prev[k]
+			var b: Color = cur[k]
+			sky_jump = maxf(sky_jump, absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b))
+		prev = cur
+	ok(sky_jump < 0.03, "sky colours change smoothly through the whole day (max step %.4f)" % sky_jump)
+	var clear_noon: Dictionary = SkyModel.describe(700.0, 0.2, Color("6f8ba3"), 0.003, 1.0)
+	var grey_noon: Dictionary = SkyModel.describe(700.0, 1.0, Color("6a7882"), 0.04, 0.75)
+	ok((clear_noon["zenith"] as Color).b - (clear_noon["zenith"] as Color).r > 0.2, "a clear noon sky is properly blue")
+	ok((grey_noon["zenith"] as Color).b - (grey_noon["zenith"] as Color).r < 0.15, "an overcast noon sky is grey")
+	ok(float(grey_noon["haze_height"]) > float(clear_noon["haze_height"]) * 3.0, "dense fog climbs higher into the sky")
+	ok(float(SkyModel.describe(1200.0, 0.0, Color("526373"), 0.011, 1.0)["stars"]) > 0.9 and float(clear_noon["stars"]) < 0.01, "stars at night, none at noon")
+	ok(float(SkyModel.describe(1200.0, 1.0, Color("526373"), 0.011, 1.0)["stars"]) < 0.3, "overcast hides the stars")
+	var dawn_glow: Dictionary = SkyModel.describe(425.0, 0.2, Color("6f8ba3"), 0.003, 1.0)
+	ok((dawn_glow["horizon"] as Color).r > (dawn_glow["horizon"] as Color).b, "dawn horizon is warm")
+
 	print("== terrain")
 	var Terr = load("res://world/terrain.gd")
 	for x in [30.0, 45.0, 60.0]:
