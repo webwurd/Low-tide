@@ -77,6 +77,23 @@ func _run() -> void:
 	ok(float(SkyModel.describe(1200.0, 1.0, Color("526373"), 0.011, 1.0)["stars"]) < 0.3, "overcast hides the stars")
 	var dawn_glow: Dictionary = SkyModel.describe(425.0, 0.2, Color("6f8ba3"), 0.003, 1.0)
 	ok((dawn_glow["horizon"] as Color).r > (dawn_glow["horizon"] as Color).b, "dawn horizon is warm")
+	# The key light hands over from sun to moon at the horizon: dir*fade and colour*fade
+	# must stay continuous (no jump in shadow direction or colour at sunrise/sunset).
+	var key_jump := 0.0
+	var key_prev := Vector3.ZERO
+	var col_prev := Vector3.ZERO
+	for m in range(0, 1440):
+		var sd := SkyModel.sun_dir(float(m))
+		var kl := SkyModel.key_light(sd.y, sd, SkyModel.moon_dir(float(m)), 0.5)
+		var kv: Vector3 = (kl["dir"] as Vector3) * float(kl["fade"])
+		var kc := Vector3((kl["color"] as Color).r, (kl["color"] as Color).g, (kl["color"] as Color).b) * float(kl["fade"])
+		if m > 0:
+			key_jump = maxf(key_jump, maxf(kv.distance_to(key_prev), kc.distance_to(col_prev)))
+		key_prev = kv
+		col_prev = kc
+	ok(key_jump < 0.06, "key light is continuous across sunrise and sunset (max step %.4f)" % key_jump)
+	var at_set := SkyModel.key_light(0.0, SkyModel.sun_dir(SkyModel.SET), SkyModel.moon_dir(SkyModel.SET), 0.5)
+	ok(float(at_set["fade"]) < 0.001, "key light is fully faded at the horizon, where sun and moon swap")
 
 	print("== terrain")
 	var Terr = load("res://world/terrain.gd")

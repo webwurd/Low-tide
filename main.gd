@@ -401,13 +401,15 @@ func _apply_lighting() -> void:
 	_feed_sky(sk)
 	ocean.set_sky_color((sk["horizon"] as Color).lerp(sk["zenith"], 0.3))
 	var sun_h: float = sk["sun_height"]
-	var from_dir: Vector3 = sk["sun_dir"] if sun_h > 0.0 else sk["moon_dir"]
+	var key := SkyModel.key_light(sun_h, sk["sun_dir"], sk["moon_dir"], dd.cloud)
 	sun.visible = true
-	sun.position = from_dir * 80.0
+	sun.position = (key["dir"] as Vector3) * 80.0
 	sun.look_at(Vector3.ZERO)
-	sun.light_color = SkyModel.sun_light_color(sun_h, dd.cloud) if sun_h > 0.0 else Color("5f78a8")
-	sun.light_energy = lerpf(0.14, 0.6, d)
-	sun.shadow_enabled = d > 0.15 and Settings.shadow_distance() > 0.0
+	sun.light_color = key["color"]
+	# The key light fades out as the sun crosses the horizon, so the swap to the moon
+	# (the opposite side of the sky) never shows as a jump in shadows or colour.
+	sun.light_energy = lerpf(0.14, 0.6, d) * float(key["fade"])
+	sun.shadow_enabled = d > 0.15 and float(key["fade"]) > 0.02 and Settings.shadow_distance() > 0.0
 	sun.directional_shadow_max_distance = maxf(Settings.shadow_distance(), 1.0)
 	island.set_lamp(DayDirector.lamp_lit, DayDirector.weights_wound, _daylight())
 	rain.emitting = dd.rain
