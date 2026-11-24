@@ -13,8 +13,9 @@ uniform float radius = 10.0;
 void fragment() {
 	vec2 p = UV * size;
 	vec2 half_size = size * 0.5;
-	vec2 q = abs(p - half_size) - (half_size - vec2(radius));
-	float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
+	float r = min(radius, min(half_size.x, half_size.y));   // large radius = pill
+	vec2 q = abs(p - half_size) - (half_size - vec2(r));
+	float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
 	float mask = clamp(0.5 - d, 0.0, 1.0);
 	vec3 behind = textureLod(screen_tex, SCREEN_UV, blur_lod).rgb;
 	// Pull bright backgrounds down more than dark ones, so contrast is even.

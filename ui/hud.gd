@@ -20,13 +20,18 @@ const RADIO_OPT_SIZE := 18
 const RADIO_PAD := Vector2(32, 24)
 const RADIO_WIDTH := 860.0
 const RADIO_GAP := 12                      # between speaker, text and replies
-const TAPE_TITLE_SIZE := 12
-const TAPE_TEXT_SIZE := 20
-const NOTE_SIZE := 17
+const TAPE_TITLE_SIZE := 14
+const TAPE_TEXT_SIZE := 22
+const NOTE_SIZE := 18
+const PROMPT_SIZE := 17
 
 var player: Player
 var _reticle: Control
 var _prompt: Label
+var _prompt_box: Control
+var _prompt_key: Label
+var _note_box: PanelContainer
+var _pad_input := false           # last input came from a gamepad (prompts show A, not E)
 var _bino: ColorRect
 var _bino_range: Label
 var _bino_label: Label
@@ -166,13 +171,37 @@ func _build_reticle() -> void:
 	dot.position = Vector2(-2, -2)
 	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_reticle.add_child(dot)
-	_prompt = _label("", 15, Color("ffe9b8"))
-	_prompt.set_anchors_preset(Control.PRESET_CENTER)
-	_prompt.position = Vector2(-140, 26)
-	_prompt.size = Vector2(280, 30)
-	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_prompt.visible = false
-	_reticle.add_child(_prompt)
+	# Interaction prompt: a frosted pill under the reticle with a key cap.
+	var kit := UiTheme.glass_panel(Vector2(16, 8), 999)
+	_prompt_box = kit[0]
+	_prompt_box.anchor_left = 0.5
+	_prompt_box.anchor_right = 0.5
+	_prompt_box.anchor_top = 0.5
+	_prompt_box.anchor_bottom = 0.5
+	_prompt_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_prompt_box.offset_top = 30.0
+	_prompt_box.offset_bottom = 30.0
+	_prompt_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_prompt_box.visible = false
+	_reticle.add_child(_prompt_box)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	(kit[1] as Control).add_child(row)
+	var cap := PanelContainer.new()
+	var cap_sb := StyleBoxFlat.new()
+	cap_sb.bg_color = Color(1, 0.96, 0.88, 0.92)
+	cap_sb.set_corner_radius_all(5)
+	cap_sb.content_margin_left = 8
+	cap_sb.content_margin_right = 8
+	cap_sb.content_margin_top = 1
+	cap_sb.content_margin_bottom = 1
+	cap.add_theme_stylebox_override("panel", cap_sb)
+	cap.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_prompt_key = _label("E", 15, Color("1c140a"), "ui_bold")
+	cap.add_child(_prompt_key)
+	row.add_child(cap)
+	_prompt = _label("", PROMPT_SIZE, UiTheme.CREAM)
+	row.add_child(_prompt)
 
 func _build_binoculars() -> void:
 	_bino = ColorRect.new()
@@ -202,28 +231,31 @@ func _build_watch() -> void:
 	add_child(_watch)
 
 func _build_assist() -> void:
-	_assist = PanelContainer.new()
-	_assist.add_theme_stylebox_override("panel", _style())
-	_assist.position = Vector2(20, 20)
+	var akit := UiTheme.glass_panel(Vector2(20, 16))
+	_assist = akit[0]
+	_assist.position = Vector2(24, 24)
 	_assist.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_assist)
 	var v := VBoxContainer.new()
-	_assist.add_child(v)
-	_assist_clock = _label("", 18, Color("ffe9b8"))
-	_assist_tide = _label("", 14)
-	_assist_level = _label("", 14)
+	v.add_theme_constant_override("separation", 6)
+	(akit[1] as Control).add_child(v)
+	_assist_clock = _label("", 20, UiTheme.CREAM, "ui_bold")
+	_assist_tide = _label("", 15, UiTheme.CREAM)
+	_assist_level = _label("", 15, UiTheme.CREAM)
 	_assist_bar = ProgressBar.new()
-	_assist_bar.custom_minimum_size = Vector2(200, 8)
+	_bar_style(_assist_bar, 8)
+	_assist_bar.custom_minimum_size = Vector2(220, 8)
 	_assist_bar.max_value = 4.6
 	_assist_bar.min_value = -0.4
 	_assist_bar.show_percentage = false
-	_assist_log = _label("", 13, Color("b8c4cc"))
+	_assist_log = _label("", 14, UiTheme.MUTED)
 	for n in [_assist_clock, _assist_tide, _assist_level, _assist_bar, _assist_log]:
 		v.add_child(n)
 	_stamina = ProgressBar.new()
+	_bar_style(_stamina, 5)
 	_stamina.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	_stamina.position = Vector2(20, -24)
-	_stamina.size = Vector2(160, 4)
+	_stamina.position = Vector2(24, -28)
+	_stamina.size = Vector2(180, 5)
 	_stamina.show_percentage = false
 	_stamina.max_value = 100
 	_stamina.modulate.a = 0.0
@@ -465,6 +497,13 @@ func _open_tutorial() -> void:
 	_tut_device = ""
 	_tut_go(0)
 
+## Prompts show the key for whatever the player last touched.
+func _input(event: InputEvent) -> void:
+	if event is InputEventJoypadButton or (event is InputEventJoypadMotion and absf((event as InputEventJoypadMotion).axis_value) > 0.4):
+		_pad_input = true
+	elif event is InputEventKey or event is InputEventMouseButton:
+		_pad_input = false
+
 ## Esc / B steps back through the setup pages, so there is always a way out.
 func _unhandled_input(event: InputEvent) -> void:
 	if _tut != null and _tut.visible and event.is_action_pressed("ui_cancel"):
@@ -537,29 +576,47 @@ func _tut_go(i: int) -> void:
 # --- toasts, modal panel, day card --------------------------------------
 
 func _build_toasts() -> void:
-	_note = _label("", 17, Color("ffe9b8"))
-	_note.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_note.position = Vector2(-380, -120)
-	_note.size = Vector2(760, 30)
+	# Arthur's short inner-voice notes: a frosted pill, bottom centre.
+	var nkit := UiTheme.glass_panel(Vector2(26, 12), 999)
+	_note_box = nkit[0]
+	_note_box.anchor_left = 0.5
+	_note_box.anchor_right = 0.5
+	_note_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_note_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_note_box.modulate.a = 0.0
+	add_child(_note_box)
+	_note = _label("", NOTE_SIZE, Color("ffe9c4"))
 	_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_note.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
-	_note.add_theme_constant_override("shadow_offset_x", 1)
-	_note.add_theme_constant_override("shadow_offset_y", 1)
-	_note.modulate.a = 0.0
-	add_child(_note)
+	(nkit[1] as Control).add_child(_note)
 	_hold_bar = ProgressBar.new()
+	_bar_style(_hold_bar, 6)
 	_hold_bar.set_anchors_preset(Control.PRESET_CENTER)
-	_hold_bar.position = Vector2(-70, 62)
-	_hold_bar.size = Vector2(140, 6)
+	_hold_bar.position = Vector2(-80, 78)
+	_hold_bar.size = Vector2(160, 6)
 	_hold_bar.show_percentage = false
 	_hold_bar.max_value = 1.0
 	_hold_bar.visible = false
 	add_child(_hold_bar)
 
+## Rounded track + amber fill for the small progress bars.
+func _bar_style(bar: ProgressBar, h: int) -> void:
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0, 0, 0, 0.38)
+	bg.set_corner_radius_all(h)
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = UiTheme.ACCENT
+	fill.set_corner_radius_all(h)
+	bar.add_theme_stylebox_override("background", bg)
+	bar.add_theme_stylebox_override("fill", fill)
+
 func show_note(text: String) -> void:
 	_note.text = text
-	_note.modulate.a = 1.0
+	# Short notes hug their text; long ones wrap at a readable width.
+	var w: float = minf(_note.get_theme_font("font").get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, _note.get_theme_font_size("font_size")).x + 4.0, 720.0)
+	_note.custom_minimum_size = Vector2(w, 0)
+	_place_note()
+	_note_box.modulate.a = 1.0
 	_note_t = 3.5 + text.length() * 0.03
 
 func _build_modal() -> void:
@@ -655,19 +712,25 @@ func show_ending(letter: String, ending_name: String, body: String) -> void:
 	_ending_opened_at = Time.get_ticks_msec() / 1000.0
 
 func _build_tape_panel() -> void:
-	_tape_panel = PanelContainer.new()
-	_tape_panel.add_theme_stylebox_override("panel", _style(Color(0.1, 0.08, 0.06, 0.9), Color(0.7, 0.55, 0.3, 0.5)))
-	_tape_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_tape_panel.custom_minimum_size = Vector2(720, 0)
-	_tape_panel.position = Vector2(-360, 24)
+	# Tape subtitles: frosted glass at the top, a different voice from the radio.
+	var kit := UiTheme.glass_panel(Vector2(28, 18), UiTheme.RADIUS, Color(0.07, 0.055, 0.04, 0.66))
+	_tape_panel = kit[0]
+	_tape_panel.anchor_left = 0.5
+	_tape_panel.anchor_right = 0.5
+	_tape_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_tape_panel.offset_left = -390.0
+	_tape_panel.offset_right = 390.0
+	_tape_panel.offset_top = 26.0
 	_tape_panel.visible = false
 	add_child(_tape_panel)
 	var v := VBoxContainer.new()
-	_tape_panel.add_child(v)
-	_tape_title = _label("", 12, Color("d9b26a"))
-	_tape_text = _label("", 20, Color("f1e6cf"), "tape")
+	v.add_theme_constant_override("separation", 8)
+	(kit[1] as Control).add_child(v)
+	_tape_title = _label("", TAPE_TITLE_SIZE, Color("e2bd78"), "ui_bold")
+	_tape_text = _label("", TAPE_TEXT_SIZE, Color("f4ead6"), "tape")
 	_tape_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_tape_text.custom_minimum_size = Vector2(690, 0)
+	_tape_text.custom_minimum_size = Vector2(724, 0)
+	_tape_text.add_theme_constant_override("line_spacing", 4)
 	v.add_child(_tape_title)
 	v.add_child(_tape_text)
 
@@ -801,7 +864,7 @@ func _process(delta: float) -> void:
 	if _note_t > 0.0:
 		_note_t -= delta
 		if _note_t < 0.8:
-			_note.modulate.a = maxf(0.0, _note_t / 0.8)
+			_note_box.modulate.a = maxf(0.0, _note_t / 0.8)
 	if Input.is_action_just_pressed("radio_1"): RadioSystem.choose(0)
 	if Input.is_action_just_pressed("radio_2"): RadioSystem.choose(1)
 	if Input.is_action_just_pressed("radio_dismiss"): RadioSystem.dismiss()
@@ -812,9 +875,10 @@ func _process(delta: float) -> void:
 	if player.binoculars:
 		_bino_range.text = "Distance: %d m" % player.bino_dist if player.bino_dist >= 0 else "Distance: --- m"
 		_bino_label.text = player.bino_label if player.bino_label != "" else "Scanning the horizon..."
-	_prompt.visible = player.nearby != null and not player.binoculars
+	_prompt_box.visible = player.nearby != null and not player.binoculars
 	if player.nearby:
-		_prompt.text = ("[hold E]  " if player.nearby.hold_time > 0.0 else "[E]  ") + player.nearby.get_title()
+		_prompt_key.text = "A" if _pad_input else "E"
+		_prompt.text = ("Hold   " if player.nearby.hold_time > 0.0 else "") + player.nearby.get_title()
 	_stamina.value = player.stamina
 	_stamina.modulate.a = lerpf(_stamina.modulate.a, 0.0 if player.stamina > 98.0 else 0.8, minf(1.0, delta * 6.0))
 
@@ -839,12 +903,18 @@ func _refresh_log() -> void:
 	_assist_log.text = "\n".join(lines)
 
 ## Toasts sit just above the radio panel when it is up, so they never overlap it.
+## Sized from its minimum size every frame (never from its current size,
+## which would never shrink back), centred, and kept above the radio panel.
 func _place_note() -> void:
+	var want := _note_box.get_combined_minimum_size()
 	var vh: float = get_viewport().get_visible_rect().size.y
-	var y: float = vh - 120.0
+	var y: float = vh - 120.0 - want.y * 0.5
 	if _radio.visible:
-		y = minf(y, _radio.global_position.y - _note.size.y - 12.0)
-	_note.position.y = y
+		y = minf(y, _radio.global_position.y - want.y - 14.0)
+	_note_box.offset_left = -want.x * 0.5
+	_note_box.offset_right = want.x * 0.5
+	_note_box.offset_top = y
+	_note_box.offset_bottom = y + want.y
 
 ## Radio, tape and toast text follow the "subtitle size" accessibility setting.
 func apply_text_scale() -> void:
