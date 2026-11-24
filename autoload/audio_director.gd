@@ -5,13 +5,30 @@ extends Node
 ## Foley (doors, stove, weights, lamp, paper, watch, rain...) comes from
 ## audio/foley_synth.gd; a recorded file at res://audio/foley/<name>.(ogg|wav)
 ## replaces the synthesised one with no code change.
+## The sea and wind beds are several seamless loops of different (prime-ish)
+## lengths, started at random offsets and mixed live by audio/sea_wind.gd (waves,
+## sets, gusts, lulls) through filters on the Sea and Wind buses, so the bed never
+## repeats audibly. Both buses send to Ambience, so the Ambience volume governs them.
 
 const RATE := 22050
 const POOL := 6
 
 var _rng := RandomNumberGenerator.new()
-var _surf: AudioStreamPlayer
-var _wind: AudioStreamPlayer
+var _surf: AudioStreamPlayer        # wash: the body of the waves (Sea bus)
+var _surf_deep: AudioStreamPlayer   # low ground swell (Sea bus)
+var _surf_foam: AudioStreamPlayer   # breaking fizz (Sea bus)
+var _wind: AudioStreamPlayer        # wind body (Wind bus)
+var _wind_whistle: AudioStreamPlayer  # gust whistle (Wind bus)
+var sea := SeaWind.new()
+var swell := 0.5                    # 0..1, how big the sea is right now
+var _altitude := 0.0
+var _tide := 1.0
+var _weather_key := ""
+var _sea_lp: AudioEffectLowPassFilter
+var _wind_bp: AudioEffectBandPassFilter
+## Loop lengths in seconds: different and coprime-ish, so the layers realign
+## only after hours.
+const BED_SECONDS := {"surf_bed": 7.3, "surf_deep": 11.9, "surf_foam": 13.1, "wind_bed": 9.7, "wind_whistle": 14.3}
 var _pool: Array[AudioStreamPlayer] = []
 var _variants: Dictionary = {}     # name -> Array[AudioStreamWAV]
 var _foghorn_timer := 14.0
@@ -34,9 +51,17 @@ var last_sfx := ""
 
 func _ready() -> void:
 	_rng.seed = 1998
-	var noise := _brown_noise(4.0)
-	_surf = _loop_player(_lowpass(noise, 340.0), -17.0)
-	_wind = _loop_player(_bandpass(noise, 620.0, 2.2), -28.0)
+	_ensure_bed_buses()
+	_surf = _loop_player(_lowpass(_brown_noise(BED_SECONDS["surf_bed"]), 340.0), -17.0, "Sea")
+	_surf_deep = _loop_player(_norm(_lowpass(_lowpass(_brown_noise(BED_SECONDS["surf_deep"]), 160.0), 160.0), 0.6), -24.0, "Sea")
+	_surf_foam = _loop_player(_norm(_bandpass(_white(BED_SECONDS["surf_foam"]), 1700.0, 0.8), 0.45), -30.0, "Sea")
+	_wind = _loop_player(_bandpass(_brown_noise(BED_SECONDS["wind_bed"]), 620.0, 2.2), -28.0, "Wind")
+	_wind_whistle = _loop_player(_norm(_bandpass(_brown_noise(BED_SECONDS["wind_whistle"]), 1150.0, 6.0), 0.5), -40.0, "Wind")
+	# A different place in every loop each session.
+	var start_rng := RandomNumberGenerator.new()
+	start_rng.randomize()
+	for pl in [_surf, _surf_deep, _surf_foam, _wind, _wind_whistle]:
+		pl.play(start_rng.randf() * (pl.stream as AudioStreamWAV).get_length() * 0.95)
 	for i in POOL:
 		var p := AudioStreamPlayer.new()
 		add_child(p)
@@ -56,7 +81,7 @@ func _ready() -> void:
 	_start_sting_render()
 	_variants["clunk"] = [_thud(90.0, 40.0, 0.12, "triangle", 500.0, 1.0, 0.3)]
 	var hiss := PackedFloat32Array()
-	hiss.resize(RATE * 2)
+	hiss.resize(int(RATE * 5.3))     # long enough that the noise pattern can't be heard repeating
 	for i in hiss.size():
 		hiss[i] = (_rng.randf() * 2.0 - 1.0) * 0.12
 	_hiss = _loop_player(_bandpass(hiss, 3200.0, 0.6), -200.0, "Radio")
@@ -158,6 +183,7 @@ func set_radio_static(on: bool) -> void:
 
 func _process(delta: float) -> void:
 	_update_foley_loops(delta)
+	_update_beds(delta)
 	if not foghorn_enabled or GameClock.paused:
 		return
 	_foghorn_timer -= delta
@@ -165,12 +191,57 @@ func _process(delta: float) -> void:
 		play_sfx("foghorn", -14.0)
 		_foghorn_timer = 26.0 + _rng.randf() * 14.0
 
-## time: seconds (for swell), altitude: player y, tide: water height (m).
-func update_ambient(time: float, altitude: float, tide: float) -> void:
-	var swell := 0.5 + 0.5 * sin(time * 0.65)
+## Main reports where Arthur is. altitude: player y, tide: water height (m).
+## (time is unused now: the sea runs on its own clock in _update_beds.)
+func update_ambient(_time: float, altitude: float, tide: float) -> void:
+	_altitude = altitude
+	_tide = tide
+
+## Sea and wind follow the day's weather: storm louder and gustier, fog softer
+## and muffled, clear days sparser, a still dawn on Day 7.
+func _refresh_weather() -> void:
+	var dd: DayData = DayDirector.data()
+	var key := "%s|%s|%s|%s" % [dd.wave_height, dd.wind_db, dd.fog_density, dd.rain]
+	if key != _weather_key:
+		_weather_key = key
+		sea.set_weather(dd.wave_height, dd.wind_db, dd.fog_density, dd.rain)
+
+func _update_beds(delta: float) -> void:
+	_refresh_weather()
+	sea.step(minf(delta, 0.1))
+	swell = sea.swell()
+	var m := sea.mix()
 	var muffle := -14.0 if indoors else 0.0
-	_surf.volume_db = -20.0 + swell * 5.0 + clampf(tide - 1.0, 0.0, 3.0) * 1.0 + muffle + weather_db * 0.5
-	_wind.volume_db = -30.0 + clampf(altitude, 0.0, 25.0) * 0.45 + muffle + weather_db
+	var sea_db: float = clampf(_tide - 1.0, 0.0, 3.0) * 1.0 + muffle + weather_db * 0.5 + float(sea.profile["surf_db"])
+	_surf.volume_db = -15.5 + _db(m["wash"]) + sea_db
+	_surf_deep.volume_db = -22.0 + _db(m["deep"]) + sea_db
+	_surf_foam.volume_db = -22.0 + _db(m["foam"]) + sea_db
+	var wind_db := clampf(_altitude, 0.0, 25.0) * 0.45 + muffle + weather_db
+	_wind.volume_db = -26.5 + _db(m["wind"]) + wind_db
+	_wind_whistle.volume_db = -27.0 + _db(m["whistle"]) + wind_db
+	_sea_lp.cutoff_hz = float(m["sea_cut"]) * (0.35 if indoors else 1.0)
+	_wind_bp.cutoff_hz = float(m["wind_cut"]) * (0.6 if indoors else 1.0)
+
+static func _db(gain: float) -> float:
+	return linear_to_db(maxf(gain, 0.002))
+
+## Sea and Wind sub-buses (filters move with the waves and gusts), both sending to
+## Ambience so the Settings volume still governs them.
+func _ensure_bed_buses() -> void:
+	for n in ["Sea", "Wind"]:
+		if AudioServer.get_bus_index(n) == -1:
+			AudioServer.add_bus()
+			var idx := AudioServer.bus_count - 1
+			AudioServer.set_bus_name(idx, n)
+			AudioServer.set_bus_send(idx, "Ambience")
+			if n == "Sea":
+				AudioServer.add_bus_effect(idx, AudioEffectLowPassFilter.new())
+			else:
+				var bp := AudioEffectBandPassFilter.new()
+				bp.resonance = 0.35
+				AudioServer.add_bus_effect(idx, bp)
+	_sea_lp = AudioServer.get_bus_effect(AudioServer.get_bus_index("Sea"), 0)
+	_wind_bp = AudioServer.get_bus_effect(AudioServer.get_bus_index("Wind"), 0)
 
 func _update_foley_loops(delta: float) -> void:
 	var muffle := -12.0 if indoors else 0.0
@@ -234,6 +305,7 @@ const BELL_PITCHES := {"bell_north_1": 440.0, "bell_east_2": 523.0, "bell_south_
 func catalog() -> Dictionary:
 	var out := {"surf_bed": _surf.stream, "wind_bed": _wind.stream, "tape_hiss": _hiss.stream,
 		"rain_bed": _rain.stream, "stove_crackle": _crackle.stream, "radio_static": _static.stream, "watch_tick": _tick.stream,
+		"surf_deep": _surf_deep.stream, "surf_foam": _surf_foam.stream, "wind_whistle": _wind_whistle.stream,
 		"hydrophone_ping": ping_stream(), "boat_engine": boat_engine_stream()}
 	for k in _variants:
 		var arr: Array = _variants[k]
@@ -398,6 +470,23 @@ func _brown_noise(seconds: float) -> PackedFloat32Array:
 		var a := float(i) / fade
 		out[i] = raw[i] * a + raw[n + i] * (1.0 - a)
 	return out
+
+## White noise (looping is seamless once filtered with the two-pass filters).
+func _white(seconds: float) -> PackedFloat32Array:
+	var out := PackedFloat32Array()
+	out.resize(int(RATE * seconds))
+	for i in out.size():
+		out[i] = _rng.randf() * 2.0 - 1.0
+	return out
+
+func _norm(src: PackedFloat32Array, peak_target: float) -> PackedFloat32Array:
+	var peak := 0.0
+	for v in src:
+		peak = maxf(peak, absf(v))
+	if peak > 0.0:
+		for i in src.size():
+			src[i] *= peak_target / peak
+	return src
 
 ## One-pole low-pass. Runs the buffer twice and keeps the second pass, so the
 ## filter state at the end matches the start (needed for seamless loops).

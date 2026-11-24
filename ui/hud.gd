@@ -8,6 +8,11 @@ signal settings_requested
 
 const AMBER := Color("ffb84d")
 const CARD_BG := Color(0.07, 0.1, 0.13, 0.88)
+const INK := Color("101a21")
+const CREAM := Color("efe4c8")
+const POSTER_TEAL := Color("1f4b52")
+const POSTER_BRASS := Color("d9a441")      # thin rules only
+const TYPE_CPS := 55.0                     # radio text types in at about reading speed
 
 var player: Player
 var _reticle: Control
@@ -39,6 +44,10 @@ var _modal_title: Label
 var _modal_body: Label
 var _modal_frame := -1
 var _card: Control
+var _card_band: ColorRect
+var _banner: Control
+var _banner_tween: Tween
+var _type_tween: Tween
 var _card_title: Label
 var _card_sub: Label
 var _tut_pages: Array = []
@@ -47,8 +56,11 @@ var _tut: PanelContainer
 var _tut_title: Label
 var _tut_body: VBoxContainer
 var _tut_next: Button
+var _tut_device := ""
 var _tut_back: Button
-var _title_panel: PanelContainer
+var _title_panel: Control
+var title_screen: TitleScreen
+var prologue: ProloguePlayer
 var _continue_btn: Button
 var modal_open := false
 var _watch_on := false
@@ -74,6 +86,7 @@ func _ready() -> void:
 	_build_watch()
 	_build_assist()
 	_build_radio()
+	_build_banner()
 	_build_fade()
 	_build_toasts()
 	_build_modal()
@@ -109,6 +122,18 @@ func _style(bg := CARD_BG, border := Color(0.85, 0.7, 0.42, 0.35)) -> StyleBoxFl
 	sb.set_border_width_all(1)
 	sb.set_corner_radius_all(10)
 	sb.set_content_margin_all(16)
+	return sb
+
+func _flat_box(bg: Color, left_accent := Color(0, 0, 0, 0), margin_h := 16, margin_v := 10) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = bg
+	sb.border_color = left_accent
+	sb.border_width_left = 3 if left_accent.a > 0.0 else 0
+	sb.set_corner_radius_all(2)
+	sb.content_margin_left = margin_h
+	sb.content_margin_right = margin_h
+	sb.content_margin_top = margin_v
+	sb.content_margin_bottom = margin_v
 	return sb
 
 func _label(text: String, size := 14, color := Color("e8dfc8"), role := "ui") -> Label:
@@ -196,7 +221,8 @@ func _build_assist() -> void:
 
 func _build_radio() -> void:
 	_radio = PanelContainer.new()
-	_radio.add_theme_stylebox_override("panel", _style())
+	# Minimal: a quiet dark strip with a thin amber edge.
+	_radio.add_theme_stylebox_override("panel", _flat_box(Color(0.04, 0.07, 0.09, 0.78), AMBER, 18, 12))
 	# Bottom-centre, growing upward, so tall text never runs off the screen.
 	_radio.anchor_left = 0.5
 	_radio.anchor_right = 0.5
@@ -210,7 +236,9 @@ func _build_radio() -> void:
 	v.add_theme_constant_override("separation", 8)
 	_radio.add_child(v)
 	_radio_speaker = _label("", 12, AMBER)
-	_radio_text = _label("", 17)
+	_radio_text = _label("", 17, CREAM)
+	_radio_text.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	_radio_text.add_theme_constant_override("shadow_offset_y", 1)
 	_radio_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_radio_text.custom_minimum_size = Vector2(750, 0)
 	_radio_opts = HBoxContainer.new()
@@ -220,6 +248,12 @@ func _build_radio() -> void:
 		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		b.custom_minimum_size = Vector2(365, 0)
 		b.focus_mode = Control.FOCUS_NONE
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.add_theme_stylebox_override("normal", _flat_box(Color(1, 1, 1, 0.07), Color(0, 0, 0, 0), 12, 8))
+		b.add_theme_stylebox_override("hover", _flat_box(Color(1, 0.72, 0.3, 0.2), Color(0, 0, 0, 0), 12, 8))
+		b.add_theme_stylebox_override("pressed", _flat_box(Color(1, 0.72, 0.3, 0.3), Color(0, 0, 0, 0), 12, 8))
+		b.add_theme_color_override("font_color", CREAM)
+		b.add_theme_color_override("font_hover_color", Color.WHITE)
 		b.pressed.connect(RadioSystem.choose.bind(i))
 		_radio_opts.add_child(b)
 		_opt_buttons.append(b)
@@ -240,6 +274,60 @@ func _layout_radio() -> void:
 	for b in _opt_buttons:
 		b.custom_minimum_size = Vector2((w - 44.0) * 0.5, 0)
 
+## "New radio message": a small padded tag at the top of the screen on a solid
+## colour, so it reads as a notice rather than part of the world.
+func _build_banner() -> void:
+	var tag := PanelContainer.new()
+	tag.add_theme_stylebox_override("panel", _flat_box(Color(POSTER_TEAL.r, POSTER_TEAL.g, POSTER_TEAL.b, 0.96), Color(0, 0, 0, 0), 20, 9))
+	tag.anchor_left = 0.5
+	tag.anchor_right = 0.5
+	tag.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	tag.offset_top = 28.0
+	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tag.z_index = 6
+	tag.visible = false
+	add_child(tag)
+	_banner = tag
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	tag.add_child(row)
+	var dot := ColorRect.new()                          # small brass indicator light
+	dot.color = AMBER
+	dot.custom_minimum_size = Vector2(8, 8)
+	dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(dot)
+	row.add_child(_label("New radio message", 22, CREAM, "display"))
+
+func show_banner() -> void:
+	var calm: bool = Settings.v("reduce_motion")
+	_banner.visible = true
+	_banner.offset_top = 28.0 if calm else 8.0
+	_banner.modulate.a = 1.0 if calm else 0.0
+	if _banner_tween:
+		_banner_tween.kill()
+	_banner_tween = create_tween()
+	if not calm:
+		_banner_tween.set_parallel(true)
+		_banner_tween.tween_property(_banner, "offset_top", 28.0, 0.3).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		_banner_tween.tween_property(_banner, "modulate:a", 1.0, 0.25)
+		_banner_tween.set_parallel(false)
+	_banner_tween.tween_interval(1.8)
+	_banner_tween.tween_property(_banner, "modulate:a", 0.0, 0.35)
+	_banner_tween.tween_callback(func(): _banner.visible = false)
+
+func _type_in(text: String) -> void:
+	_radio_text.text = '"' + text + '"'
+	if _type_tween:
+		_type_tween.kill()
+	if Settings.v("reduce_motion"):
+		_radio_text.visible_characters = -1
+		return
+	_radio_text.visible_characters = 0
+	_type_tween = create_tween()
+	_type_tween.tween_property(_radio_text, "visible_characters", _radio_text.text.length(), _radio_text.text.length() / TYPE_CPS)
+	_type_tween.tween_callback(func(): _radio_text.visible_characters = -1)
+
 func _build_fade() -> void:
 	_fade = ColorRect.new()
 	_full(_fade)
@@ -252,47 +340,49 @@ func _build_fade() -> void:
 	_full(_fade_label)
 	_fade.add_child(_fade_label)
 
+func _title_button(text: String) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.flat = true
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.focus_mode = Control.FOCUS_ALL
+	UiFonts.style(b, "display", 32)
+	b.add_theme_color_override("font_color", CREAM)
+	b.add_theme_color_override("font_hover_color", AMBER)
+	b.add_theme_color_override("font_focus_color", AMBER)
+	b.add_theme_color_override("font_pressed_color", POSTER_BRASS)
+	var empty := StyleBoxEmpty.new()
+	for st in ["normal", "hover", "pressed", "focus"]:
+		b.add_theme_stylebox_override(st, empty)
+	return b
+
+## Title: a live view of Gannet Rock at dusk (Main drives the backdrop) with
+## the menu column on the left (ui/title_screen.gd). New watch plays the
+## prologue (ui/prologue_player.gd), then the setup tutorial.
 func _build_title() -> void:
-	_title = ColorRect.new()
-	(_title as ColorRect).color = Color(0.03, 0.05, 0.07, 0.82)
-	_full(_title)
-	_title.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(_title)
-	var c := CenterContainer.new()
-	_full(c)
-	_title.add_child(c)
-	_title_panel = PanelContainer.new()
-	_title_panel.add_theme_stylebox_override("panel", _style(CARD_BG, Color(0.85, 0.7, 0.42, 0.5)))
-	c.add_child(_title_panel)
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 12)
-	v.custom_minimum_size = Vector2(560, 0)
-	_title_panel.add_child(v)
-	var t := _label("Low Tide", 46, Color.WHITE, "display")
-	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var sub := _label("Gannet Rock Light Station, Maine coast, winter 1998", 13, Color("9aa7b0"))
-	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var body := _label("You are Arthur, winter keeper on a fog-bound island. Read the tide, cross the sandbars while they last, and be back on high ground before the Atlantic returns.", 14)
-	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var b_new := Button.new()
-	b_new.text = "New watch"
-	b_new.pressed.connect(_open_tutorial)
-	_continue_btn = Button.new()
-	_continue_btn.text = "Continue"
-	_continue_btn.pressed.connect(func():
-		_title.visible = false
-		continue_pressed.emit())
-	_continue_btn.visible = SaveSystem.has_save()
-	_endings_label = _label("", 12, Color("9aa7b0"))
-	_endings_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_screen = TitleScreen.new()
+	title_screen.z_index = 4
+	add_child(title_screen)
+	_title = title_screen
+	_title_panel = title_screen.panel
+	_continue_btn = title_screen.continue_btn
+	_endings_label = title_screen.endings_label
 	var seen: Array = SaveSystem.endings_seen()
 	if seen.size() > 0:
 		_endings_label.text = "Endings found: " + ", ".join(seen.map(func(k): return String(k).to_upper()))
-	var b_settings := Button.new()
-	b_settings.text = "Settings"
-	b_settings.pressed.connect(func(): settings_requested.emit())
-	for n in [t, sub, body, b_new, _continue_btn, b_settings, _endings_label]:
-		v.add_child(n)
+	title_screen.new_watch.connect(_start_prologue)
+	title_screen.continue_game.connect(func():
+		_title.visible = false
+		continue_pressed.emit())
+	title_screen.settings.connect(func(): settings_requested.emit())
+	prologue = ProloguePlayer.new()
+	prologue.z_index = 5
+	add_child(prologue)
+	prologue.finished.connect(_open_tutorial)
+
+func _start_prologue() -> void:
+	_title.visible = false
+	prologue.play()
 
 # --- setup / tutorial (shown before Arthur steps onto the island) -------
 
@@ -314,54 +404,117 @@ func _build_tutorial() -> void:
 	_tut_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
-	_tut_back = Button.new()
-	_tut_back.text = "Back"
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 18)
+	_tut_back = _tut_button("Back", Vector2(150, 56), false)
 	_tut_back.pressed.connect(func(): _tut_go(_tut_idx - 1))
-	_tut_next = Button.new()
+	_tut_next = _tut_button("Next", Vector2(280, 56), true)
 	_tut_next.pressed.connect(func(): _tut_go(_tut_idx + 1))
 	row.add_child(_tut_back)
 	row.add_child(_tut_next)
 	for n in [_tut_title, _tut_body, row]:
 		v.add_child(n)
-	_tut_pages = TutorialData.pages()
+	_tut_pages = TutorialData.pages_for("kb")
+
+## A clearly visible button: filled, with a hover and focus state, sized to be easy to hit.
+func _tut_button(text: String, min_size: Vector2, primary: bool) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.custom_minimum_size = min_size
+	b.focus_mode = Control.FOCUS_ALL
+	UiFonts.style(b, "ui_bold", 20 if primary else 17)
+	var fill := Color(0.85, 0.62, 0.22, 0.95) if primary else Color(1, 1, 1, 0.10)
+	var hover := Color(0.95, 0.72, 0.3, 1.0) if primary else Color(1, 1, 1, 0.2)
+	var text_col := Color("1a1308") if primary else CREAM
+	b.add_theme_color_override("font_color", text_col)
+	b.add_theme_color_override("font_hover_color", text_col)
+	b.add_theme_color_override("font_focus_color", text_col)
+	b.add_theme_color_override("font_pressed_color", text_col)
+	b.add_theme_stylebox_override("normal", _flat_box(fill, Color(0, 0, 0, 0), 20, 12))
+	b.add_theme_stylebox_override("hover", _flat_box(hover, Color(0, 0, 0, 0), 20, 12))
+	b.add_theme_stylebox_override("pressed", _flat_box(hover, Color(0, 0, 0, 0), 20, 12))
+	var focus := _flat_box(hover, Color(0, 0, 0, 0), 20, 12)
+	focus.set_border_width_all(2)
+	focus.border_color = Color.WHITE
+	b.add_theme_stylebox_override("focus", focus)
+	return b
 
 func _open_tutorial() -> void:
+	_title.visible = true
 	_title_panel.visible = false
 	_tut.visible = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE      # the buttons need a cursor
+	_tut_device = ""
 	_tut_go(0)
 
+## Esc / B steps back through the setup pages, so there is always a way out.
+func _unhandled_input(event: InputEvent) -> void:
+	if _tut != null and _tut.visible and event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		_tut_go(_tut_idx - 1)
+
+func _tut_pick(device: String) -> void:
+	_tut_device = device
+	_tut_pages = TutorialData.pages_for(device)
+	_tut_go(1)
+
+## Page 0 asks how the player is playing; pages 1..n show only that device's controls.
 func _tut_go(i: int) -> void:
 	if i < 0:
 		_tut.visible = false
 		_title_panel.visible = true
 		return
-	if i >= _tut_pages.size():
+	if i > 0 and i - 1 >= _tut_pages.size():
 		_tut.visible = false
 		_title.visible = false
 		new_game_pressed.emit()
 		return
 	_tut_idx = i
-	var pg: Dictionary = _tut_pages[i]
-	_tut_title.text = pg["title"]
 	for ch in _tut_body.get_children():
 		ch.queue_free()
+	_tut_back.text = "Back" if i > 0 else "Title"
+	if i == 0:
+		_tut_title.text = "How are you playing?"
+		_tut_next.visible = false
+		var intro := _label("Pick one and the next pages show only those controls. You can change this any time in Settings.", 16, Color("cfd6d6"))
+		intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		intro.custom_minimum_size = Vector2(820, 0)
+		_tut_body.add_child(intro)
+		var gap := Control.new()
+		gap.custom_minimum_size = Vector2(0, 24)
+		_tut_body.add_child(gap)
+		var choices := HBoxContainer.new()
+		choices.alignment = BoxContainer.ALIGNMENT_CENTER
+		choices.add_theme_constant_override("separation", 24)
+		var kb := _tut_button("Keyboard and mouse", Vector2(320, 84), true)
+		kb.pressed.connect(_tut_pick.bind("kb"))
+		var pad := _tut_button("Gamepad", Vector2(320, 84), true)
+		pad.pressed.connect(_tut_pick.bind("pad"))
+		choices.add_child(kb)
+		choices.add_child(pad)
+		_tut_body.add_child(choices)
+		kb.grab_focus.call_deferred()
+		return
+	var pg: Dictionary = _tut_pages[i - 1]
+	_tut_title.text = pg["title"]
+	_tut_next.visible = true
 	var rows: Array = pg["rows"]
 	if rows.size() > 0:
 		var grid := GridContainer.new()
-		grid.columns = 3
-		grid.add_theme_constant_override("h_separation", 28)
-		grid.add_theme_constant_override("v_separation", 8)
+		grid.columns = 2
+		grid.add_theme_constant_override("h_separation", 48)
+		grid.add_theme_constant_override("v_separation", 10)
 		for r in rows.size():
 			for cell in rows[r]:
-				grid.add_child(_label(cell, 15, AMBER if r == 0 else Color("e8dfc8")))
+				grid.add_child(_label(cell, 17, AMBER if r == 0 else Color("e8dfc8")))
 		_tut_body.add_child(grid)
 	if pg["text"] != "":
-		var t := _label(pg["text"], 15)
+		var t := _label(pg["text"], 16)
 		t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		t.custom_minimum_size = Vector2(820, 0)
 		_tut_body.add_child(t)
-	_tut_back.text = "Back" if i > 0 else "Title"
-	_tut_next.text = "Next" if i < _tut_pages.size() - 1 else "Step into the cottage"
+	_tut_next.text = "Next" if i < _tut_pages.size() else "Step into the cottage"
+	_tut_next.grab_focus.call_deferred()      # Enter / Space / A advance without the mouse
 
 # --- toasts, modal panel, day card --------------------------------------
 
@@ -542,31 +695,54 @@ func _render_journal() -> void:
 				body.append("No tapes yet.")
 	_open_modal("Keeper's journal     " + "   ".join(head) + "     (A / D to turn)", "\n".join(body))
 
+## Day cards: a bold band across the screen with big display type.
 func _build_card() -> void:
 	_card = Control.new()
 	_full(_card)
 	_card.modulate.a = 0.0
 	_card.z_index = 3
 	add_child(_card)
+	_card_band = ColorRect.new()
+	_card_band.color = Color(POSTER_TEAL.r, POSTER_TEAL.g, POSTER_TEAL.b, 0.94)
+	_card_band.set_anchors_preset(Control.PRESET_CENTER_LEFT)
+	_card_band.anchor_right = 1.0
+	_card_band.offset_top = -270.0
+	_card_band.offset_bottom = -70.0
+	_card_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_card.add_child(_card_band)
 	var c := CenterContainer.new()
 	_full(c)
-	c.offset_top = -190.0
-	c.offset_bottom = -190.0
-	_card.add_child(c)
+	_card_band.add_child(c)
 	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 4)
 	c.add_child(v)
-	_card_title = _label("", 56, Color.WHITE, "display")
+	var rule := ColorRect.new()
+	rule.color = POSTER_BRASS
+	rule.custom_minimum_size = Vector2(110, 4)
+	rule.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_card_title = _label("", 84, CREAM, "display")
 	_card_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_card_sub = _label("", 16, AMBER)
+	_card_sub = _label("", 18, AMBER)
 	_card_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(_card_title)
-	v.add_child(_card_sub)
+	for n in [rule, _card_title, _card_sub]:
+		v.add_child(n)
 
 func show_card(title: String, sub: String, seconds := 3.0) -> void:
 	_card_title.text = title
-	_card_sub.text = sub
+	_card_sub.text = sub.replace("  -  ", "   ·   ")
+	_card_sub.visible = sub != ""
 	var tw := create_tween()
-	tw.tween_property(_card, "modulate:a", 1.0, 0.6)
+	if Settings.v("reduce_motion"):
+		_card_band.scale.y = 1.0
+		tw.tween_property(_card, "modulate:a", 1.0, 0.4)
+	else:
+		_card_band.pivot_offset = Vector2(0, 100)
+		_card_band.scale.y = 0.0
+		tw.set_parallel(true)
+		tw.tween_property(_card_band, "scale:y", 1.0, 0.45).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tw.tween_property(_card, "modulate:a", 1.0, 0.3)
+		tw.set_parallel(false)
 	tw.tween_interval(seconds)
 	tw.tween_property(_card, "modulate:a", 0.0, 1.0)
 
@@ -617,6 +793,7 @@ func _process(delta: float) -> void:
 	if Input.is_action_just_pressed("radio_dismiss"): RadioSystem.dismiss()
 
 	_bino.visible = player.binoculars
+	_reticle.visible = not _title.visible and not prologue.visible
 	_reticle.get_child(0).visible = not player.binoculars
 	if player.binoculars:
 		_bino_range.text = "Distance: %d m" % player.bino_dist if player.bino_dist >= 0 else "Distance: --- m"
@@ -668,9 +845,11 @@ func apply_text_scale() -> void:
 	_layout_radio()
 
 func _on_line(speaker: String, text: String, options: Array) -> void:
+	if not _radio.visible:
+		show_banner()                      # a new call, not a follow-up line
 	_radio.visible = true
 	_radio_speaker.text = speaker
-	_radio_text.text = '"' + text + '"'
+	_type_in(text)
 	_radio_opts.visible = options.size() > 0
 	for i in 2:
 		_opt_buttons[i].visible = i < options.size()
@@ -679,7 +858,7 @@ func _on_line(speaker: String, text: String, options: Array) -> void:
 
 func _on_reply(speaker: String, text: String) -> void:
 	_radio_speaker.text = speaker
-	_radio_text.text = '"' + text + '"'
+	_type_in(text)
 	_radio_opts.visible = false
 
 func fade_out(duration := 0.7) -> void:

@@ -53,6 +53,47 @@ func _run() -> void:
 	ok(tide.sandbars_open(2.1) and not tide.sandbars_open(2.11), "sandbar gate at 2.1 m")
 	near(tide.speed_multiplier(0.5), 0.6, 0.001, "knee-deep speed x0.6")
 
+	print("== sky (Atmosphere / SkyRig)")
+	var atm := Atmosphere.new()
+	ok(atm.sun_direction(700.0).y > 0.2 and atm.day_factor(700.0) > 0.99, "sun is well up at 11:40")
+	ok(atm.day_factor(1200.0) < 0.01, "it is fully night at 20:00")
+	ok(atm.sun_direction(430.0).x > 0.5 and atm.sun_direction(960.0).x < -0.5, "sun rises in the east (+x) and sets in the west (-x)")
+	ok(atm.sun_direction(700.0).z > 0.5, "noon sun is in the south")
+	ok(atm.moon_direction(1200.0).y > 0.2, "moon is up at night")
+	var sky_jump := 0.0
+	var prev: Dictionary = atm.sample(0.0)
+	for m in range(1, 1440):
+		var cur: Dictionary = atm.sample(float(m))
+		for k in ["sky_top", "sky_horizon", "fog_color"]:
+			var a: Color = prev[k]
+			var bb: Color = cur[k]
+			sky_jump = maxf(sky_jump, absf(a.r - bb.r) + absf(a.g - bb.g) + absf(a.b - bb.b))
+		prev = cur
+	ok(sky_jump < 0.06, "sky colours change smoothly through the whole day (max step %.4f)" % sky_jump)
+	var noon: Dictionary = atm.sample(700.0)
+	ok((noon["sky_top"] as Color).b - (noon["sky_top"] as Color).r > 0.2, "a noon sky is properly blue")
+	ok(float(atm.sample(1200.0)["stars"]) > 0.9 and float(noon["stars"]) < 0.01, "stars at night, none at noon")
+	ok(WeatherLook.preset("overcast").cloud_cover > 0.85 and WeatherLook.preset("clear").cloud_cover < 0.4, "overcast weather hides the sky; clear weather shows it")
+	ok((atm.sample(430.0)["sky_horizon"] as Color).r > (atm.sample(430.0)["sky_horizon"] as Color).b, "dawn horizon is warm")
+	# The key light hands over from sun to moon in each twilight: dir*fade and
+	# colour*fade must stay continuous (no jump in shadows or colour).
+	var key_jump := 0.0
+	var key_prev := Vector3.ZERO
+	var col_prev := Vector3.ZERO
+	for m in range(0, 1440):
+		var kl: Dictionary = atm.key_light(float(m))
+		var c: Color = atm.sample(float(m))["sun_color"]
+		var kv: Vector3 = (kl["dir"] as Vector3) * float(kl["fade"])
+		var kc := Vector3(c.r, c.g, c.b) * float(kl["fade"])
+		if m > 0:
+			key_jump = maxf(key_jump, maxf(kv.distance_to(key_prev), kc.distance_to(col_prev)))
+		key_prev = kv
+		col_prev = kc
+	ok(key_jump < 0.06, "key light is continuous across sunrise and sunset (max step %.4f)" % key_jump)
+	var swap_m := atm.sunset_minute + 25.0
+	ok(float(atm.key_light(swap_m)["fade"]) < 0.001 and float(atm.key_light(atm.sunrise_minute - 20.0)["fade"]) < 0.001, "key light is fully faded where sun and moon swap")
+	ok(atm.key_light(swap_m - 1.0)["is_sun"] and not atm.key_light(swap_m + 1.0)["is_sun"], "the swap itself happens inside the dark band")
+
 	print("== terrain")
 	var Terr = load("res://world/terrain.gd")
 	for x in [30.0, 45.0, 60.0]:
@@ -592,7 +633,7 @@ func _run() -> void:
 	print("== A2: audio catalog sanity")
 	var catalog: Dictionary = root.get_node("AudioDirector").catalog()
 	ok(catalog.size() >= 28, "audio catalog lists %d sounds" % catalog.size())
-	var loops := ["surf_bed", "wind_bed", "tape_hiss", "boat_engine", "rain_bed", "stove_crackle", "radio_static", "watch_tick"]
+	var loops := ["surf_bed", "surf_deep", "surf_foam", "wind_bed", "wind_whistle", "tape_hiss", "boat_engine", "rain_bed", "stove_crackle", "radio_static", "watch_tick"]
 	var all_sane := true
 	for nm in catalog:
 		var st := _audio_stats(catalog[nm])
@@ -790,7 +831,10 @@ func _run() -> void:
 	cfg.set_v("vol_master", 0.25)
 	ok(absf(AudioServer.get_bus_volume_db(0) - linear_to_db(0.25)) < 0.01, "master volume drives the Master bus")
 	var audio := root.get_node("AudioDirector")
-	ok(audio._surf.bus == "Ambience" and audio._hiss.bus == "Radio", "ambient beds are on Ambience, tape hiss on Radio")
+	ok(audio._surf.bus == "Sea" and audio._wind.bus == "Wind" and audio._hiss.bus == "Radio", "sea beds on Sea, wind on Wind, tape hiss on Radio")
+	var sea_i := AudioServer.get_bus_index("Sea")
+	var wind_i := AudioServer.get_bus_index("Wind")
+	ok(sea_i != -1 and wind_i != -1 and AudioServer.get_bus_send(sea_i) == "Ambience" and AudioServer.get_bus_send(wind_i) == "Ambience", "Sea and Wind buses feed Ambience, so the Ambience volume governs them")
 	audio.play_sfx("wood_0")
 	cfg.reset_defaults()
 
@@ -832,6 +876,7 @@ func _run() -> void:
 	var pl = main.player
 	main._place("outdoors", main.island.spawn_point, 0.0)
 	await _frames(30)
+	state.set_flag("binoculars_ready")      # Clara has mentioned them
 	cfg.set_v("toggle_binoculars", true)
 	_send_action("binoculars", true); await _frames(3); _send_action("binoculars", false); await _frames(3)
 	ok(pl.binoculars, "toggle mode: one tap raises the binoculars and they stay up")
@@ -903,9 +948,15 @@ func _run() -> void:
 	ok(main.hud._radio_text.get_theme_font_size("font_size") == int(17 * 1.5) and main.hud._tape_text.get_theme_font_size("font_size") == int(20 * 1.5), "subtitle size scales the radio and tape text")
 	cfg.set_v("subtitle_scale", 1.0)
 
-	cfg.set_v("brightness", 1.3); cfg.set_v("exposure", 1.2); cfg.set_v("glow", true)
+	cfg.set_v("brightness", 1.3); cfg.set_v("exposure", 1.0); cfg.set_v("glow", true)
 	main._apply_lighting()
-	ok(absf(main.env.adjustment_brightness - 1.3) < 0.001 and absf(main.env.tonemap_exposure - 0.95 * 1.2) < 0.001 and main.env.glow_enabled, "brightness, exposure and bloom reach the environment")
+	var base_exposure: float = main.env.tonemap_exposure
+	cfg.set_v("exposure", 1.2)
+	main._apply_lighting()
+	ok(absf(main.env.adjustment_brightness - 1.3) < 0.001 and absf(main.env.tonemap_exposure - base_exposure * 1.2) < 0.001 and main.env.glow_enabled, "brightness, exposure and bloom reach the environment")
+	cfg.set_v("glow", false)
+	main._apply_lighting()
+	ok(not main.env.glow_enabled, "turning bloom off turns it off")
 	cfg.reset_defaults()
 	cfg.set_v("shadow_quality", 0)
 	main._place("outdoors", main.island.spawn_point, 0.0)
@@ -917,9 +968,9 @@ func _run() -> void:
 	ok(main.sun.shadow_enabled and main.sun.directional_shadow_max_distance >= 220.0, "high shadow quality draws shadows farther")
 	cfg.reset_defaults()
 	cfg.set_v("ocean_detail", 0)
-	ok(main.ocean.mesh.subdivide_width == 36, "ocean detail Low halves the wave mesh")
+	ok(main.ocean.mesh.subdivide_width == 120, "ocean detail Low halves the wave mesh")
 	cfg.set_v("ocean_detail", 2)
-	ok(main.ocean.mesh.subdivide_width == 72, "...and High restores it")
+	ok(main.ocean.mesh.subdivide_width == 240, "...and High restores it")
 	cfg.set_v("night_assist", 1.0)
 	clock.set_time(1, 1200.0)
 	main._apply_lighting()
@@ -956,13 +1007,14 @@ func _run() -> void:
 	sm.controls["quality_preset"].select(3)
 	sm.controls["quality_preset"].item_selected.emit(3)
 	ok(cfg.v("quality_preset") == 3 and cfg.v("fps_cap") == 60 and sm.controls["fps_cap"].selected == FPS_CAPS_IDX_60, "choosing a preset in the menu applies it and updates the other controls")
-	sm.controls["glow"].button_pressed = true
-	ok(cfg.v("glow") == true, "a checkbox writes to Settings")
+	var glow_flip: bool = not cfg.DEFAULTS["glow"]
+	sm.controls["glow"].button_pressed = glow_flip
+	ok(cfg.v("glow") == glow_flip, "a checkbox writes to Settings")
 	cfg.set_v("vol_master", 0.9)
 	near(sm.controls["vol_master"].value, 0.9, 0.001, "changes from elsewhere refresh the menu controls")
 	sm.tabs.current_tab = 2
 	sm._reset_tab()
-	ok(cfg.v("glow") == false and absf(cfg.v("brightness") - 1.0) < 0.001 and absf(cfg.v("vol_master") - 0.9) < 0.001, "Reset this tab restores only that tab's settings")
+	ok(cfg.v("glow") == cfg.DEFAULTS["glow"] and absf(cfg.v("brightness") - 1.0) < 0.001 and absf(cfg.v("vol_master") - 0.9) < 0.001, "Reset this tab restores only that tab's settings")
 	sm.tabs.current_tab = 3
 	sm._begin_capture("binoculars", "kb", sm.bind_buttons["binoculars|kb"])
 	ok(sm.is_capturing() and sm.bind_buttons["binoculars|kb"].text.begins_with("Press"), "clicking a binding waits for a key")
@@ -1301,6 +1353,167 @@ func _run() -> void:
 	cfg.reset_defaults()
 	main.hud.apply_text_scale()
 	main.hud._radio.visible = false
+
+	print("== living sea and wind")
+	var ad := root.get_node("AudioDirector")
+	var lens: Array = ad.BED_SECONDS.values()
+	var distinct := true
+	for i in lens.size():
+		for j in lens.size():
+			if i != j:
+				var r: float = lens[i] / lens[j]
+				if absf(r - roundf(r)) < 0.02:
+					distinct = false
+	ok(distinct, "bed loops have different lengths, none a multiple of another")
+	ok(ad.catalog()["surf_bed"].get_length() > 6.0 and ad.catalog()["tape_hiss"].get_length() > 5.0, "no short beds left (surf %.1f s, tape hiss %.1f s)" % [ad.catalog()["surf_bed"].get_length(), ad.catalog()["tape_hiss"].get_length()])
+	# Simulate ten minutes of an ordinary day.
+	var sw = SeaWind.new(7)
+	sw.set_weather(0.14, 0.0, 0.011, false)
+	var series: Array = []
+	var starts: Array = []
+	var prev_n := 0
+	var big := 0
+	var gust_max := 0.0
+	var gust_min := 1.0
+	for i in 6000:
+		sw.step(0.1)
+		series.append(sw.mix()["wash"])
+		if sw._waves.size() > prev_n:
+			starts.append(i * 0.1)
+			if sw._waves[sw._waves.size() - 1][1] > 0.8:
+				big += 1
+		prev_n = sw._waves.size()
+		if i > 300:
+			gust_max = maxf(gust_max, sw.mix()["wind"]); gust_min = minf(gust_min, sw.mix()["wind"])
+	var gaps: Array = []
+	for i in range(1, starts.size()):
+		gaps.append(starts[i] - starts[i - 1])
+	var gmin: float = gaps.min()
+	var gmax: float = gaps.max()
+	ok(starts.size() > 40 and gmax - gmin > 4.0, "waves arrive irregularly (%d waves in 10 min, gaps %.1f-%.1f s)" % [starts.size(), gmin, gmax])
+	ok(big >= 3, "bigger sets roll in now and then (%d big waves)" % big)
+	ok(gust_max - gust_min > 0.25, "the wind has gusts and lulls (%.2f..%.2f)" % [gust_min, gust_max])
+	# No lag between 6 s (longer than one wave) and 2 minutes makes the sea repeat itself.
+	var sn := series.size()
+	var mean := 0.0
+	for v in series: mean += v
+	mean /= sn
+	var var_sum := 0.0
+	for v in series: var_sum += (v - mean) * (v - mean)
+	var sim_worst := 0.0
+	var sim_lag := 0
+	for lag in range(60, 1200, 7):
+		var c := 0.0
+		for i in sn - lag:
+			c += (series[i] - mean) * (series[i + lag] - mean)
+		c /= var_sum * float(sn - lag) / sn
+		if c > sim_worst:
+			sim_worst = c; sim_lag = lag
+	ok(sim_worst < 0.6, "the sea never repeats itself (worst self-similarity %.2f at %.1f s)" % [sim_worst, sim_lag * 0.1])
+	# Weather.
+	var storm_p: Dictionary = SeaWind.profile_for(0.45, 8.0, 0.017, true)
+	var calm_p: Dictionary = SeaWind.profile_for(0.06, 0.0, 0.006, false)
+	var fog_p: Dictionary = SeaWind.profile_for(0.14, 0.0, 0.040, false)
+	var plain_p: Dictionary = SeaWind.profile_for(0.14, 0.0, 0.011, false)
+	ok(storm_p["wave_max"] < plain_p["wave_min"] + 1.0 and storm_p["gust_every"] < 8.0 and storm_p["surf_db"] > 1.0, "storm: waves pound, gusts come fast, surf louder")
+	ok(fog_p["cut_hi"] < plain_p["cut_hi"] * 0.7 and fog_p["surf_db"] < plain_p["surf_db"], "fog: softer and muffled")
+	ok(calm_p["wave_min"] > plain_p["wave_min"] and calm_p["wind_base"] < 0.6 and calm_p["gust_depth"] < 0.2, "a still day: sparse waves, barely a breath of wind")
+	var bstorm = SeaWind.new(3)
+	bstorm.profile = storm_p
+	var bcalm = SeaWind.new(3)
+	bcalm.profile = calm_p
+	var ws := 0
+	var wc := 0
+	for i in 3000:
+		var a0: int = bstorm._waves.size()
+		bstorm.step(0.1)
+		if bstorm._waves.size() > a0: ws += 1
+		var a1: int = bcalm._waves.size()
+		bcalm.step(0.1)
+		if bcalm._waves.size() > a1: wc += 1
+	ok(ws > wc * 1.6, "more waves in a storm than on a still day (%d vs %d in 5 min)" % [ws, wc])
+	# Live: volumes and filters move while Arthur stands still.
+	ad.indoors = false
+	var vols := {}
+	var cuts := {}
+	for i in 600:
+		ad._update_beds(0.1)
+		vols[snappedf(ad._surf.volume_db, 0.5)] = true
+		cuts[snappedf(ad._sea_lp.cutoff_hz, 50.0)] = true
+	ok(vols.size() > 6 and cuts.size() > 4, "standing still, the surf level and brightness keep changing (%d levels, %d filter settings)" % [vols.size(), cuts.size()])
+	ad.indoors = true
+	ad._update_beds(0.1)
+	var in_cut: float = ad._sea_lp.cutoff_hz
+	ad.indoors = false
+	ad._update_beds(0.1)
+	ok(in_cut < ad._sea_lp.cutoff_hz * 0.5, "indoors the sea is muffled by the filter as well as the volume")
+	# Bell buoys: the count stays readable but the rhythm wanders.
+	var bb = get_nodes_in_group("bell_buoy")[3]
+	var pauses := {}
+	for i in 4:
+		bb._rung = bb.strikes
+		bb._clock = 100.0
+		bb._process(0.0)
+		pauses[snappedf(bb._group_pause, 0.1)] = true
+	ok(pauses.size() >= 3 and bb._group_pause >= 4.5, "bell buoys ring irregularly between groups (never faster than the count can be read)")
+
+	print("== playtest 1: binoculars are unlocked by Clara's first check-in")
+	var bino_day: int = clock.day
+	var bino_flag: bool = state.has_flag("binoculars_ready")
+	state.clear_flag("binoculars_ready")
+	clock.day = 1
+	main.hud.close_modal()
+	main.player.locked = false
+	main.player.ui_lock = false
+	ok(not state.binoculars_ready(), "on Day 1 the binoculars are locked until the check-in")
+	Input.action_press("binoculars")
+	await _frames(6)
+	ok(not main.player.binoculars, "holding the binoculars key does nothing before Clara mentions them")
+	Input.action_release("binoculars")
+	await _frames(3)
+	main._unlock_binoculars()
+	ok(state.has_flag("binoculars_ready") and state.binoculars_ready(), "the first check-in unlocks them")
+	Input.action_press("binoculars")
+	await _frames(6)
+	ok(main.player.binoculars, "after the check-in the key raises them")
+	Input.action_release("binoculars")
+	await _frames(3)
+	state.clear_flag("binoculars_ready")
+	clock.day = 2
+	ok(state.binoculars_ready(), "older saves (past Day 1) keep their binoculars")
+	clock.day = bino_day
+	if bino_flag:
+		state.set_flag("binoculars_ready")
+	var conv_lib = load("res://story/conversations.gd")      # loaded at runtime: it needs the autoloads
+	ok(conv_lib.get_conv("morning_d1")["text"].contains("binoculars"), "Clara's first call mentions the binoculars")
+
+	print("== playtest 1: setup tutorial")
+	var hud = main.hud
+	hud._open_tutorial()
+	await _frames(2)
+	ok(hud._tut.visible and hud._tut_idx == 0 and not hud._tut_next.visible, "tutorial opens on the 'how are you playing' choice")
+	ok(TutorialData.pages_for("kb")[0]["rows"][1].size() == 2 and TutorialData.pages_for("pad")[0]["rows"][1].size() == 2, "per-device tutorial pages carry one controls column")
+	hud._tut_pick("pad")
+	await _frames(3)
+	var tut_text := ""
+	for ch in hud._tut_body.get_children():
+		for l in ch.get_children():
+			if l is Label:
+				tut_text += (l as Label).text + "|"
+	ok(hud._tut_idx == 1 and "Left stick" in tut_text and not ("W A S D" in tut_text), "gamepad choice shows only gamepad controls (%s)" % tut_text.left(60))
+	ok(hud._tut_next.custom_minimum_size.x >= 240.0 and hud._tut_next.custom_minimum_size.y >= 48.0 and hud._tut_next.visible, "the Next button is large and visible")
+	var tut_esc := InputEventAction.new()
+	tut_esc.action = "ui_cancel"
+	tut_esc.pressed = true
+	hud._unhandled_input(tut_esc)
+	ok(hud._tut_idx == 0, "Esc / B steps back to the choice, so there is always a way out")
+	hud._tut_pick("kb")
+	for _i in 2:
+		hud._tut_go(hud._tut_idx + 1)
+	await _frames(2)
+	ok(hud._tut_next.text == "Step into the cottage" and hud._tut.visible, "the last tutorial page offers 'Step into the cottage'")
+	hud._tut.visible = false
+	hud._title.visible = false
 
 	print("\n%d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)

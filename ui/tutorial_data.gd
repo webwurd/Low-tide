@@ -26,3 +26,15 @@ static func pages() -> Array:
 			"In fog. Bell buoys ring around the island: 1 strike is north, 2 east, 3 south, 4 west. Walk toward the sound and keep the beam behind you.\n\n" +
 			"Evening. Light the lamp in the lantern room, write the log at the cottage desk, call Clara, and turn in. Sitting in the armchair or on the lantern bench lets you wait for the tide."},
 	]
+
+## The same pages for one input device ("kb" or "pad"): the unused column is dropped,
+## so a player only sees the controls they use.
+static func pages_for(device: String) -> Array:
+	var col := 2 if device == "pad" else 1
+	var out: Array = []
+	for pg in pages():
+		var rows: Array = []
+		for r in pg["rows"]:
+			rows.append([r[0], r[col]])
+		out.append({"title": pg["title"], "rows": rows, "text": pg["text"]})
+	return out

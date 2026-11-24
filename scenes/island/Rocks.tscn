@@ -1,0 +1,156 @@
+[gd_scene load_steps=19 format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/rock_0.res" id="1_6xh4k"]
+[ext_resource type="ArrayMesh" path="res://assets/models/rock_1.res" id="2_ggtg1"]
+[ext_resource type="ArrayMesh" path="res://assets/models/rock_2.res" id="3_gnq4f"]
+[ext_resource type="ArrayMesh" path="res://assets/models/rock_3.res" id="4_tornw"]
+[ext_resource type="ArrayMesh" path="res://assets/models/rock_4.res" id="5_gw43v"]
+[ext_resource type="ArrayMesh" path="res://assets/models/rock_5.res" id="6_sxk8m"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_wy75h"]
+radius = 1.8
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_58mae"]
+radius = 2.1
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_pygxj"]
+radius = 2.325
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_mfwio"]
+radius = 1.95
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_ypn4b"]
+radius = 2.625
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_bweg3"]
+radius = 2.175
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_wsoan"]
+radius = 1.35
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_pivdi"]
+radius = 1.575
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_ahab5"]
+radius = 1.5
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_1o0lm"]
+radius = 1.275
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_ckwvi"]
+radius = 2.4
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_m0mf0"]
+radius = 2.55
+
+[node name="Rocks" type="Node3D"]
+
+[node name="Rock0" type="MeshInstance3D" parent="."]
+transform = Transform3D(-1.50633, 0.17436, -2.30611, -0.137053, 2.26092, 0.260465, 2.00586, 0.270178, -1.28978, 14, 1.74931, 14)
+mesh = ExtResource("1_6xh4k")
+metadata/prop = "rock_0"
+
+[node name="Rock1" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.154027, 0.462467, -3.18289, -0.268138, 2.62077, 0.367815, 2.78252, 0.260478, 0.172499, -16, 1.13261, 15)
+mesh = ExtResource("2_ggtg1")
+metadata/prop = "rock_1"
+
+[node name="Rock2" type="MeshInstance3D" parent="."]
+transform = Transform3D(2.8268, 0.551716, 2.10096, -0.280857, 2.90615, -0.385272, -1.86558, 0.147344, 2.47141, 18, 0.815024, -14)
+mesh = ExtResource("3_gnq4f")
+metadata/prop = "rock_2"
+
+[node name="Rock3" type="MeshInstance3D" parent="."]
+transform = Transform3D(2.74009, 0.519829, 1.07786, -0.32379, 2.42412, -0.345977, -0.983177, 0.210881, 2.39768, -19, 0.137124, -15)
+mesh = ExtResource("4_tornw")
+metadata/prop = "rock_3"
+
+[node name="Rock4" type="MeshInstance3D" parent="."]
+transform = Transform3D(-0.133303, 0.601232, -3.97761, 0.340246, 3.27206, 0.483183, 3.4797, -0.337093, -0.167569, 8, 0.510601, -22)
+mesh = ExtResource("5_gw43v")
+metadata/prop = "rock_4"
+
+[node name="Rock5" type="MeshInstance3D" parent="."]
+transform = Transform3D(-1.95774, -0.107861, -2.69775, -0.197208, 2.74773, 0.0332537, 2.33855, 0.18847, -1.7046, -10, -0.348581, -24)
+mesh = ExtResource("6_sxk8m")
+metadata/prop = "rock_5"
+
+[node name="Rock6" type="MeshInstance3D" parent="."]
+transform = Transform3D(-2.05178, 0.269019, 0.0521769, 0.218165, 1.69049, -0.136953, -0.0635887, -0.137104, -1.79364, 44, 1.3459, 11)
+mesh = ExtResource("1_6xh4k")
+metadata/prop = "rock_0"
+
+[node name="Rock7" type="MeshInstance3D" parent="."]
+transform = Transform3D(-1.25862, -0.242308, -2.0468, -0.163795, 1.98374, -0.134122, 1.78394, 0.0725498, -1.10557, 56, -1.25463, -2)
+mesh = ExtResource("2_ggtg1")
+metadata/prop = "rock_1"
+
+[node name="Rock8" type="MeshInstance3D" parent="."]
+transform = Transform3D(2.26732, -0.105372, -0.371681, 0.0855886, 1.898, -0.0159816, 0.323632, 0.00202463, 1.97364, -42, -0.762266, -13)
+mesh = ExtResource("3_gnq4f")
+metadata/prop = "rock_2"
+
+[node name="Rock9" type="MeshInstance3D" parent="."]
+transform = Transform3D(-1.93744, -0.0717004, 0.251449, -0.0561446, 1.61379, 0.0275714, -0.219552, 0.0211605, -1.68563, -55, -3.694, 1)
+mesh = ExtResource("4_tornw")
+metadata/prop = "rock_3"
+
+[node name="Rock10" type="MeshInstance3D" parent="."]
+transform = Transform3D(2.20175, 0.195708, -2.94218, 0.0738462, 3.02824, 0.256695, 2.56289, -0.223812, 1.90302, 84, 0.279282, 14)
+mesh = ExtResource("5_gw43v")
+metadata/prop = "rock_4"
+
+[node name="Rock11" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.448378, -0.18509, -3.87979, 0.338228, 3.21022, -0.114059, 3.35875, -0.339511, 0.404359, -82, 0.866956, -16)
+mesh = ExtResource("6_sxk8m")
+metadata/prop = "rock_5"
+
+[node name="Body" type="StaticBody3D" parent="."]
+
+[node name="Shape0" type="CollisionShape3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 1.74931, 14)
+shape = SubResource("SphereShape3D_wy75h")
+
+[node name="Shape1" type="CollisionShape3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 1.13261, 15)
+shape = SubResource("SphereShape3D_58mae")
+
+[node name="Shape2" type="CollisionShape3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0.815024, -14)
+shape = SubResource("SphereShape3D_pygxj")
+
+[node name="Shape3" type="CollisionShape3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19, 0.137124, -15)
+shape = SubResource("SphereShape3D_mfwio")
+
+[node name="Shape4" type="CollisionShape3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0.510601, -22)
+shape = SubResource("SphereShape3D_ypn4b")
+
+[node name="Shape5" type="CollisionShape3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, -0.348581, -24)
+shape = SubResource("SphereShape3D_bweg3")
+
+[node name="Shape6" type="CollisionShape3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44, 1.3459, 11)
+shape = SubResource("SphereShape3D_wsoan")
+
+[node name="Shape7" type="CollisionShape3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 56, -1.25463, -2)
+shape = SubResource("SphereShape3D_pivdi")
+
+[node name="Shape8" type="CollisionShape3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42, -0.762266, -13)
+shape = SubResource("SphereShape3D_ahab5")
+
+[node name="Shape9" type="CollisionShape3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55, -3.694, 1)
+shape = SubResource("SphereShape3D_1o0lm")
+
+[node name="Shape10" type="CollisionShape3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 84, 0.279282, 14)
+shape = SubResource("SphereShape3D_ckwvi")
+
+[node name="Shape11" type="CollisionShape3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -82, 0.866956, -16)
+shape = SubResource("SphereShape3D_m0mf0")

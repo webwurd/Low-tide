@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="WeatherLook" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://art/weather_look.gd" id="1_sopdg"]
+
+[resource]
+script = ExtResource("1_sopdg")
+cloud_cover = 0.28
+cloud_darkness = 0.0
+sun_scale = 1.0
+ambient_scale = 1.0
+saturation = 1.18
+sky_to_fog = 0.0
+fog_scale = 1.6
+fog_tint_amount = 0.25
+height_fog = 0.012
+volumetric_density = 0.006
+wind = 0.35
+wetness = 0.0
+tint = Color(1, 1, 1, 1)
