@@ -8,7 +8,7 @@ godot --headless -s tools/export_audio.gd -- /some/output/dir     # default: res
 ```
 
 Automated checks (in `tests/run_tests.gd`) confirm each sound is audible, un-clipped, finite, and that the
-four looping beds have no click at the loop point. **Nobody has judged tone by ear yet. That is what this list is for.**
+looping beds have no click at the loop point. **Nobody has judged tone by ear yet. That is what this list is for.**
 
 Legend: **Listen for** = what "right" should sound like. **Tune** = where to change it.
 
@@ -55,6 +55,24 @@ Check: do they sound like instruments or like a synth? Too long, too loud over t
 to use real music, drop `sting_end_a.ogg` (or `.wav`/`.mp3`) etc. into `res://audio/stings/` and it is used instead, with no code change.
 Tune in `audio/sting_synth.gd` (`render()` phrases, note timings, levels).
 
+## C3. Foley (synthesised in `audio/foley_synth.gd`)
+Recorded files dropped into `res://audio/foley/<name>.(ogg|wav|mp3)` replace these with no code change.
+| ID | What it is | Hear it | Listen for |
+|---|---|---|---|
+| `door_open_0..1` / `door_close_0..1` | Latch click + hinge creak; wooden thud + latch | Any door between outdoors and the cottage/tower | Heavy old door, not a squeaky cartoon hinge |
+| `stairs_0..1` | Four creaky wooden treads | Tower stairs up/down | Weight on old wood |
+| `stove_0` | Iron door clank, match, fire catching | Lighting the stove (once a day) | Cast iron; the whoomph of kindling |
+| `stove_crackle` (loop) | Low fire roar + ember pops | Cottage, once the stove is lit, all day | Cosy, never like rain or static |
+| `winding_0` | Ratchet pawl clicks over a groaning drum | Winding the weights | Heavy clockwork, a pause each turn of the crank |
+| `lamp_0` | Match, mantle catching, pressure hiss | Lighting the lamp | Soft and satisfying |
+| `chair_0..1` / `bed_0` | Wood creak + cushion/blanket rustle | Armchair or bench (wait an hour); going to bed | Comfortable, not horror-movie |
+| `page_0..2` / `pen_0` | Paper swish with crinkle; pen strokes | Tide table, logbook open and page turns; writing the log | Paper, not wind |
+| `tap_0` | Two knuckle taps on glass | Reading the barometer | The classic "tap the glass" |
+| `watch_tick` (loop) | Five beats per second, tick-tock | Holding up the pocket watch (not when Assist pins it) | Tiny, precise, not a clock on the wall |
+| `radio_static` (loop) | Band-limited hiss + crackle | Under every radio line while the panel is up; scales with "Radio static intensity" | Should frame Clara's lines, not tire the ear |
+| `click_0` | Soft UI tick | Every button (title, pause, settings, radio replies); works while paused | Quiet, unobtrusive |
+| `rain_bed` (loop) / `thunder_0..1` | Hiss + low wash + droplets; distant rolling thunder every 35-85 s | Day 4 (storm); muffled -12 dB indoors | Heavy coastal rain; thunder distant, not a jump-scare |
+
 ## D. Mixing questions
 - Is the bed (surf + wind) too loud under the radio voice-line text, or too quiet to feel alone?
 - Do indoors feel properly sheltered (-14 dB surf and wind)? Does the stove need its own crackle (see below)?
@@ -62,6 +80,5 @@ Tune in `audio/sting_synth.gd` (`render()` phrases, note timings, levels).
 - Does `squelch_0` drown subtle moments (tape playback)?
 
 ## E. Missing audio (known gaps; not bugs)
-Rain on the storm day (Day 4), door open/close, stove crackle, clockwork weights winding, lamp lighting, armchair/bench,
-page/journal turn, pocket-watch tick, radio static *between* lines, Clara's voice (text-only), menu click sounds.
-Stings now exist (see C2) but are placeholders. Plan: foley in M7.
+Clara's voice (text-only), wind gusts/shutters on Day 4, gulls, the lens mechanism turning at night.
+Stings (C2) and foley (C3) exist but are synthesised placeholders.

@@ -485,6 +485,7 @@ func toggle_logbook() -> void:
 		close_modal()
 		return
 	_journal_page = 0
+	AudioDirector.play_sfx("page", -8.0)
 	_render_journal()
 
 func _render_journal() -> void:
@@ -561,6 +562,7 @@ func _process(delta: float) -> void:
 	else:
 		_watch_on = Input.is_action_pressed("watch")
 	_watch.visible = _watch_on or Settings.assist_mode
+	AudioDirector.set_watch(_watch_on and not _title.visible)
 	if Input.is_action_just_pressed("logbook") and not _title.visible:
 		toggle_logbook()
 	if modal_open and Engine.get_process_frames() > _modal_frame:
@@ -569,9 +571,11 @@ func _process(delta: float) -> void:
 	if modal_open and _journal_page >= 0 and Engine.get_process_frames() > _modal_frame:
 		if Input.is_action_just_pressed("move_right"):
 			_journal_page = (_journal_page + 1) % 3
+			AudioDirector.play_sfx("page", -9.0, 1.05)
 			_render_journal()
 		elif Input.is_action_just_pressed("move_left"):
 			_journal_page = (_journal_page + 2) % 3
+			AudioDirector.play_sfx("page", -9.0, 0.95)
 			_render_journal()
 	if modal_open:
 		var dir := Input.get_axis("move_forward", "move_back") + Input.get_axis("look_up", "look_down")

@@ -2,6 +2,9 @@ extends Node
 ## Procedural audio (no external assets). Ports the prototype's Web Audio
 ## synth: looping surf + wind beds, surface footsteps, radio squelch, foghorn.
 ## All samples are generated once at startup into AudioStreamWAV buffers.
+## Foley (doors, stove, weights, lamp, paper, watch, rain...) comes from
+## audio/foley_synth.gd; a recorded file at res://audio/foley/<name>.(ogg|wav)
+## replaces the synthesised one with no code change.
 
 const RATE := 22050
 const POOL := 6
@@ -16,6 +19,18 @@ var foghorn_enabled := true
 var indoors := false
 var weather_db := 0.0
 var _hiss: AudioStreamPlayer
+# foley loops
+var _rain: AudioStreamPlayer
+var _crackle: AudioStreamPlayer
+var _static: AudioStreamPlayer
+var _tick: AudioStreamPlayer
+var _ui: AudioStreamPlayer
+var raining := false
+var stove_lit := false            # the cottage stove is burning (crackle while indoors there)
+var in_cottage := false
+var _thunder_timer := 20.0
+## Last one-shot requested (tests read it).
+var last_sfx := ""
 
 func _ready() -> void:
 	_rng.seed = 1998
@@ -47,8 +62,102 @@ func _ready() -> void:
 	_hiss = _loop_player(_bandpass(hiss, 3200.0, 0.6), -200.0, "Radio")
 	_hiss.stop()
 	_hiss.volume_db = -21.5   # hiss stream is now unclipped (22 dB quieter at source)
+	_build_foley()
+
+func _build_foley() -> void:
+	var one_shots := {
+		"door_open": [FoleySynth.door_open(1), FoleySynth.door_open(31)],
+		"door_close": [FoleySynth.door_close(2), FoleySynth.door_close(32)],
+		"stairs": [FoleySynth.stairs(3), FoleySynth.stairs(33)],
+		"stove": [FoleySynth.stove()], "winding": [FoleySynth.winding()], "lamp": [FoleySynth.lamp()],
+		"chair": [FoleySynth.chair(7), FoleySynth.chair(37)], "bed": [FoleySynth.bed()],
+		"page": [FoleySynth.page(9), FoleySynth.page(39), FoleySynth.page(69)],
+		"pen": [FoleySynth.pen()], "tap": [FoleySynth.tap()], "click": [FoleySynth.click()],
+		"thunder": [FoleySynth.thunder(13), FoleySynth.thunder(43)],
+	}
+	for k in one_shots:
+		var file := _foley_file(k)
+		if file != null:
+			_variants[k] = [file]
+			continue
+		var arr: Array = []
+		for data in one_shots[k]:
+			arr.append(_wav(data))
+		_variants[k] = arr
+	_rain = _foley_loop("rain_bed", FoleySynth.rain(), "Ambience")
+	_crackle = _foley_loop("stove_crackle", FoleySynth.stove_crackle(), "Ambience")
+	_static = _foley_loop("radio_static", FoleySynth.radio_static(), "Radio")
+	_tick = _foley_loop("watch_tick", FoleySynth.watch_tick(), "SFX")
+	# Menu clicks must sound while the tree is paused (pause menu, settings).
+	_ui = AudioStreamPlayer.new()
+	_ui.bus = "SFX"
+	_ui.process_mode = Node.PROCESS_MODE_ALWAYS
+	_ui.volume_db = -14.0
+	add_child(_ui)
+	get_tree().node_added.connect(_on_node_added)
+
+func _foley_file(nm: String) -> AudioStream:
+	for ext in ["ogg", "wav", "mp3"]:
+		var path := "res://audio/foley/%s.%s" % [nm, ext]
+		if ResourceLoader.exists(path):
+			return load(path)
+	return null
+
+func _foley_loop(nm: String, data: PackedFloat32Array, bus: String) -> AudioStreamPlayer:
+	var p := AudioStreamPlayer.new()
+	p.bus = bus
+	var file := _foley_file(nm)
+	if file != null:
+		if file is AudioStreamOggVorbis or file is AudioStreamMP3:
+			file.loop = true
+		p.stream = file
+	else:
+		p.stream = _wav(data, true)
+	p.volume_db = -80.0
+	add_child(p)
+	return p
+
+## Every button in the game clicks (title, pause, settings, radio replies, tutorial).
+func _on_node_added(n: Node) -> void:
+	if n is BaseButton and not n.has_meta("silent"):
+		n.pressed.connect(ui_click)
+
+func ui_click() -> void:
+	var list: Array = _variants.get("click", [])
+	if list.is_empty():
+		return
+	_ui.stream = list[0]
+	_ui.pitch_scale = 0.95 + _rng.randf() * 0.1
+	_ui.play()
+	last_sfx = "click"
+
+## A sound for moving between places: doors to and from outdoors, the tower stairs.
+func play_transition(from_loc: String, to_loc: String) -> void:
+	var pair := [from_loc, to_loc]
+	if pair.has("tower_top"):
+		play_sfx("stairs", -8.0)
+	elif from_loc != to_loc:
+		play_sfx("door_open", -7.0)
+		get_tree().create_timer(0.55).timeout.connect(func(): play_sfx("door_close", -6.0))
+
+## Pocket watch out: tick while it is held up (not when Assist pins it on screen).
+func set_watch(on: bool) -> void:
+	if on and not _tick.playing:
+		_tick.volume_db = -20.0
+		_tick.play()
+	elif not on and _tick.playing:
+		_tick.stop()
+
+## Static under the radio panel while Clara is on the line.
+func set_radio_static(on: bool) -> void:
+	if on and not _static.playing:
+		_static.play(_rng.randf() * 2.5)
+	elif not on and _static.playing:
+		_static.stop()
+	_static.volume_db = -27.0 + Settings.vol_to_db(float(Settings.v("radio_static")))
 
 func _process(delta: float) -> void:
+	_update_foley_loops(delta)
 	if not foghorn_enabled or GameClock.paused:
 		return
 	_foghorn_timer -= delta
@@ -63,6 +172,27 @@ func update_ambient(time: float, altitude: float, tide: float) -> void:
 	_surf.volume_db = -20.0 + swell * 5.0 + clampf(tide - 1.0, 0.0, 3.0) * 1.0 + muffle + weather_db * 0.5
 	_wind.volume_db = -30.0 + clampf(altitude, 0.0, 25.0) * 0.45 + muffle + weather_db
 
+func _update_foley_loops(delta: float) -> void:
+	var muffle := -12.0 if indoors else 0.0
+	_fade_loop(_rain, -13.0 + muffle if raining else -80.0, delta, 12.0)
+	_fade_loop(_crackle, -19.0 if (stove_lit and in_cottage) else -80.0, delta, 25.0)
+	if raining:
+		_thunder_timer -= delta
+		if _thunder_timer <= 0.0:
+			play_sfx("thunder", -10.0 + muffle * 0.5, 0.85 + _rng.randf() * 0.3)
+			_thunder_timer = 35.0 + _rng.randf() * 50.0
+
+## Fades a loop toward target_db (dB/s), starting and stopping it as needed.
+func _fade_loop(p: AudioStreamPlayer, target_db: float, delta: float, rate: float) -> void:
+	if target_db > -79.0 and not p.playing:
+		p.volume_db = -60.0
+		p.play(_rng.randf() * 0.5)
+	if not p.playing:
+		return
+	p.volume_db = move_toward(p.volume_db, target_db, delta * rate)
+	if target_db <= -79.0 and p.volume_db <= -59.0:
+		p.stop()
+
 func set_tape(on: bool) -> void:
 	if on and not _hiss.playing:
 		_hiss.play()
@@ -70,12 +200,13 @@ func set_tape(on: bool) -> void:
 		_hiss.stop()
 
 ## Which mixer bus each one-shot plays on (see Settings AUDIO_BUSES).
-const SFX_BUS := {"squelch": "Radio", "foghorn": "Ambience", "sting": "Music"}
+const SFX_BUS := {"squelch": "Radio", "foghorn": "Ambience", "sting": "Music", "thunder": "Ambience"}
 
 func play_sfx(sfx_name: String, volume_db := 0.0, pitch := 1.0) -> void:
 	var list: Array = _variants.get(sfx_name, [])
 	if list.is_empty():
 		return
+	last_sfx = sfx_name
 	if sfx_name == "squelch":
 		volume_db += Settings.vol_to_db(float(Settings.v("radio_static")))
 	for p in _pool:
@@ -102,6 +233,7 @@ const BELL_PITCHES := {"bell_north_1": 440.0, "bell_east_2": 523.0, "bell_south_
 ## the audio sanity tests.
 func catalog() -> Dictionary:
 	var out := {"surf_bed": _surf.stream, "wind_bed": _wind.stream, "tape_hiss": _hiss.stream,
+		"rain_bed": _rain.stream, "stove_crackle": _crackle.stream, "radio_static": _static.stream, "watch_tick": _tick.stream,
 		"hydrophone_ping": ping_stream(), "boat_engine": boat_engine_stream()}
 	for k in _variants:
 		var arr: Array = _variants[k]

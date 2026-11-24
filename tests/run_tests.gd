@@ -592,7 +592,7 @@ func _run() -> void:
 	print("== A2: audio catalog sanity")
 	var catalog: Dictionary = root.get_node("AudioDirector").catalog()
 	ok(catalog.size() >= 28, "audio catalog lists %d sounds" % catalog.size())
-	var loops := ["surf_bed", "wind_bed", "tape_hiss", "boat_engine"]
+	var loops := ["surf_bed", "wind_bed", "tape_hiss", "boat_engine", "rain_bed", "stove_crackle", "radio_static", "watch_tick"]
 	var all_sane := true
 	for nm in catalog:
 		var st := _audio_stats(catalog[nm])
@@ -1028,6 +1028,78 @@ func _run() -> void:
 	aud._sting_player.stop()
 	if FileAccess.file_exists(root.get_node("SaveSystem").endings_path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(root.get_node("SaveSystem").endings_path))
+
+	print("== M7c: foley")
+	var fol: Dictionary = aud.catalog()
+	for nm in ["door_open_0", "door_close_0", "stairs_0", "stove_0", "winding_0", "lamp_0", "chair_0", "bed_0",
+			"page_0", "pen_0", "tap_0", "click_0", "thunder_0"]:
+		var fs := _audio_stats(fol[nm]) if fol.has(nm) else {}
+		ok(fol.has(nm) and fs["peak"] < 0.9 and fs["rms"] > 0.01 and fs["seconds"] < 8.0 and absf(fol[nm].data.decode_s16(fol[nm].data.size() - 2)) < 400,
+			"foley %s: audible one-shot, no clip, no end click" % nm)
+	aud.last_sfx = ""
+	main._on_barometer()
+	ok(aud.last_sfx == "tap", "the barometer gets a knuckle tap on the glass")
+	main._on_tide_table()
+	ok(aud.last_sfx == "page", "reading the tide table turns a page")
+	main.hud.close_modal()
+	director.begin_day(2)
+	aud.last_sfx = ""
+	main._on_stove()
+	ok(aud.last_sfx == "stove" and director.rituals.has("stove"), "lighting the stove: clank, match, fire")
+	aud.last_sfx = ""
+	main._on_stove()
+	ok(aud.last_sfx != "stove", "...but not a second time the same day")
+	aud.last_sfx = ""
+	main._on_weights()
+	ok(aud.last_sfx == "winding", "winding the weights ratchets")
+	aud.last_sfx = ""
+	main._on_weights()
+	ok(aud.last_sfx == "", "already-wound weights stay quiet")
+	main.location = "cottage"
+	main._process(0.016)
+	ok(aud.stove_lit and aud.in_cottage, "the lit stove crackles in the cottage")
+	for i in 30:
+		aud._update_foley_loops(0.1)
+	ok(aud._crackle.playing and aud._crackle.volume_db > -30.0, "stove crackle fades in (%.1f dB)" % aud._crackle.volume_db)
+	aud.in_cottage = false
+	for i in 40:
+		aud._update_foley_loops(0.1)
+	ok(not aud._crackle.playing, "...and stops when Arthur leaves")
+	aud.raining = true
+	aud.indoors = false
+	for i in 80:
+		aud._update_foley_loops(0.1)
+	var rain_out: float = aud._rain.volume_db
+	aud.indoors = true
+	for i in 80:
+		aud._update_foley_loops(0.1)
+	ok(aud._rain.playing and rain_out > aud._rain.volume_db + 8.0, "rain plays, muffled indoors (%.1f vs %.1f dB)" % [rain_out, aud._rain.volume_db])
+	aud.raining = false
+	for i in 80:
+		aud._update_foley_loops(0.1)
+	ok(not aud._rain.playing, "rain stops on a dry day")
+	aud.indoors = false
+	aud.set_watch(true)
+	ok(aud._tick.playing, "the pocket watch ticks while held up")
+	aud.set_watch(false)
+	ok(not aud._tick.playing, "...and stops when put away")
+	aud.set_radio_static(true)
+	ok(aud._static.playing and aud._static.bus == "Radio", "static sits under Clara's lines on the Radio bus")
+	aud.set_radio_static(false)
+	aud.last_sfx = ""
+	aud.play_transition("tower_base", "tower_top")
+	ok(aud.last_sfx == "stairs", "the tower stairs creak")
+	aud.play_transition("cottage", "outdoors")
+	ok(aud.last_sfx == "door_open", "doors open (and close behind)")
+	await create_timer(0.7).timeout
+	ok(aud.last_sfx == "door_close", "...the door swings shut")
+	var btn := Button.new()
+	root.add_child(btn)
+	aud.last_sfx = ""
+	btn.pressed.emit()
+	ok(aud.last_sfx == "click", "buttons click")
+	ok(aud._ui.process_mode == Node.PROCESS_MODE_ALWAYS, "menu clicks still sound while paused")
+	btn.queue_free()
 
 	print("\n%d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)
