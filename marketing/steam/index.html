@@ -2,7 +2,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Reenie+Beanie&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Reenie+Beanie&display=swap">
 <style>
 /* Layout concept: a harbourmaster's board. A dark slate field, fog-white type, and amber used only for the lamp and the one action on the page. */
 :root {
@@ -17,7 +17,7 @@
   --muted: #9db0b3;     /* Fog pulled toward slate; 7:1 on Night Water */
   --line: rgba(221, 229, 228, .13);
   --panel: #1b2832;
-  --display: 'Marcellus', 'Iowan Old Style', Georgia, serif;
+  --display: 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
   --body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
   --hand: 'Reenie Beanie', 'Bradley Hand', cursive;
@@ -47,8 +47,8 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--lantern); outli
   margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--deep); }
 .bar .wrap { display: flex; align-items: center; gap: 20px; min-height: 52px; flex-wrap: wrap; }
-.brandmini { display: flex; align-items: center; gap: 10px; font: 400 1.05rem var(--display); letter-spacing: .08em; text-decoration: none; }
-.brandmini svg { width: 26px; height: auto; }
+.brandmini { display: flex; align-items: center; text-decoration: none; }
+.brandmini svg { height: 22px; width: auto; display: block; }
 .tabs { display: flex; gap: 4px; margin-left: auto; }
 .tabs a { font: 500 .78rem var(--mono); letter-spacing: .1em; text-transform: uppercase; text-decoration: none; padding: 16px 12px 14px; color: var(--muted); border-bottom: 2px solid transparent; }
 .tabs a[aria-current="page"] { color: var(--fog); border-color: var(--lantern); }
@@ -146,8 +146,8 @@ body.steam-on { background: #1b2838; }
 /* global header */
 .st-gh { background: #171a21; }
 .st-gh-in { display: flex; align-items: center; gap: 36px; height: 80px; flex-wrap: wrap; }
-.st-logo { display: flex; align-items: center; gap: 10px; color: #fff; font: 400 20px/1 var(--display); letter-spacing: .1em; }
-.st-logo svg { width: 24px; height: auto; display: block; }
+.st-logo { display: flex; align-items: center; gap: 12px; color: #fff; }
+.st-logo svg { height: 26px; width: auto; display: block; }
 .st-logo small { font: 400 10px/1.3 Arial, sans-serif; letter-spacing: .12em; color: #8f98a0; border-left: 1px solid #3a4452; padding-left: 10px; text-transform: uppercase; }
 .st-super { display: flex; flex-wrap: wrap; gap: 4px; }
 .st-super a { color: #b8b6b4; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; padding: 8px 14px; border-radius: 2px; }
@@ -250,22 +250,40 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
   .st-cap { max-width: 460px; }
 }
 @media (max-width: 560px) { .st-super a { padding: 6px 8px; font-size: 12px; } .st-acct { margin-left: 0; } .st-req, .st-figs { grid-template-columns: minmax(0, 1fr); } .st-gh-in { height: auto; padding-block: 14px; gap: 10px 18px; } .st-search input { width: 150px; } }
+
+/* logo direction picker + brand directions */
+.vsw { display: flex; gap: 0; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; margin-left: 8px; }
+.vsw button, .vbtn { appearance: none; border: 0; background: transparent; color: var(--muted); font: 500 .72rem var(--mono); letter-spacing: .06em; padding: 8px 12px; cursor: pointer; }
+.vsw button:hover, .vbtn:hover { color: var(--fog); }
+.vsw button[aria-pressed="true"] { background: rgba(255, 184, 77, .14); color: var(--lantern); }
+.vbtn { border: 1px solid var(--line); border-radius: 3px; }
+.vbtn[aria-pressed="true"] { color: var(--lantern); border-color: rgba(255, 184, 77, .5); }
+.vlab { font: 500 .66rem var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-left: auto; align-self: center; }
+.dir { display: grid; gap: 14px; align-content: start; }
+.dir .stage { min-height: 170px; padding: 28px 20px; }
+.dir h3 { font-size: 1.5rem; }
+.dir p { color: #c5d1d1; font-size: .92rem; }
+.outro { min-height: 360px; background: radial-gradient(ellipse at 50% 85%, #1d2c39 0%, #0f1822 60%, #0a1016 100%); }
+.outro svg { width: min(100%, 760px); }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+@media (max-width: 900px) { .vlab { display: none; } .vsw { margin-left: 0; } }
 </style>
 
 <div class="bar"><div class="wrap">
-  <a class="brandmini" href="#store" aria-label="Low Tide"><span id="navmark"></span>LOW TIDE</a>
+  <a class="brandmini" href="#store" aria-label="Low Tide"><span id="navmark"></span></a>
   <nav class="tabs" aria-label="Views">
     <a href="#store" data-tab="store">Store page</a>
     <a href="#brand" data-tab="brand">Brand guide</a>
     <a href="#assets" data-tab="assets">Steam asset kit</a>
   </nav>
+  <div class="vsw" role="group" aria-label="Logo direction"><button type="button" data-v="b" aria-pressed="true">B Lowercase</button><button type="button" data-v="c" aria-pressed="false">C Stencil</button><button type="button" data-v="h" aria-pressed="false">H Capitals</button></div>
 </div></div>
 <div class="draft"><div class="wrap"><b>DRAFT</b> &nbsp;The Store page tab follows the standard Steam store page layout, without Valve's logo or marks. Key art stands in for screenshots and the trailer until the build can be captured.</div></div>
 
 <!-- ================= STORE ================= -->
 <section class="view steam" id="view-store">
   <div class="st-gh"><div class="st-w st-gh-in">
-    <div class="st-logo"><span id="stMark"></span>LOW TIDE<small>Store page<br>preview</small></div>
+    <div class="st-logo"><span id="stMark"></span><small>Store page<br>preview</small></div>
     <nav class="st-super" aria-label="Main"><a class="on" href="#store">Store</a><a href="#store">Community</a><a href="#store">About</a><a href="#store">Support</a></nav>
     <div class="st-acct"><span>login</span><span>|</span><span>language &#9662;</span></div>
   </div></div>
@@ -354,7 +372,7 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
       </div>
 
       <div class="st-rtop">
-        <img class="st-cap" src="assets/header_capsule.png" alt="Low Tide header capsule" width="308" height="144">
+        <canvas class="st-cap" id="stCap" aria-label="Low Tide header capsule"></canvas>
         <p class="st-snip" id="short">Winter, 1998. You are the lone winter keeper of Gannet Rock Light Station, off the coast of Maine. The tide decides where you can walk. The only other voice on the island is Clara, a Coast Guard dispatcher on a crackling VHF radio. Seven days. One secret the sea has kept for twenty-four years.</p>
         <dl class="st-glance">
           <dt>All reviews:</dt><dd>Need more user reviews to generate a score</dd>
@@ -395,16 +413,36 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
     </div>
 
     <div class="sec" style="padding-top:32px">
+      <div class="hd"><span class="eyebrow">Logo directions</span><h2>Two directions and a fallback.</h2><p>All three share one idea: a single amber light in a cold field. The switch in the top bar changes the whole page, including the store preview and every capsule.</p></div>
+      <div class="grid2">
+        <div class="card dir"><div class="stage" id="dir-b"></div><h3>B &middot; Lowercase</h3><p>The lamp is the dot of the i. Cormorant Garamond, lowercase, over a hairline. Quiet and literary, like the title of a book left on a desk. The only warm thing in it is the light.</p><div><button class="vbtn" type="button" data-v="b" aria-pressed="true">Use B</button></div></div>
+        <div class="card dir"><div class="stage" id="dir-c"></div><h3>C &middot; Stencil</h3><p>Capitals stamped like the PROJECT PELAGIC canister, one amber rule, and a classification line. Colder and more official. Someone cut this out of a sheet of metal and did not explain why.</p><div><button class="vbtn" type="button" data-v="c" aria-pressed="false">Use C</button></div></div>
+        <div class="card dir"><div class="stage" id="dir-h"></div><h3>H &middot; Capitals (fallback)</h3><p>Cormorant capitals with the lighthouse as the I. The lamp burns above it and lays a thin beam across the title. The closest to a classic mystery title card.</p><div><button class="vbtn" type="button" data-v="h" aria-pressed="false">Use H</button></div></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="hd"><span class="eyebrow">Selected direction</span><h2 id="variantTitle">B &middot; Lowercase</h2></div>
       <div class="grid2">
         <div class="card" style="grid-column:1/-1;padding:0"><div class="stage" id="logoMain" style="min-height:300px"></div></div>
         <div class="card"><div class="stage light" id="logoInk"></div><p class="caption">Ink version for paper, press and light backgrounds. The lamp goes to Ember so it holds on fog.</p></div>
-        <div class="card"><div class="stage tiny" id="logoMark"></div><p class="caption">The mark: the lighthouse, its lamp and its reflection. Used for the Steam client icon and small spaces.</p></div>
+        <div class="card"><div class="stage tiny" id="logoMark"></div><p class="caption">The mark, on Night Water as the Steam client icon. For small spaces.</p></div>
       </div>
       <div class="grid2" style="margin-top:20px">
         <div class="card"><h3>How it is built</h3>
-          <p class="muted" style="margin-top:10px">The <b style="color:var(--fog);font-weight:500">I</b> in TIDE is the lighthouse. Its stem is the tower, and the lamp burns above it. The lamp lays a thin beam across the title and a broken streak of light into the water. Everything else in the logo is cold. The letters are Marcellus, a Roman inscriptional face, set wide like text cut into stone. The wordmark is kerned, outlined and shipped as vectors, so it never depends on a font.</p></div>
+          <p class="muted" style="margin-top:10px" id="variantCopy"></p></div>
         <div class="card"><h3>Use</h3>
-          <p class="muted" style="margin-top:10px">Keep clear space equal to the height of the L on every side. Below 220 px wide, use the flat version without the reflection and beam (<span class="mono">low-tide_wordmark_flat.svg</span>). The lamp is always amber, or Ember on light paper, and it never moves off the I. On key art, set the logo over dark water, and leave the beam off where it would run parallel to the painted one.</p></div>
+          <p class="muted" style="margin-top:10px">Keep clear space equal to the height of the tallest letter on every side. On key art, set the logo over dark water. The lamp, or the amber rule, is the only warm element, and it is always amber (Ember on light paper). No glow beyond the lamp's own, no bevels, no reflections. The wordmarks are kerned and outlined, so they never depend on a font.</p></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="hd"><span class="eyebrow">Outro idea</span><h2>The title, half under water.</h2><p>Not part of the logo. The submerged look works better as a moment in the game than as a mark. The title stands on the waterline, the tide rises through the letters, and their reflection ripples beneath. It uses whichever direction is selected.</p></div>
+      <div class="card" style="padding:0"><div class="stage outro" id="outroStage"></div></div>
+      <div class="actions"><button class="vbtn" type="button" id="tideIn">Let the tide in</button><button class="vbtn" type="button" id="tideOut">Let it go out</button></div>
+      <div class="grid2" style="margin-top:20px">
+        <div class="card"><h3>As a swept card</h3><p class="muted" style="margin-top:10px">The design bible already fades to black when Arthur is swept to the South Landing Dock, with no game-over screen. Hold the black for a second, bring the title up with the waterline already high, and let it fall as the dock fades in. The sea takes the title instead of the player.</p></div>
+        <div class="card"><h3>As an ending card</h3><p class="muted" style="margin-top:10px">Over the final shot of a quiet ending, let the tide rise through the title and hold. In Godot: render the title to a texture, draw it in a ColorRect whose shader discards pixels below a waterline uniform, and draw the same texture flipped below the line in slices with a sine offset. Tween the uniform up while the surf bed swells.</p></div>
       </div>
     </div>
 
@@ -416,7 +454,7 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
         <div class="card"><h3>Firewatch</h3><p class="muted" style="margin-top:8px">A plain, bold wordmark that also works as an icon. Took: a mark that stands alone. Left: the warm, graphic palette.</p></div>
         <div class="card"><h3>Edith Finch, Ethan Carter, Dear Esther</h3><p class="muted" style="margin-top:8px">Quiet, literary mystery. Took: restraint, wide-set serif capitals and a lot of empty dark.</p></div>
       </div>
-      <p class="caption" style="margin-top:14px">Routes we dropped. A stencil wordmark felt like a war game. Cutting the letters at the waterline turned the L into an I. The earlier half-sun mark was too gentle for the story.</p>
+      <p class="caption" style="margin-top:14px">Routes we dropped. A half-sun mark was too gentle for the story. Cutting the letters at the waterline turned the L into an I, and a rippled reflection under the logo felt fussy. The submerged look is kept for the outro card below.</p>
     </div>
 
     <div class="sec">
@@ -429,7 +467,7 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
     <div class="sec">
       <div class="hd"><span class="eyebrow">Type</span><h2>Three voices and one hand.</h2></div>
       <div class="grid2">
-        <div class="card spec"><span class="eyebrow">Display &middot; Marcellus</span><div class="big">What the tide leaves.</div><p class="muted">Title, headings, taglines. Widely tracked capitals for the title only; sentence case everywhere else.</p></div>
+        <div class="card spec"><span class="eyebrow">Display &middot; Cormorant Garamond</span><div class="big">What the tide leaves.</div><p class="muted">Title (direction B and H), headings and taglines, in semibold. Direction C uses Big Shoulders Stencil Display for the title only.</p></div>
         <div class="card spec"><span class="eyebrow">Text &middot; IBM Plex Sans</span><p style="font-size:1.25rem;line-height:1.4">The east bar closes at a quarter past twelve. Take the glass with you.</p><p class="muted">Store copy, interface text, captions. Regular and medium only.</p></div>
         <div class="card spec"><span class="eyebrow">Data &middot; IBM Plex Mono</span><p class="mono" style="font-size:1.1rem;line-height:1.5;letter-spacing:.04em">LOW 07:30 &nbsp;0.2 m<br>HIGH 13:42 &nbsp;4.2 m<br>BARS CLOSE &gt; 2.1 m</p><p class="muted">Anything the island measures: tide table, radio header, eyebrows. Tabular figures.</p></div>
         <div class="card spec"><span class="eyebrow">Hand &middot; Reenie Beanie</span><p style="font:400 2rem/1.1 var(--hand);color:var(--fog)">Glass 30.1 and steady. Fog, then.</p><p class="muted">Arthur's logbook only. Never for marketing headlines.</p></div>
@@ -476,7 +514,7 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
     <div class="hd" style="max-width:70ch;display:grid;gap:12px">
       <span class="eyebrow">Steam asset kit</span>
       <h2>Every capsule at Steam's size.</h2>
-      <p class="muted">These previews are the real compositions. Full-resolution PNGs and vector logos are in <span class="mono">marketing/steam/assets</span> and <span class="mono">marketing/steam/logo</span>. Run <span class="mono">node export.mjs</span> in <span class="mono">marketing/steam</span> to regenerate them after changing the art.</p>
+      <p class="muted">These previews are the real compositions. Full-resolution PNGs and vector logos are in <span class="mono">marketing/steam/assets/&lt;direction&gt;</span> and <span class="mono">marketing/steam/logo/&lt;direction&gt;</span>; art with no logo is in <span class="mono">assets</span>. Run <span class="mono">node export.mjs</span> in <span class="mono">marketing/steam</span> to regenerate them after changing the art.</p>
     </div>
     <div class="sec" style="padding-top:28px"><div class="assets" id="assetGrid"></div></div>
 
@@ -514,12 +552,33 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
   }
   window.addEventListener('hashchange', route); route();
 
-  /* ---- logos ---- */
-  $('#navmark').innerHTML = LT.logoSVG({ layout: 'mark', id: 'nv', reflect: false, beam: false });
-  $('#stMark').innerHTML = LT.logoSVG({ layout: 'mark', id: 'sm', reflect: false, beam: false });
-  $('#logoMain').innerHTML = LT.logoSVG({ id: 'lm' });
-  $('#logoInk').innerHTML = LT.logoSVG({ id: 'li', fill: P.night, onLight: true });
-  $('#logoMark').innerHTML = LT.logoSVG({ layout: 'mark', id: 'lk' });
+  /* ---- logo direction ---- */
+  let variant = 'b';
+  try { const sv = localStorage.getItem('lt-variant'); if (sv && LT.VARIANTS[sv]) variant = sv; } catch (e) {}
+  const COPY = {
+    b: 'Cormorant Garamond semibold, lowercase, lightly tracked, kerned and outlined. The i is the dotless form and the amber dot is the lamp, sized and placed from the font\'s own dot. A hairline sits under the baseline. The mark is the lowercase i with its lamp.',
+    c: 'Big Shoulders Stencil Display capitals, set wide, with one amber rule and a classification line in IBM Plex Mono at three quarters of the title width. The mark is an LT monogram over the same rule.',
+    h: 'Cormorant Garamond semibold capitals. The I is the lighthouse: the lamp burns above it and lays a thin beam across the title, over a hairline. The mark is a drawn tower with its lamp and beam.',
+  };
+  $('#dir-b').innerHTML = LT.logoSVG({ variant: 'b', id: 'db' });
+  $('#dir-c').innerHTML = LT.logoSVG({ variant: 'c', id: 'dc' });
+  $('#dir-h').innerHTML = LT.logoSVG({ variant: 'h', id: 'dh' });
+
+  /* ---- outro: the half-drowned title ---- */
+  const outro = $('#outroStage'); let rise = 0.12, raf = 0;
+  const drawOutro = () => { outro.innerHTML = LT.drownedSVG({ variant, rise, id: 'dr' }); };
+  function animateTo(target, ms) {
+    cancelAnimationFrame(raf);
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { rise = target; drawOutro(); return; }
+    const from = rise, t0 = performance.now();
+    (function step(t) {
+      const k = Math.min(1, (t - t0) / ms), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      rise = from + (target - from) * e; drawOutro();
+      if (k < 1) raf = requestAnimationFrame(step);
+    })(t0);
+  }
+  $('#tideIn').addEventListener('click', () => animateTo(0.62, 4200));
+  $('#tideOut').addEventListener('click', () => animateTo(0.12, 3000));
 
   /* ---- palette ---- */
   const sw = [
@@ -638,16 +697,38 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
   const grid = $('#assetGrid');
   kinds.forEach(([k, name, dims, note, span]) => {
     const d = document.createElement('div'); d.className = 'asset' + (span ? ' span' : '');
-    d.innerHTML = `<div class="frame" style="${k === 'logo_transparent' ? 'background:var(--night)' : ''}"><canvas></canvas></div><div class="nm"><b style="font-weight:500">${name}</b><span>${dims}</span></div><p>${note} <span class="mono">assets/${k}.png</span></p>`;
+    d.innerHTML = `<div class="frame" style="${k === 'logo_transparent' ? 'background:var(--night)' : ''}"><canvas></canvas></div><div class="nm"><b style="font-weight:500">${name}</b><span>${dims}</span></div><p>${note} <span class="mono" data-path></span></p>`;
     grid.appendChild(d);
     const c = d.querySelector('canvas'); const A = LT.ASSETS[k];
     const target = span ? 1100 : Math.min(A.w, 560); d._k = k; d._s = Math.min(1, target / A.w); d._c = c;
   });
-  async function renderAll() {
-    try { await Promise.all([document.fonts.load('400 40px Marcellus'), document.fonts.load('500 20px "IBM Plex Mono"')]); } catch (e) {}
-    // header capsule on the store page, then the kit
-    for (const d of grid.children) await LT.renderAsset(d._c, d._k, d._s);
+  let renderToken = 0;
+  async function renderCapsules() {
+    const t = ++renderToken;
+    try { await Promise.all([document.fonts.load('600 40px "Cormorant Garamond"'), document.fonts.load('500 20px "IBM Plex Mono"')]); } catch (e) {}
+    await LT.renderAsset($('#stCap'), 'header_capsule', 0.5, variant);
+    for (const d of grid.children) {
+      if (t !== renderToken) return;
+      d.querySelector('[data-path]').textContent = LT.ASSETS[d._k].shared ? `assets/${d._k}.png` : `assets/${variant}/${d._k}.png`;
+      if (LT.ASSETS[d._k].shared && d._done) continue;
+      await LT.renderAsset(d._c, d._k, d._s, variant); d._done = true;
+    }
   }
-  renderAll();
+  function applyVariant(v, persist) {
+    variant = v; LT.variant = v;
+    if (persist) { try { localStorage.setItem('lt-variant', v); } catch (e) {} }
+    document.querySelectorAll('[data-v]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+    $('#navmark').innerHTML = LT.logoSVG({ variant: v, id: 'nv', beam: false, line: false });
+    $('#stMark').innerHTML = LT.logoSVG({ variant: v, id: 'sm', beam: false, line: false });
+    $('#logoMain').innerHTML = LT.logoSVG({ variant: v, id: 'lm', beam: v === 'h' });
+    $('#logoInk').innerHTML = LT.logoSVG({ variant: v, id: 'li', fill: P.night, onLight: true });
+    $('#logoMark').innerHTML = LT.logoSVG({ variant: v, layout: 'mark', id: 'lk', beam: v === 'h' });
+    $('#variantTitle').textContent = LT.VARIANTS[v].label.replace('  ', ' \u00b7 ');
+    $('#variantCopy').textContent = COPY[v];
+    drawOutro();
+    renderCapsules();
+  }
+  document.querySelectorAll('[data-v]').forEach((b) => b.addEventListener('click', () => applyVariant(b.dataset.v, true)));
+  applyVariant(variant, false);
 })();
 </script>
