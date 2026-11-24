@@ -2,18 +2,18 @@
  "convs": {
   "morning_d1": [
    {
-    "text": "Gannet Rock, this is Station Penobscot. Radio check. Tide's dropping fast; if you want the outer stacks before noon, now's your window.",
+    "text": "Gannet Rock, this is Station Penobscot, radio check. Tide's dropping fast. If you want the outer stacks before noon, now's your window. Say something, Arthur, so I know the set works.",
     "priority": 2,
     "speaker": "clara",
     "options": [
      {
-      "text": "Copy, Clara. Lamp's steady, weights are wound. Heading out.",
-      "reply": "Roger. Give me a shout if anything strange washed up in last night's squall.",
+      "text": "Penobscot, Gannet Rock. Lamp's steady, weights wound. I've also located the coffee, which seemed the main thing.",
+      "reply": "Copy, that is the main thing. Give me a shout if anything strange washed up in last night's squall.",
       "trust": 1
      },
      {
-      "text": "Copy. I'll look around and radio if I find anything worth your time.",
-      "reply": "Worth my time is a low bar out here, Arthur. Anything you find, I'd like to hear about.",
+      "text": "Copy. I'll look around and radio if there's anything worth your time.",
+      "reply": "Worth my time is a low bar at this hour, Arthur. Anything you find, I'd like to hear about.",
       "trust": 0
      }
     ]
@@ -21,7 +21,7 @@
   ],
   "react_east_bar_first": [
    {
-    "text": "Careful crossing that bar, Arthur. Keep one eye on your pocket watch so you make it back before high tide.",
+    "text": "East bar. Watch in your hand, Arthur, not in your pocket. It's a long walk back when the water turns.",
     "priority": 0,
     "speaker": "clara",
     "options": []
@@ -29,7 +29,7 @@
   ],
   "react_west_bar_first": [
    {
-    "text": "West bar's narrower than the east, and it floods first. Mind the gulleys.",
+    "text": "West bar's narrower than the east, and it floods first. Mind the gullies.",
     "priority": 0,
     "speaker": "clara",
     "options": []
@@ -37,7 +37,7 @@
   ],
   "react_bar_rising": [
    {
-    "text": "Water's making, Arthur. You've maybe an hour of crossing left.",
+    "text": "Water's making. You've maybe an hour of crossing left. I'd start back.",
     "priority": 0,
     "speaker": "clara",
     "options": []
@@ -45,7 +45,7 @@
   ],
   "react_bar_closing": [
    {
-    "text": "Arthur, get off that bar. Now. I mean it.",
+    "text": "Arthur. Get off that bar. Now. I mean it.",
     "priority": 1,
     "speaker": "clara",
     "options": []
@@ -53,7 +53,7 @@
   ],
   "react_west_withheld": [
    {
-    "text": "You're out on the west stack. Is there anything about the east stack you'd like to tell me?",
+    "text": "You're on the west stack now. Anything from the east stack you'd like to put on the record?",
     "priority": 1,
     "speaker": "clara",
     "options": [
@@ -69,8 +69,8 @@
       ]
      },
      {
-      "text": "Not yet.",
-      "reply": "All right. Whenever you're ready.",
+      "text": "Not yet. I'd like to understand it first.",
+      "reply": "I know that one. All right, Arthur. Whenever you're ready.",
       "trust": -1
      }
     ]
@@ -78,7 +78,7 @@
   ],
   "react_cottage_curious": [
    {
-    "text": "Sounds quiet in there. Are you eating properly, Arthur?",
+    "text": "Quiet in there, teacher. Have you eaten?",
     "priority": 0,
     "speaker": "clara",
     "options": []
@@ -86,21 +86,21 @@
   ],
   "shipwreck": [
    {
-    "text": "You walked all the way out to the East Stack. What did you find wedged in the hull?",
+    "text": "You've been out on the East Stack a while. What's in the hull?",
     "priority": 1,
     "speaker": "clara",
     "options": [
      {
-      "text": "An orange canister stamped 'PROJECT PELAGIC, 1974'. It's in the satchel.",
-      "reply": "...Keep it dry, and bring it back before the bar floods. Don't open it out in the salt spray.",
+      "text": "An orange canister, stamped PROJECT PELAGIC, 1974. It's in the satchel.",
+      "reply": "...Keep it dry and bring it back before the bar floods. Don't open it out in the salt spray.",
       "trust": 1,
       "set": [
        "reported_canister"
       ]
      },
      {
-      "text": "Old trawler wreck, Clara. Nothing worth reporting.",
-      "reply": "Mm. Watch the water behind you; that bar vanishes fast.",
+      "text": "An old trawler. Rust and rope. Nothing to report.",
+      "reply": "Mm. Mind the water behind you. That bar goes fast.",
       "trust": -1,
       "set": [
        "withheld_canister"
@@ -116,16 +116,16 @@
     "speaker": "clara",
     "options": [
      {
-      "text": "A rusted acoustic buoy. The casing is warm, and there's a cassette taped inside the hatch.",
-      "reply": "Warm? ...Nobody's serviced those buoys since the station closed. Bring the tape home, Arthur, and head for high ground.",
+      "text": "A rusted acoustic buoy. The casing's warm, and there's a cassette taped inside the hatch.",
+      "reply": "Warm. ...That'll be the cold, probably. Metal does odd things. Bring the tape home, Arthur, and head for high ground.",
       "trust": 1,
       "set": [
        "reported_buoy"
       ]
      },
      {
-      "text": "Just kelp and barnacles. Eerie acoustics.",
-      "reply": "Don't linger. The Atlantic doesn't wait for sightseers.",
+      "text": "Kelp and barnacles. It's eerie in here, that's all.",
+      "reply": "Don't linger. The Atlantic doesn't wait for anyone enjoying the acoustics.",
       "trust": -1,
       "set": [
        "withheld_buoy"
@@ -136,7 +136,7 @@
   ],
   "evening_d1": [
    {
-    "text": "The beam looks beautiful from here. Thank you for telling me about that canister, Arthur. I know it isn't easy, handing over odd things you find.",
+    "text": "Beam looks beautiful from here. Thank you for telling me about that canister, Arthur. People don't always, when it's something odd.",
     "priority": 2,
     "speaker": "clara",
     "options": [
@@ -176,8 +176,8 @@
       ]
      },
      {
-      "text": "Nothing to report.",
-      "reply": "All right, Arthur. Goodnight.",
+      "text": "Nothing worth a radio call.",
+      "reply": "All right. Goodnight, Arthur.",
       "trust": -1
      }
     ],
@@ -192,13 +192,13 @@
     "speaker": "clara",
     "options": [
      {
-      "text": "Lonelier than I expected. But I like it.",
+      "text": "Quieter than I expected. I'm still deciding what I think about that.",
       "reply": "That's honest. Most keepers say it takes three days to stop listening for company.",
       "trust": 1
      },
      {
-      "text": "Busy. Plenty to log.",
-      "reply": "All business. Fine. Get some sleep, Arthur.",
+      "text": "Busy. A great deal to log.",
+      "reply": "All business. Fine. Get some sleep.",
       "trust": 0
      }
     ]
@@ -206,7 +206,7 @@
   ],
   "morning_d2": [
    {
-    "text": "Morning, Arthur. Slept better than I have in weeks, knowing someone out there tells me the truth. How's the rock?",
+    "text": "Slept better than I have in weeks. Funny what one straight answer does. How's the rock?",
     "priority": 2,
     "speaker": "clara",
     "options": [
@@ -227,12 +227,12 @@
     ]
    },
    {
-    "text": "Morning. Fog's lifting a little. Arthur, I'd rather you were straight with me about what's out there.",
+    "text": "Morning. Fog's lifting. I'll say this once, Arthur: I'd rather you were straight with me about what's out there.",
     "priority": 2,
     "speaker": "clara",
     "options": [
      {
-      "text": "I'll do better.",
+      "text": "I'll do better. I'm out of practice at being asked.",
       "reply": "That's all I ask.",
       "trust": 1
      },
@@ -271,8 +271,8 @@
     "speaker": "clara",
     "options": [
      {
-      "text": "Walt was talking to his wife. June. He said the Navy lied about the cable job.",
-      "reply": "...Yes. I know the name. Let me tell you about it, another night.",
+      "text": "It's a man talking to his wife. June. He says the Navy lied about the cable job. He says it very politely.",
+      "reply": "...Yes. I know the name. Another night, Arthur. I'll tell you another night.",
       "trust": 1,
       "set": [
        "told_clara_june"
@@ -280,7 +280,7 @@
      },
      {
       "text": "Just static and wind.",
-      "reply": "Static and wind. Of course.",
+      "reply": "Static and wind. Of course. Goodnight.",
       "trust": -2,
       "set": [
        "lied_about_tape"
@@ -321,7 +321,7 @@
     "speaker": "clara",
     "options": [
      {
-      "text": "Tired. The rock's getting to me.",
+      "text": "Tired. I'd forgotten how long a day is when nobody's asking you questions.",
       "reply": "It does that. Sleep.",
       "trust": 0
      },
@@ -348,7 +348,7 @@
       ]
      },
      {
-      "text": "Just rocks and kelp.",
+      "text": "Rocks and kelp, mostly.",
       "reply": "All right. Mind the tide on the way back.",
       "trust": -1,
       "set": [
@@ -393,7 +393,7 @@
   ],
   "react_south_reef_first": [
    {
-    "text": "The reef! I never thought the water dropped that far. You have an hour at best, Arthur.",
+    "text": "The reef. I've never seen it dry. You've got an hour at best, Arthur. One hour. I'm holding you to the table.",
     "priority": 1,
     "speaker": "clara",
     "options": []
@@ -401,7 +401,7 @@
   ],
   "react_reef_closing": [
    {
-    "text": "The water's turned on the reef. Get off it. Now.",
+    "text": "Arthur. The water's turned. Off the reef. Now.",
     "priority": 1,
     "speaker": "clara",
     "options": []
@@ -414,7 +414,7 @@
     "speaker": "clara",
     "options": [
      {
-      "text": "What was Array 2?",
+      "text": "What was Array 2? The tag was Navy issue.",
       "reply": "...Another night. I promise.",
       "trust": 1
      },
@@ -446,7 +446,7 @@
       ]
      },
      {
-      "text": "No.",
+      "text": "No. I'm tired, Clara.",
       "reply": "All right.",
       "trust": -1
      }
@@ -468,7 +468,7 @@
      },
      {
       "text": "Nothing worth reporting.",
-      "reply": "Alright, Arthur.",
+      "reply": "All right, Arthur.",
       "trust": -1
      }
     ]
@@ -486,8 +486,8 @@
       "trust": 1
      },
      {
-      "text": "June was careful. She wasn't careless.",
-      "reply": "No. She wasn't.",
+      "text": "June was careful. Everything I've heard says so.",
+      "reply": "No. She wasn't careless.",
       "trust": 1
      }
     ],
@@ -543,17 +543,17 @@
   ],
   "morning_d3": [
    {
-    "text": "Morning, Arthur. Fog's down to the waterline, so keep your ears open. One bell strike is north, two is east, three is south, four is west. You know I worry.",
+    "text": "Fog's down to the waterline. Listen, don't look. One strike is the north bell, two east, three south, four west. Say it back to me.",
     "priority": 2,
     "speaker": "clara",
     "options": [
      {
-      "text": "I'll steer by the bells.",
+      "text": "Nineteen years of school bells. I can manage four.",
       "reply": "Good. Don't trust the beam in this. Trust your ears.",
       "trust": 1
      },
      {
-      "text": "You worry a lot, for a dispatcher.",
+      "text": "You worry a good deal, for a dispatcher.",
       "reply": "It's the job. And... other things.",
       "trust": 1
      }
@@ -563,17 +563,17 @@
     ]
    },
    {
-    "text": "Morning. Dense fog. Bells: one strike north, two east, three south, four west. Don't go out blind.",
+    "text": "Dense fog. One strike north, two east, three south, four west. Don't go out blind.",
     "priority": 2,
     "speaker": "clara",
     "options": [
      {
-      "text": "Understood.",
+      "text": "Understood. North one, east two.",
       "reply": "Good.",
       "trust": 0
      },
      {
-      "text": "I'll go where I like.",
+      "text": "I've been told what to do by a great many people lately.",
       "reply": "Then go carefully.",
       "trust": -1
      }
@@ -582,7 +582,7 @@
   ],
   "react_fog_bells": [
    {
-    "text": "In this soup, find the bell before you trust your feet. Two strikes is the east buoy. You'd be crossing toward it.",
+    "text": "In this soup, find the bell before you trust your feet. Two strikes is the east buoy. That's the way you'd be crossing.",
     "priority": 0,
     "speaker": "clara",
     "options": []
@@ -590,12 +590,12 @@
   ],
   "morning_d4": [
    {
-    "text": "Gale warning's up, Arthur, and the bars are done for the day. Stay by the stove. I'll be on sixteen all day if you want company.",
+    "text": "Gale warning's up, Arthur, and the bars are done for the day. Stay by the stove. I'll be on sixteen all day. Company's allowed.",
     "priority": 2,
     "speaker": "clara",
     "options": [
      {
-      "text": "Then I'll want company.",
+      "text": "Then I'll take the company.",
       "reply": "Good. I'll call you at noon.",
       "trust": 1
      },
@@ -629,17 +629,17 @@
   ],
   "midday_d4": [
    {
-    "text": "Arthur, you still with me? The line's crackling. Anyone else would be climbing the walls by now.",
+    "text": "Arthur, you still with me? Line's crackling. Anyone else would be climbing the walls by now.",
     "priority": 1,
     "speaker": "clara",
     "options": [
      {
-      "text": "Snug. The lamp's trimmed and the stove's roaring.",
-      "reply": "Good. I'll keep the line open.",
+      "text": "Snug. Lamp's trimmed, stove's roaring. Have you eaten?",
+      "reply": "...Toast. Don't say it.",
       "trust": 0
      },
      {
-      "text": "It's too quiet in here. Talk to me.",
+      "text": "It's too quiet in here. Tell me something. Anything.",
       "reply": "...All right. Ask me anything. I'm not going anywhere in this weather either.",
       "trust": 1
      }
@@ -648,7 +648,7 @@
   ],
   "evening_d4": [
    {
-    "text": "Long day. Storms make people talk, don't they? My father worked the Pelagic boats, Arthur. Tom Dunmore. He never said much about 1974.",
+    "text": "Long day. Storms make people talk, don't they? My father worked the Pelagic boats, Arthur. Tom Dunmore. He never said much about 1974. He was about your age that winter.",
     "priority": 2,
     "speaker": "clara",
     "options": [
@@ -663,7 +663,7 @@
      },
      {
       "text": "Why are you telling me now?",
-      "reply": "Because it's blowing a gale and I'm tired of keeping it all inside.",
+      "reply": "Because it's blowing a gale and I'm tired of carrying it by myself.",
       "trust": 1,
       "set": [
        "clara_shared_father"
@@ -715,13 +715,13 @@
   ],
   "d4_why_post": [
    {
-    "text": "And you? Why would a man take a winter post alone, at the far end of the line?",
+    "text": "And you? Nobody takes a winter post at forty-one without a reason.",
     "priority": 2,
     "speaker": "clara",
     "options": [
      {
-      "text": "My wife, Maren, died in the autumn. I couldn't stay in the house.",
-      "reply": "...I'm sorry, Arthur. I didn't know. Thank you for telling me.",
+      "text": "My wife died in the autumn. Maren. I couldn't stay in the house.",
+      "reply": "...I'm sorry, Arthur. I didn't know. I'm glad you said it.",
       "trust": 2,
       "set": [
        "told_clara_wife"
@@ -776,7 +776,7 @@
   ],
   "morning_d6": [
    {
-    "text": "Cold one. Arthur, I owe you a straight conversation. Tonight, when the lamp's lit. I wanted you to know I mean it.",
+    "text": "Cold one. Arthur, I owe you a straight conversation. Tonight, when the lamp's lit. I wanted you to hear it from me first, so you'd know I mean it.",
     "priority": 2,
     "speaker": "clara",
     "options": [
@@ -806,8 +806,8 @@
       "trust": 1
      },
      {
-      "text": "Try harder.",
-      "reply": "I'll try.",
+      "text": "I'd like more than trying.",
+      "reply": "I know you would.",
       "trust": 0
      }
     ],
@@ -835,21 +835,21 @@
   ],
   "evening_d6": [
    {
-    "text": "All right, Arthur. You've earned this. My father piloted the boat that took June Haskell to the reef. He told the Navy the tide table said one hour. They said two. He waited offshore with his engine running and watched the water come over the bar. I've kept that buoy alive ever since. I tell myself the ping is her recorder.",
+    "text": "All right. My father piloted the boat that took June Haskell to the reef. He told the Navy the table said one hour. They said two. He held off the bar with his engine running and watched the water come over it. I've kept that buoy alive ever since. I tell myself the ping is her recorder.",
     "priority": 2,
     "speaker": "clara",
     "options": [
      {
-      "text": "It was grief, Clara. Not duty.",
-      "reply": "...Yes. It was.",
+      "text": "That was never duty, Clara. That's grief. I know it when I see it.",
+      "reply": "...Yes. It is.",
       "trust": 2,
       "set": [
        "clara_admitted"
       ]
      },
      {
-      "text": "You should have told me on day one.",
-      "reply": "I know. I couldn't.",
+      "text": "You could have told me on day one.",
+      "reply": "I know. I couldn't. I didn't know you yet.",
       "trust": 0,
       "set": [
        "clara_admitted"
@@ -861,7 +861,7 @@
     ]
    },
    {
-    "text": "Arthur, I can tell you some of it. My father was on the boats. There was an accident in '74, and the Navy buried it. I keep the buoy running because... because I can't stop.",
+    "text": "I can tell you some of it. My father was on the boats. There was an accident in '74 and the Navy buried it. I keep the buoy running because... I can't stop. That's as far as I can go tonight.",
     "priority": 2,
     "speaker": "clara",
     "options": [
@@ -892,8 +892,8 @@
     "speaker": "clara",
     "options": [
      {
-      "text": "I found your recording in the west buoy, Clara.",
-      "reply": "...You had no right. Fine. My father piloted the boat. That's all I'll say.",
+      "text": "I found your tape in the west buoy, Clara. Your voice. I've heard it.",
+      "reply": "...That wasn't yours to find. Fine. My father piloted the boat. That's all I'll say.",
       "trust": 1,
       "set": [
        "clara_partial"
@@ -915,12 +915,12 @@
   ],
   "morning_d7": [
    {
-    "text": "Last morning of your watch, Arthur. I wanted to hear your voice before the relief boat.",
+    "text": "Last day. Funny. I've talked to you more than I talk to anyone ashore.",
     "priority": 2,
     "speaker": "clara",
     "options": [
      {
-      "text": "Hearing yours, too.",
+      "text": "Same here. I don't think I've talked this much since the classroom.",
       "reply": "Then we're square.",
       "trust": 1
      },
@@ -974,12 +974,12 @@
   ],
   "evening_d7": [
    {
-    "text": "Light's on. The relief boat's due at first light, Arthur. You hold June's tapes, and Walt's, and my father's. Whatever you decide, I'll abide by it.",
+    "text": "Light's on. Relief boat's due at first light. You hold June's tapes, and Walt's, and my father's. Whatever you decide, I'll abide by it.",
     "priority": 2,
     "speaker": "clara",
     "options": [
      {
-      "text": "Send them to June's sister, Ruth Whitcomb, in Providence. She should hear them.",
+      "text": "I'm sending them to Ruth Whitcomb, in Providence. She's waited twenty-four years to hear her sister.",
       "reply": "...Yes. I'll write the cover letter myself.",
       "trust": 0,
       "set": [
@@ -988,7 +988,7 @@
       "next": "end_a_high"
      },
      {
-      "text": "Let the past lie. We let the buoy go quiet, and keep this between us.",
+      "text": "Let the buoy go quiet, Clara. The tapes go back in the locker. This stays between us.",
       "reply": "...Then I'll cut the supply tonight. Thank you, Arthur.",
       "trust": 0,
       "set": [
@@ -1002,12 +1002,12 @@
     ]
    },
    {
-    "text": "Light's on. The relief boat's due at first light. You know enough to decide. What will you do?",
+    "text": "Light's on. Relief boat's due at first light. You know enough to decide. What will you do?",
     "priority": 2,
     "speaker": "clara",
     "options": [
      {
-      "text": "Send the tapes to June's family. Ruth Whitcomb, in Providence.",
+      "text": "I'm sending the tapes to June's family. Ruth Whitcomb, in Providence.",
       "reply": "Do what you must. I'll sign whatever you need.",
       "trust": 0,
       "set": [
@@ -1016,7 +1016,7 @@
       "next": "end_a_mid"
      },
      {
-      "text": "I'm filing a report with the Coast Guard, Clara. About the buoy, and about 1974.",
+      "text": "I'm filing a report, Clara. The buoy, and 1974. I'm sorry.",
       "reply": "...I understand.",
       "trust": 0,
       "set": [
@@ -1057,7 +1057,7 @@
   ],
   "end_a_high": [
    {
-    "text": "Goodnight, Arthur. And thank you, for all of it. I'll see you off at the boat.",
+    "text": "Goodnight, Arthur. Thank you, for all of it. Get some sleep before the boat.",
     "priority": 2,
     "speaker": "clara",
     "options": []
@@ -1081,7 +1081,7 @@
   ],
   "end_b": [
    {
-    "text": "Supply's cut at my end. The buoy will go quiet by morning. Goodnight, Arthur.",
+    "text": "I've cut the supply. It'll go quiet by morning. Goodnight, Arthur.",
     "priority": 2,
     "speaker": "clara",
     "options": []
@@ -1089,7 +1089,7 @@
   ],
   "end_c": [
    {
-    "text": "Goodnight, Arthur.",
+    "text": "Station Penobscot, out.",
     "priority": 2,
     "speaker": "clara",
     "options": []
@@ -1123,7 +1123,7 @@
   ],
   "ending_b_radio": [
    {
-    "text": "It's gone quiet, Arthur. I can't hear the ping any more. It's so quiet. I have the relief boat on my board.",
+    "text": "It's gone quiet, Arthur. I can't hear the ping any more. ...I have the relief boat on my board.",
     "priority": 2,
     "speaker": "clara",
     "options": []
@@ -1131,7 +1131,7 @@
   ],
   "ending_c_radio": [
    {
-    "text": "Only static on sixteen. No one answers.",
+    "text": "Penobscot, Gannet Rock. Penobscot, Gannet Rock. ...Only static on sixteen.",
     "priority": 2,
     "speaker": "arthur",
     "options": []
@@ -1144,13 +1144,13 @@
     "speaker": "clara",
     "options": [
      {
-      "text": "Wound it an hour ago. Lens is turning smooth.",
+      "text": "Wound an hour ago. The lens is turning smooth.",
       "reply": "Good. Keep an eye on the tide chart. Low water should expose the outer bars right about now.",
       "trust": 0
      },
      {
-      "text": "Fog's thick enough to chew, but the lamp cuts right through.",
-      "reply": "That's why they pay you the big bucks. Stay off the sandbars once the tide turns.",
+      "text": "Fog you could lean on, and the lamp's cutting through it anyway.",
+      "reply": "That's what she's for. Stay off the sandbars once the tide turns.",
       "trust": 1
      }
     ]
@@ -1163,13 +1163,13 @@
     "speaker": "clara",
     "options": [
      {
-      "text": "Stove's roaring and coffee's on. Plenty of fuel.",
+      "text": "Stove's lit, coffee's on, fuel's plentiful.",
       "reply": "Jealous. All I've got is burnt machine coffee and static on channel 16.",
       "trust": 1
      },
      {
       "text": "Found some old 1970s oceanography logs on the shelf.",
-      "reply": "Huh... yeah, the university used Gannet Rock before automation. Mostly weather balloons and drift buoys.",
+      "reply": "Huh. Yeah, the university had the rock before automation. Weather balloons, drift buoys, that kind of thing.",
       "trust": 0
      }
     ]
@@ -1177,7 +1177,7 @@
   ],
   "sandbar_warning": [
    {
-    "text": "Careful crossing that sandbar, Arthur. Keep one eye on your pocket watch so you make it back before high tide.",
+    "text": "Watch in your hand, Arthur, not your pocket. Make it back before the tide does.",
     "priority": 0,
     "speaker": "clara",
     "options": []
@@ -1190,13 +1190,13 @@
     "speaker": "clara",
     "options": [
      {
-      "text": "Misjudged the swell. Back on the dock, just soaked boots.",
-      "reply": "Watch that pocket watch! Once the water tops two meters those bars are no place to be.",
+      "text": "Back on the dock. Wet to the knees and rather embarrassed.",
+      "reply": "Embarrassed is fine. Embarrassed is alive. Once the water tops two meters those bars are no place to be.",
       "trust": 0
      },
      {
-      "text": "I'm fine, Clara. Water came in faster than the chart predicted.",
-      "reply": "Tides don't mess around out there. Wait for falling water before crossing again.",
+      "text": "I'm fine. The water came in faster than the chart said.",
+      "reply": "It always does. The chart's an average; the sea isn't. Wait for falling water before you cross again.",
       "trust": 0
      }
     ]

@@ -172,6 +172,17 @@ Canon facts come from `narrative_outline.md` and the tapes in `dialogue/dialogue
 
 ---
 
+## The age gap: Arthur 41, Clara 28
+
+Thirteen years. It matters because it **inverts the usual authority**: the younger woman knows the sea, the radio and the rules; the older man is the novice, and the one who has already buried a wife. Neither of them is comfortable with that.
+
+- **She is his superior on the rock.** She gives the orders (tide, bells, "off the reef"). He takes them without fuss, because he's a teacher and respects people who know their subject.
+- **He is the age her father was in 1974.** Tom was about 40. Clara never says "you remind me of my father," but she says "he was about your age that winter" (Day 4), and her protectiveness has an edge of dread. She is watching a man of that age walk out onto the same reef.
+- **He remembers what she can't.** In 1974 Arthur was seventeen, and Clara was four. She grew up inside the silence that followed. He grew up reading about the era. His references are older (school bells, chalk, cassettes); hers are procedural and local.
+- **Teasing, not flirting.** She calls him "teacher" once, early, and means it kindly. He catches himself being paternal ("Have you eaten?") and is told off for it, then borrows her own tell back at her on Day 4 ("...Toast. Don't say it."). Humour flows both ways.
+- **Neither patronises the other.** Arthur never calls her "kid" or "young lady." Clara never calls him "sir" or "old man." If a line sounds like a parent, a boss or a suitor, rewrite it.
+- **Grief at different distances.** Arthur's is fresh and he hides it in precision. Clara's is twenty-four years old and she hides it in routine. He learns from her how long it lasts; she learns from him that it can be said out loud.
+
 ## How the two leads play against each other
 
 | | Arthur | Clara |
