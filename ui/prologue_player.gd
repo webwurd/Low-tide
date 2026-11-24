@@ -31,7 +31,9 @@ var chosen_flags: Array[String] = []
 var trust_delta := 0
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Already in the tree here, so offsets must be set too (plain
+	# set_anchors_preset would keep the current zero-size rect).
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_shade = ColorRect.new()
 	_shade.color = Color(0.02, 0.03, 0.04, 0.0)

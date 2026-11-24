@@ -13,7 +13,9 @@ var _settings: PanelContainer
 var _first_focus: Button
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Already in the tree here, so offsets must be set too (plain
+	# set_anchors_preset would keep the current zero-size rect).
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	# Soft left-side shade so the type sits on the scene, not on a box.
 	var shade := TextureRect.new()

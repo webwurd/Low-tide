@@ -462,6 +462,7 @@ func _process(delta: float) -> void:
 	if Input.is_action_just_pressed("radio_dismiss"): RadioSystem.dismiss()
 
 	_bino.visible = player.binoculars
+	_reticle.visible = not _title.visible and not prologue.visible
 	_reticle.get_child(0).visible = not player.binoculars
 	if player.binoculars:
 		_bino_range.text = "DIST: %d m" % player.bino_dist if player.bino_dist >= 0 else "DIST: --- m"
