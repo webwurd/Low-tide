@@ -178,7 +178,7 @@ func _build_lighthouse() -> void:
 	set_lamp(false, false, 1.0)
 
 	tower_door = _interactable("lighthouse", "Enter the lighthouse", Vector3(0, 11.3, -1.2), 3.2, "lighthouse")
-	_bino_target("GANNET ROCK LIGHTHOUSE (1884)", Vector3(0, 30, -6))
+	_bino_target("Gannet Rock lighthouse (1884)", Vector3(0, 30, -6))
 
 # --- cottage -----------------------------------------------------------
 
@@ -246,6 +246,7 @@ func _tide_marks(base: Vector3) -> void:
 			lbl.font_size = 64
 			lbl.pixel_size = 0.004
 			lbl.modulate = Color("e8dfc8")
+			UiFonts.style_3d(lbl, "ui")
 			lbl.position = base + Vector3(-0.3, h + 0.12, 0.0)
 			lbl.rotation.y = -PI / 2.0
 			add_child(lbl)
@@ -263,7 +264,7 @@ func _build_wreck() -> void:
 	var wreck_it := _interactable("shipwreck", "Take the canister from the hull", Vector3(78.5, 6.2, 8.2), 5.5, "shipwreck")
 	wreck_it.give_item = "canister"
 	wreck_it.visible_fn = func(): return not GameState.has_item("canister")
-	_bino_target("EAST SEA STACK // UNCHARTED WRECK", Vector3(76, 8, 6))
+	_bino_target("East sea stack: uncharted wreck", Vector3(76, 8, 6))
 
 # --- west sea stack: echo cave -----------------------------------------
 
@@ -290,7 +291,7 @@ func _build_cave() -> void:
 	var hydro := Hydrophone.new()
 	hydro.position = Vector3(-72.5, 6.7, -8.0)
 	add_child(hydro)
-	_bino_target("WEST SEA STACK // ECHO SEA CAVE", Vector3(-74, 9, -8))
+	_bino_target("West sea stack: echo cave", Vector3(-74, 9, -8))
 
 func _build_rocks() -> void:
 	var rng := RandomNumberGenerator.new()
@@ -337,7 +338,7 @@ func _build_cove() -> void:
 	var tin := _interactable("tin", "Open the biscuit tin", hut_pos + Vector3(-2.7, 1.2, 0.8), 1.8, "")
 	tin.give_item = "tape_5"
 	tin.visible_fn = func(): return GameState.has_flag("heard_tape_4") and not GameState.has_item("tape_5")
-	_bino_target("NORTH COVE // CABLE LANDING", Vector3(-17, 5, -52))
+	_bino_target("North cove: cable landing", Vector3(-17, 5, -52))
 
 # --- south reef: cable vault ---------------------------------------------
 
@@ -356,16 +357,16 @@ func _build_vault() -> void:
 	var it := _interactable("vault", "Open the hatch and look inside", Vector3(c.x - 1.6, base_y + 1.3, c.y - 1.2), 3.0, "vault")
 	it.give_item = "tape_2"
 	it.visible_fn = func(): return not GameState.has_item("tape_2")
-	_bino_target("SOUTH REEF // CABLE VAULT", Vector3(c.x, 3, c.y))
+	_bino_target("South reef: cable vault", Vector3(c.x, 3, c.y))
 
 # --- bell buoys (navigate by ear: 1 N, 2 E, 3 S, 4 W) ---------------------
 
 func _build_buoys() -> void:
 	var defs := [
-		["BELL BUOY (1) NORTH", 1, 440.0, Vector3(10, 0, -88)],
-		["BELL BUOY (2) EAST", 2, 523.0, Vector3(92, 0, -34)],
-		["BELL BUOY (3) SOUTH", 3, 349.0, Vector3(-26, 0, 90)],
-		["BELL BUOY (4) WEST", 4, 392.0, Vector3(-92, 0, 30)],
+		["Bell buoy 1 (north)", 1, 440.0, Vector3(10, 0, -88)],
+		["Bell buoy 2 (east)", 2, 523.0, Vector3(92, 0, -34)],
+		["Bell buoy 3 (south)", 3, 349.0, Vector3(-26, 0, 90)],
+		["Bell buoy 4 (west)", 4, 392.0, Vector3(-92, 0, 30)],
 	]
 	for d in defs:
 		var b := BellBuoy.new()
@@ -408,13 +409,14 @@ func _build_reef_markers() -> void:
 	_mesh(sign_node, _cyl(0.12, 0.14, post_h, 6), wood, Vector3(0, post_h / 2.0, 0))
 	_mesh(sign_node, _box(Vector3(4.2, 1.8, 0.12)), _mat(Color("c9c2ac"), 0.9), Vector3(0, post_h - 0.6, -0.2))   # board stands proud of the post
 	var text := Label3D.new()
-	text.text = "CAUSEWAY\nSPRING LOW WATER ONLY\nKEEP BETWEEN THE POLES"
+	text.text = "Causeway.\nSpring low water only.\nKeep between the poles."
 	text.font_size = 56
 	text.pixel_size = 0.0052
 	text.modulate = Color("2b2418")
 	text.outline_size = 0
+	UiFonts.style_3d(text, "display")
 	text.position = Vector3(0, post_h - 0.6, -0.28)
 	text.rotation.y = PI               # faces north, toward Arthur coming off the island
 	sign_node.add_child(text)
 	var it := _interactable("reef_sign", "Read the sign", Vector3(sp.x, base_y + 1.5, sp.y), 3.5, "")
-	it.used.connect(func(): GameState.note("Painted board: CAUSEWAY. SPRING LOW WATER ONLY. KEEP BETWEEN THE POLES."))
+	it.used.connect(func(): GameState.note("Painted board: Causeway. Spring low water only. Keep between the poles."))

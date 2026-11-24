@@ -37,4 +37,4 @@ func hhmm() -> String:
 	var h24 := m / 60
 	var h12 := h24 % 12
 	if h12 == 0: h12 = 12
-	return "%02d:%02d %s" % [h12, m % 60, "PM" if h24 >= 12 else "AM"]
+	return "%d:%02d %s" % [h12, m % 60, "pm" if h24 >= 12 else "am"]

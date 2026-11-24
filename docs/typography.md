@@ -1,30 +1,30 @@
-# Typography (decision deferred to M7)
+# Typography
 
-**Status:** every piece of UI text currently uses Godot's built-in default font. It is a placeholder.
-**Direction from the project owner:** use something *different and fresh*, not the stock default and not a generic "retro typewriter" look.
+**Status:** decided and applied (M7c). Set B, chosen by the project owner from three specimens.
 
-## Where text appears today (all in `ui/hud.gd` unless noted)
-| Surface | Notes |
-|---|---|
-| Title + setup tutorial (controls table, "a day on Gannet Rock") | Large display title, then a 3-column key table: needs clear, legible body text |
-| Radio panel (Clara) + reply options | Short spoken lines; most-read text in the game |
-| Interact prompt, Arthur's inner-voice toasts, hold bar | Small, over busy 3D scenes: needs strong legibility |
-| Day cards ("DAY 2", title, weather) | Display use |
-| Journal modal: log, satchel, tapes | Paper-coloured page; long-form reading; good candidate for a handwritten/hand-set face |
-| Tide table (paper modal) | Tabular numerals matter |
-| Tape panel (Walt's subtitles) | Could differ from Clara's radio text to signal a different voice/medium |
-| Binocular overlay readout, Assist HUD, pocket watch | Instrument-style numerals and caps |
-| `Label3D` numerals on pier pilings (`world/island.gd`) | Painted marks: large, simple digits |
+## Fonts
+All three families are SIL Open Font License 1.1, bundled in `ui/fonts/` (WOFF, imported by Godot). The full licence text and each font's own copyright line are in `docs/licences.md`.
 
-## Requirements for the chosen font(s)
-- Licence allows bundling and redistribution in a commercial game (SIL OFL or equivalent). Record the licence in `docs/licences.md`.
-- Covers Latin + punctuation used in the script (curly quotes, em dash, ellipsis) and **tabular figures** for the tide table and clock.
-- Reads clearly at 12-18 px over fog and dark interiors, at Steam Deck resolution (1280x800).
-- Works with Godot's `FontFile`/`FontVariation` (TTF/OTF; variable fonts are fine).
+| Role (`UiFonts`) | Family and file | Used for |
+|---|---|---|
+| `display` | Newsreader SemiBold (`Newsreader-SemiBold.woff`) | Game title, day cards, ending names, menu and journal headings |
+| `ui` | IBM Plex Mono Regular (`IBMPlexMono-Regular.woff`) | HUD, radio panel, prompts, menus, settings, tutorial. Also `ThemeDB.fallback_font`, so any unstyled control picks it up |
+| `paper` | Caveat Medium (`Caveat-Medium.woff`) | Journal entries and the tide table, i.e. text written on paper in the fiction |
+| `tape` | Newsreader Italic (`Newsreader-Italic.woff`) | Subtitles for Walt's, June's, Tom's and Clara's tapes, so recordings read as a different voice from the live radio |
 
-## Plan for M7
-1. Shortlist 3-4 candidate families and test them in-engine on the real screens listed above (screenshots via `tests/screenshot.gd`).
-2. Probably a **small system of 2-3 faces**, not one: e.g. a distinctive display face (title, day cards), a highly legible UI/body face (radio, prompts, tutorial), and an optional hand-set or handwritten face for diegetic paper (journal, tide table, tape labels). One of each, to keep it cohesive.
-3. Centralise: create a single `Theme` resource (`ui/theme.tres`) assigned at the HUD root, so fonts and sizes live in one place instead of per-label overrides (today `_label()` in `hud.gd` sets size/colour per call).
-4. Add a font-scale / "larger text" accessibility option alongside the M7 Settings menu.
-5. Update the tutorial screen, Label3D tide marks and binocular overlay to use the new faces.
+`UiFonts.get_font(role)` returns null if a file is missing or not yet imported, which falls back to the engine font. Nothing breaks without the files.
+
+## Capitalisation rule
+Use standard writing conventions. **No all-caps UI text.** The first version had forced capitals everywhere (`LOW TIDE`, `NEW WATCH`, `CH-16 // CLARA`) and the project owner found it "very AI looking or synthetic".
+
+- Titles, buttons, menu headings, labels: sentence case, or normal title case for proper names (Low Tide, New watch, Keeper's journal, The Right Address).
+- Separators are punctuation, not slashes or dashes with spaces: `Tape 1: Walt, January 1976`, `Relief boat, first light`.
+- Keep key names and genuine acronyms as written: E, Q, LB, LT, L3, F1, W A S D, MSAA, FXAA.
+- Text that is painted or stamped inside the fiction (for example the stamped canister) may stay in capitals. Mark those with a comment.
+- A test (`tests/run_tests.gd`, section "typography") walks the HUD and menu control trees plus ending names, tape titles, speaker labels, tutorial pages and tide labels, and fails on any string that reads as shouting. If a new screen needs a legitimate all-caps word, adjust `_shouty()` rather than switching the test off.
+
+## Layout notes
+IBM Plex Mono is wide, so text wraps earlier than the old default font. Panels were widened (radio 780, tutorial 860x460, journal modal 780x440, settings 940x580) and long text wraps rather than clips. A test checks that the radio panel stays inside 1280x720 with the longest line at subtitle sizes 1.0, 1.5 and 1.8.
+
+## Not verified here
+I can check fit, wrapping and capitalisation in screenshots. Whether the typography *feels* right in the game is the owner's call. The user can swap any role by changing `UiFonts.ROLE_FILES`.

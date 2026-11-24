@@ -2,13 +2,13 @@ class_name Conversations
 ## Loads and resolves conversations from dialogue/dialogue.json (the single
 ## source of truth shared with the Unity port).
 
-const SPEAKER := "CH-16 // CLARA (COAST GUARD DISPATCH)"
+const SPEAKER := "Clara, Coast Guard dispatch (channel 16)"
 
 static var _json: Dictionary = {}
 static var _loaded := false
 
 const JSON_PATH := "res://dialogue/dialogue.json"
-const SPEAKERS := {"clara": SPEAKER, "arthur": "ARTHUR"}
+const SPEAKERS := {"clara": SPEAKER, "arthur": "Arthur"}
 
 static func reload() -> void:
 	_loaded = false

@@ -247,6 +247,12 @@ func catalog() -> Dictionary:
 
 # ---- music stings (rendered in the background so startup does not stall) ----
 
+## Worker tasks must be collected before exit, or the engine never shuts down.
+func _exit_tree() -> void:
+	for id in _sting_tasks.values():
+		WorkerThreadPool.wait_for_task_completion(id)
+	_sting_tasks.clear()
+
 func _start_sting_render() -> void:
 	for n in StingSynth.NAMES:
 		_sting_tasks[n] = WorkerThreadPool.add_task(_render_sting.bind(n), false, "render " + n)

@@ -16,12 +16,12 @@ var _tab_keys: Array = []              # per tab: settings keys on it (for "rese
 
 func _ready() -> void:
 	theme = UiTheme.build()
-	custom_minimum_size = Vector2(860, 560)
+	custom_minimum_size = Vector2(940, 580)
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 10)
 	add_child(root)
 	var title := Label.new()
-	title.text = "SETTINGS"
+	title.text = "Settings"
 	UiFonts.style(title, "display", 28)
 	root.add_child(title)
 	tabs = TabContainer.new()
