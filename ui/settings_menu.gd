@@ -265,19 +265,25 @@ func is_capturing() -> bool:
 func _input(event: InputEvent) -> void:
 	if _capture_action == "" or not visible:
 		return
+	# Esc cancels for either device, so a keyboard-only player is never stuck
+	# in a gamepad capture. Only events we actually use are marked handled.
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_ESCAPE:
+		_end_capture("Cancelled.")
+		get_viewport().set_input_as_handled()
+		return
 	var ev: InputEvent = null
 	if _capture_dev == Settings.KB:
 		if event is InputEventKey and event.pressed and not event.echo:
-			if event.physical_keycode == KEY_ESCAPE:
-				_end_capture("Cancelled.")
-				get_viewport().set_input_as_handled()
-				return
 			ev = InputEventKey.new()
 			(ev as InputEventKey).physical_keycode = event.physical_keycode
 		elif event is InputEventMouseButton and event.pressed:
 			ev = InputEventMouseButton.new()
 			(ev as InputEventMouseButton).button_index = event.button_index
 	else:
+		if event is InputEventMouseButton and event.pressed:
+			_end_capture("Cancelled.")      # a click anywhere cancels a gamepad capture
+			get_viewport().set_input_as_handled()
+			return
 		if event is InputEventJoypadButton and event.pressed:
 			ev = InputEventJoypadButton.new()
 			(ev as InputEventJoypadButton).button_index = event.button_index
@@ -286,14 +292,18 @@ func _input(event: InputEvent) -> void:
 			ev = InputEventJoypadMotion.new()
 			(ev as InputEventJoypadMotion).axis = event.axis
 			(ev as InputEventJoypadMotion).axis_value = 1.0
-	if ev == null:
+	if ev != null:
+		apply_capture(ev)
 		get_viewport().set_input_as_handled()
-		return
-	apply_capture(ev)
-	get_viewport().set_input_as_handled()
+	elif event is InputEventKey and event.pressed:
+		get_viewport().set_input_as_handled()    # swallow stray key presses so Enter/Space don't hit buttons
 
 ## Applies a captured event to the action being rebound (also used by tests).
 func apply_capture(ev: InputEvent) -> void:
+	var blocked := Settings.rebind_blocked(_capture_action, ev)
+	if blocked != "":
+		_end_capture(blocked)
+		return
 	var cleared := Settings.rebind(_capture_action, ev)
 	_end_capture("Unbound from: %s" % ", ".join(PackedStringArray(cleared)) if cleared.size() > 0 else "Bound.")
 

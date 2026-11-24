@@ -58,7 +58,7 @@ func add_log(day: int, text: String) -> void:
 func to_dict() -> Dictionary:
 	return {"discovered": discovered, "discovered_day": discovered_day, "flags": flags,
 		"trust": trust, "logbook": logbook, "items": items, "flag_day": flag_day,
-		"reaction_last": reaction_last}
+		"reaction_last": reaction_last, "ending": ending}
 
 func from_dict(d: Dictionary) -> void:
 	reset()
@@ -73,6 +73,7 @@ func from_dict(d: Dictionary) -> void:
 	for k in d.get("flag_day", {}):
 		flag_day[k] = int(d["flag_day"][k])
 	reaction_last = d.get("reaction_last", {})
+	ending = String(d.get("ending", ""))
 	logbook = []
 	for e in d.get("logbook", []):
 		logbook.append({"day": int(e["day"]), "text": String(e["text"])})
