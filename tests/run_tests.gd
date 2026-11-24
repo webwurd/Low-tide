@@ -633,7 +633,7 @@ func _run() -> void:
 	print("== A2: audio catalog sanity")
 	var catalog: Dictionary = root.get_node("AudioDirector").catalog()
 	ok(catalog.size() >= 28, "audio catalog lists %d sounds" % catalog.size())
-	var loops := ["surf_bed", "wind_bed", "tape_hiss", "boat_engine"]
+	var loops := ["surf_bed", "surf_deep", "surf_foam", "wind_bed", "wind_whistle", "tape_hiss", "boat_engine"]
 	var all_sane := true
 	for nm in catalog:
 		var st := _audio_stats(catalog[nm])
@@ -831,7 +831,10 @@ func _run() -> void:
 	cfg.set_v("vol_master", 0.25)
 	ok(absf(AudioServer.get_bus_volume_db(0) - linear_to_db(0.25)) < 0.01, "master volume drives the Master bus")
 	var audio := root.get_node("AudioDirector")
-	ok(audio._surf.bus == "Ambience" and audio._hiss.bus == "Radio", "ambient beds are on Ambience, tape hiss on Radio")
+	ok(audio._surf.bus == "Sea" and audio._wind.bus == "Wind" and audio._hiss.bus == "Radio", "sea beds on Sea, wind on Wind, tape hiss on Radio")
+	var sea_i := AudioServer.get_bus_index("Sea")
+	var wind_i := AudioServer.get_bus_index("Wind")
+	ok(sea_i != -1 and wind_i != -1 and AudioServer.get_bus_send(sea_i) == "Ambience" and AudioServer.get_bus_send(wind_i) == "Ambience", "Sea and Wind buses feed Ambience, so the Ambience volume governs them")
 	audio.play_sfx("wood_0")
 	cfg.reset_defaults()
 
@@ -1278,6 +1281,109 @@ func _run() -> void:
 	cfg.reset_defaults()
 	main.hud.apply_text_scale()
 	main.hud._radio.visible = false
+
+	print("== living sea and wind")
+	var ad := root.get_node("AudioDirector")
+	var lens: Array = ad.BED_SECONDS.values()
+	var distinct := true
+	for i in lens.size():
+		for j in lens.size():
+			if i != j:
+				var r: float = lens[i] / lens[j]
+				if absf(r - roundf(r)) < 0.02:
+					distinct = false
+	ok(distinct, "bed loops have different lengths, none a multiple of another")
+	ok(ad.catalog()["surf_bed"].get_length() > 6.0 and ad.catalog()["tape_hiss"].get_length() > 5.0, "no short beds left (surf %.1f s, tape hiss %.1f s)" % [ad.catalog()["surf_bed"].get_length(), ad.catalog()["tape_hiss"].get_length()])
+	# Simulate ten minutes of an ordinary day.
+	var sw = SeaWind.new(7)
+	sw.set_weather(0.14, 0.0, 0.011, false)
+	var series: Array = []
+	var starts: Array = []
+	var prev_n := 0
+	var big := 0
+	var gust_max := 0.0
+	var gust_min := 1.0
+	for i in 6000:
+		sw.step(0.1)
+		series.append(sw.mix()["wash"])
+		if sw._waves.size() > prev_n:
+			starts.append(i * 0.1)
+			if sw._waves[sw._waves.size() - 1][1] > 0.8:
+				big += 1
+		prev_n = sw._waves.size()
+		if i > 300:
+			gust_max = maxf(gust_max, sw.mix()["wind"]); gust_min = minf(gust_min, sw.mix()["wind"])
+	var gaps: Array = []
+	for i in range(1, starts.size()):
+		gaps.append(starts[i] - starts[i - 1])
+	var gmin: float = gaps.min()
+	var gmax: float = gaps.max()
+	ok(starts.size() > 40 and gmax - gmin > 4.0, "waves arrive irregularly (%d waves in 10 min, gaps %.1f-%.1f s)" % [starts.size(), gmin, gmax])
+	ok(big >= 3, "bigger sets roll in now and then (%d big waves)" % big)
+	ok(gust_max - gust_min > 0.25, "the wind has gusts and lulls (%.2f..%.2f)" % [gust_min, gust_max])
+	# No lag between 6 s (longer than one wave) and 2 minutes makes the sea repeat itself.
+	var sn := series.size()
+	var mean := 0.0
+	for v in series: mean += v
+	mean /= sn
+	var var_sum := 0.0
+	for v in series: var_sum += (v - mean) * (v - mean)
+	var sim_worst := 0.0
+	var sim_lag := 0
+	for lag in range(60, 1200, 7):
+		var c := 0.0
+		for i in sn - lag:
+			c += (series[i] - mean) * (series[i + lag] - mean)
+		c /= var_sum * float(sn - lag) / sn
+		if c > sim_worst:
+			sim_worst = c; sim_lag = lag
+	ok(sim_worst < 0.6, "the sea never repeats itself (worst self-similarity %.2f at %.1f s)" % [sim_worst, sim_lag * 0.1])
+	# Weather.
+	var storm_p: Dictionary = SeaWind.profile_for(0.45, 8.0, 0.017, true)
+	var calm_p: Dictionary = SeaWind.profile_for(0.06, 0.0, 0.006, false)
+	var fog_p: Dictionary = SeaWind.profile_for(0.14, 0.0, 0.040, false)
+	var plain_p: Dictionary = SeaWind.profile_for(0.14, 0.0, 0.011, false)
+	ok(storm_p["wave_max"] < plain_p["wave_min"] + 1.0 and storm_p["gust_every"] < 8.0 and storm_p["surf_db"] > 1.0, "storm: waves pound, gusts come fast, surf louder")
+	ok(fog_p["cut_hi"] < plain_p["cut_hi"] * 0.7 and fog_p["surf_db"] < plain_p["surf_db"], "fog: softer and muffled")
+	ok(calm_p["wave_min"] > plain_p["wave_min"] and calm_p["wind_base"] < 0.6 and calm_p["gust_depth"] < 0.2, "a still day: sparse waves, barely a breath of wind")
+	var bstorm = SeaWind.new(3)
+	bstorm.profile = storm_p
+	var bcalm = SeaWind.new(3)
+	bcalm.profile = calm_p
+	var ws := 0
+	var wc := 0
+	for i in 3000:
+		var a0: int = bstorm._waves.size()
+		bstorm.step(0.1)
+		if bstorm._waves.size() > a0: ws += 1
+		var a1: int = bcalm._waves.size()
+		bcalm.step(0.1)
+		if bcalm._waves.size() > a1: wc += 1
+	ok(ws > wc * 1.6, "more waves in a storm than on a still day (%d vs %d in 5 min)" % [ws, wc])
+	# Live: volumes and filters move while Arthur stands still.
+	ad.indoors = false
+	var vols := {}
+	var cuts := {}
+	for i in 600:
+		ad._update_beds(0.1)
+		vols[snappedf(ad._surf.volume_db, 0.5)] = true
+		cuts[snappedf(ad._sea_lp.cutoff_hz, 50.0)] = true
+	ok(vols.size() > 6 and cuts.size() > 4, "standing still, the surf level and brightness keep changing (%d levels, %d filter settings)" % [vols.size(), cuts.size()])
+	ad.indoors = true
+	ad._update_beds(0.1)
+	var in_cut: float = ad._sea_lp.cutoff_hz
+	ad.indoors = false
+	ad._update_beds(0.1)
+	ok(in_cut < ad._sea_lp.cutoff_hz * 0.5, "indoors the sea is muffled by the filter as well as the volume")
+	# Bell buoys: the count stays readable but the rhythm wanders.
+	var bb = get_nodes_in_group("bell_buoy")[3]
+	var pauses := {}
+	for i in 4:
+		bb._rung = bb.strikes
+		bb._clock = 100.0
+		bb._process(0.0)
+		pauses[snappedf(bb._group_pause, 0.1)] = true
+	ok(pauses.size() >= 3 and bb._group_pause >= 4.5, "bell buoys ring irregularly between groups (never faster than the count can be read)")
 
 	print("== playtest 1: binoculars are unlocked by Clara's first check-in")
 	var bino_day: int = clock.day

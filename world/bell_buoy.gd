@@ -1,7 +1,9 @@
 class_name BellBuoy extends Node3D
 ## A bell buoy marking one side of the island, for navigating by ear in fog.
 ## Strike count tells the compass point: 1 = North, 2 = East, 3 = South, 4 = West.
-## Rougher seas ring faster and louder.
+## Rougher seas ring faster and louder. The buoy rings when the sea rocks it, so the
+## timing wanders: strikes within a group stay close (the count must stay readable),
+## the pause between groups varies, and each strike differs a little in force and pitch.
 
 @export var strikes := 1
 @export var pitch := 440.0
@@ -12,6 +14,7 @@ var _phase := 0.0
 var _clock := 0.0
 var _rung := 0
 var _gap := 0.0
+var _group_pause := 6.0
 
 func _ready() -> void:
 	add_to_group("bell_buoy")
@@ -51,12 +54,14 @@ func _process(delta: float) -> void:
 	_clock += delta * rough
 	if _rung < strikes:
 		if _clock >= _gap:
-			_player.volume_db = -4.0 + minf(rough - 1.0, 1.0) * 4.0
+			_player.volume_db = -4.0 + minf(rough - 1.0, 1.0) * 4.0 + randf_range(-2.0, 0.5)
+			_player.pitch_scale = 1.0 + randf_range(-0.006, 0.006)
 			_player.play()
 			_rung += 1
 			_clock = 0.0
-			_gap = 0.95
-	elif _clock >= 6.0:
+			_gap = randf_range(0.8, 1.15)        # within a group: always well under the group pause
+	elif _clock >= _group_pause:
 		_rung = 0
 		_clock = 0.0
 		_gap = 0.0
+		_group_pause = randf_range(4.5, 9.0)
