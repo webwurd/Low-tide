@@ -739,16 +739,23 @@ func _build_ending_card() -> void:
 	v.add_theme_constant_override("separation", 14)
 	v.custom_minimum_size = Vector2(760, 0)
 	c.add_child(v)
-	_ending_title = _label("Low Tide", 20, Color("9aa7b0"))
+	_ending_title = _label("Low Tide", 16, UiTheme.MUTED, "ui_bold")
 	_ending_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_ending_name = _label("", 44, Color.WHITE, "display")
 	_ending_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_ending_body = _label("", 17, Color("d8dde2"))
+	_ending_body = _label("", 19, Color("dde1e4"))
+	_ending_body.add_theme_constant_override("line_spacing", 4)
 	_ending_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_ending_body.custom_minimum_size = Vector2(760, 0)
-	_ending_hint = _label("[E]  return to title", 13, AMBER)
+	_ending_hint = _label("E   Return to title", 15, UiTheme.CREAM, "ui_bold")
 	_ending_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	for n in [_ending_title, _ending_name, _ending_body, _ending_hint]:
+	var hint_pill := PanelContainer.new()
+	hint_pill.add_theme_stylebox_override("panel", UiTheme.pill(Color(1, 1, 1, 0.08)))
+	hint_pill.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	hint_pill.add_child(_ending_hint)
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 12)
+	for n in [_ending_title, _ending_name, _ending_body, gap, hint_pill]:
 		v.add_child(n)
 
 func show_ending(letter: String, ending_name: String, body: String) -> void:
@@ -835,11 +842,22 @@ func _build_card() -> void:
 	_card_band.offset_bottom = -70.0
 	_card_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_card.add_child(_card_band)
+	# Hairline brass edges, like the rule on a printed poster.
+	for edge in [0.0, 1.0]:
+		var line := ColorRect.new()
+		line.color = Color(POSTER_BRASS.r, POSTER_BRASS.g, POSTER_BRASS.b, 0.7)
+		line.anchor_right = 1.0
+		line.anchor_top = edge
+		line.anchor_bottom = edge
+		line.offset_top = -1.0 if edge > 0.5 else 0.0
+		line.offset_bottom = 0.0 if edge > 0.5 else 1.0
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_card_band.add_child(line)
 	var c := CenterContainer.new()
 	_full(c)
 	_card_band.add_child(c)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 4)
+	v.add_theme_constant_override("separation", 6)
 	c.add_child(v)
 	var rule := ColorRect.new()
 	rule.color = POSTER_BRASS
@@ -848,7 +866,7 @@ func _build_card() -> void:
 	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_card_title = _label("", 84, CREAM, "display")
 	_card_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_card_sub = _label("", 18, AMBER)
+	_card_sub = _label("", 24, Color(1, 0.86, 0.6), "display")
 	_card_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	for n in [rule, _card_title, _card_sub]:
 		v.add_child(n)
