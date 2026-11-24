@@ -17,6 +17,7 @@ var menus: Menus
 var env: Environment
 var sky_mat: ShaderMaterial
 var sun: DirectionalLight3D
+var moon: DirectionalLight3D
 var rain: CPUParticles3D
 var location := "cottage"          # outdoors | cottage | tower_base | tower_top
 var started := false
@@ -340,6 +341,12 @@ func _build_environment() -> void:
 	sun.position = Vector3(-45, 75, 35)
 	add_child(sun)
 	sun.look_at(Vector3.ZERO)
+	# The moon is its own, shadowless light so the sun never has to swing round to it.
+	moon = DirectionalLight3D.new()
+	moon.light_color = Color("5f78a8")
+	moon.light_energy = 0.0
+	moon.shadow_enabled = false
+	add_child(moon)
 
 ## Brightness / exposure / bloom from the Lighting settings.
 func _apply_display_settings() -> void:
@@ -383,6 +390,7 @@ func _apply_lighting() -> void:
 		env.ambient_light_color = INDOOR_AMBIENT
 		env.ambient_light_energy = 0.8
 		sun.visible = false
+		moon.visible = false
 		rain.emitting = false
 		return
 	var d := clampf(_daylight() * dd.light_scale, 0.0, 1.0)
@@ -399,14 +407,21 @@ func _apply_lighting() -> void:
 	_feed_sky(sk)
 	ocean.set_sky_color((sk["horizon"] as Color).lerp(sk["zenith"], 0.3))
 	var sun_h: float = sk["sun_height"]
-	var from_dir: Vector3 = sk["sun_dir"] if sun_h > 0.0 else sk["moon_dir"]
+	# Sun and moon are separate lights, each faded through twilight by the sun's
+	# height, so the key light never snaps from one side of the sky to the other.
+	var sun_gate := smoothstep(-0.03, 0.08, sun_h)
+	var moon_gate := smoothstep(0.02, -0.18, sun_h)
 	sun.visible = true
-	sun.position = from_dir * 80.0
+	sun.position = (sk["sun_dir"] as Vector3) * 80.0
 	sun.look_at(Vector3.ZERO)
-	sun.light_color = SkyModel.sun_light_color(sun_h, dd.cloud) if sun_h > 0.0 else Color("5f78a8")
-	sun.light_energy = lerpf(0.14, 0.6, d)
-	sun.shadow_enabled = d > 0.15 and Settings.shadow_distance() > 0.0
+	sun.light_color = SkyModel.sun_light_color(sun_h, dd.cloud)
+	sun.light_energy = lerpf(0.14, 0.6, d) * sun_gate
+	sun.shadow_enabled = d > 0.15 and sun_h > 0.0 and Settings.shadow_distance() > 0.0
 	sun.directional_shadow_max_distance = maxf(Settings.shadow_distance(), 1.0)
+	moon.visible = true
+	moon.position = (sk["moon_dir"] as Vector3) * 80.0
+	moon.look_at(Vector3.ZERO)
+	moon.light_energy = 0.14 * moon_gate
 	island.set_lamp(DayDirector.lamp_lit, DayDirector.weights_wound, _daylight())
 	rain.emitting = dd.rain
 	rain.global_position = player.global_position + Vector3(0, 14, 0)

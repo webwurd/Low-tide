@@ -953,6 +953,23 @@ func _run() -> void:
 	main._apply_lighting()
 	ok(assisted > main.env.ambient_light_energy + 0.3, "night brightness assist lifts the dark (%.2f vs %.2f)" % [assisted, main.env.ambient_light_energy])
 	cfg.reset_defaults()
+	# Key light must be continuous through sunrise and sunset (no "lightswitch" flip).
+	var key_jump := 0.0
+	var prev_key := Vector3.ZERO
+	for day_m in range(0, 1440, 2):
+		clock.set_time(1, float(day_m))
+		main._apply_lighting()
+		var key: Vector3 = -main.sun.global_transform.basis.z * main.sun.light_energy - main.moon.global_transform.basis.z * main.moon.light_energy
+		if day_m > 0:
+			key_jump = maxf(key_jump, (key - prev_key).length())
+		prev_key = key
+	ok(key_jump < 0.05, "key light direction x energy changes smoothly over the whole day, incl. sunrise and sunset (max step %.4f per 2 min)" % key_jump)
+	clock.set_time(1, 1200.0)
+	main._apply_lighting()
+	ok(main.moon.light_energy > 0.1 and main.sun.light_energy < 0.01, "at night the moon lights the island and the sun is off")
+	clock.set_time(1, 700.0)
+	main._apply_lighting()
+	ok(main.sun.light_energy > 0.3 and main.moon.light_energy < 0.01, "at noon the sun lights the island and the moon is off")
 	clock.set_time(1, 700.0)
 
 	print("-- menus")

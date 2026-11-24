@@ -85,12 +85,10 @@ static func describe(minute: float, cloud: float, fog_tint: Color, fog_density: 
 		"golden": golden,
 	}
 
-## Warm, low light at dawn/dusk; cool pale light at noon; moonlight at night.
+## Warm, low light at dawn/dusk, cool pale light at noon. (Moonlight is a separate light.)
 static func sun_light_color(h: float, cloud: float) -> Color:
 	var warm := Color("ff9f5a")
 	var mid := Color("ffd9a8")
 	var noon := Color("e6eef5")
-	var moon := Color("5f78a8")
 	var c := warm.lerp(mid, smoothstep(0.0, 0.12, h)).lerp(noon, smoothstep(0.12, 0.3, h))
-	c = c.lerp(Color("c8d3dc"), clampf(cloud, 0.0, 1.0) * 0.6)
-	return moon.lerp(c, smoothstep(-0.12, 0.02, h))
+	return c.lerp(Color("c8d3dc"), clampf(cloud, 0.0, 1.0) * 0.6)
