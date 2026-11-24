@@ -1,0 +1,1324 @@
+{
+ "conditions": [
+  "flag:a",
+  "!flag:a",
+  "flag:reported_canister",
+  "!flag:withheld_canister",
+  "trust>=2",
+  "trust>=3",
+  "trust>=12",
+  "trust<3",
+  "trust<=0",
+  "trust==2",
+  "trust>5",
+  "trust<0",
+  "has:canister",
+  "!has:tape_1",
+  "has:tape_6",
+  "found:shipwreck",
+  "found:cable",
+  "!found:vault",
+  "zone:east_bar",
+  "zone:east_bar,west_bar",
+  "zone:pier",
+  "loc:cottage",
+  "loc:outdoors",
+  "loc:cottage,tower_base",
+  "phase:morning",
+  "phase:expedition",
+  "phase:evening",
+  "!phase:evening",
+  "tide:rising",
+  "tide:falling",
+  "tide>=1.4",
+  "tide>=1.9",
+  "tide>=-0.05",
+  "tide<=0.3",
+  "day==1",
+  "day==3",
+  "day>=4",
+  "day<3",
+  "time>=720",
+  "time<500",
+  "time>=1000"
+ ],
+ "log_scenarios": [
+  {
+   "compose_day": 2,
+   "name": "quiet_day",
+   "state": {
+    "day": 2,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "outdoors",
+    "minute": 600.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "shore"
+   }
+  },
+  {
+   "compose_day": 1,
+   "name": "day1_finds",
+   "state": {
+    "day": 1,
+    "discovered": {
+     "lighthouse": 1,
+     "seacave": 1,
+     "shipwreck": 1
+    },
+    "flags": [
+     "reported_canister",
+     "withheld_buoy"
+    ],
+    "items": [],
+    "location": "outdoors",
+    "minute": 600.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "shore"
+   }
+  },
+  {
+   "compose_day": 3,
+   "name": "day3_mixed",
+   "state": {
+    "day": 3,
+    "discovered": {
+     "cable": 3,
+     "floorboard": 3,
+     "vault": 5
+    },
+    "flag_days": {
+     "heard_tape_3": 3
+    },
+    "flags": [
+     "heard_tape_3",
+     "reported_cable"
+    ],
+    "items": [],
+    "location": "outdoors",
+    "minute": 600.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "shore"
+   }
+  },
+  {
+   "compose_day": 6,
+   "name": "day6_all",
+   "state": {
+    "day": 6,
+    "discovered": {
+     "buoy_service": 6,
+     "tin": 6
+    },
+    "flags": [
+     "heard_tape_5",
+     "heard_tape_6",
+     "clara_admitted"
+    ],
+    "items": [],
+    "location": "outdoors",
+    "minute": 600.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "shore"
+   }
+  },
+  {
+   "compose_day": 4,
+   "name": "flag_other_day",
+   "state": {
+    "day": 4,
+    "discovered": {},
+    "flag_days": {
+     "heard_tape_1": 2
+    },
+    "flags": [
+     "heard_tape_1"
+    ],
+    "items": [],
+    "location": "outdoors",
+    "minute": 600.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "shore"
+   }
+  }
+ ],
+ "radio_scenarios": [
+  {
+   "name": "chain_next",
+   "ops": [
+    [
+     "play",
+     "evening_d7"
+    ],
+    [
+     "choose",
+     0
+    ],
+    [
+     "dismiss"
+    ],
+    [
+     "dismiss"
+    ]
+   ],
+   "state": {
+    "day": 7,
+    "discovered": {},
+    "flags": [
+     "clara_admitted"
+    ],
+    "items": [],
+    "location": "cottage",
+    "minute": 600.0,
+    "name": "x",
+    "phase": 2,
+    "trust": 0,
+    "zone": "cottage"
+   }
+  },
+  {
+   "name": "priority_preempt",
+   "ops": [
+    [
+     "play",
+     "lighthouse"
+    ],
+    [
+     "play",
+     "swept"
+    ],
+    [
+     "dismiss"
+    ],
+    [
+     "dismiss"
+    ]
+   ],
+   "state": {
+    "day": 1,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "outdoors",
+    "minute": 600.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "shore"
+   }
+  },
+  {
+   "name": "idle_ignored_when_active",
+   "ops": [
+    [
+     "play",
+     "lighthouse"
+    ],
+    [
+     "play",
+     "sandbar_warning"
+    ],
+    [
+     "dismiss"
+    ]
+   ],
+   "state": {
+    "day": 1,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "outdoors",
+    "minute": 600.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "shore"
+   }
+  },
+  {
+   "name": "same_priority_queues",
+   "ops": [
+    [
+     "play",
+     "lighthouse"
+    ],
+    [
+     "play",
+     "cottage"
+    ],
+    [
+     "choose",
+     0
+    ],
+    [
+     "dismiss"
+    ],
+    [
+     "dismiss"
+    ]
+   ],
+   "state": {
+    "day": 1,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "outdoors",
+    "minute": 600.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "shore"
+   }
+  },
+  {
+   "name": "choose_applies_effects",
+   "ops": [
+    [
+     "play",
+     "shipwreck"
+    ],
+    [
+     "choose",
+     1
+    ],
+    [
+     "dismiss"
+    ]
+   ],
+   "state": {
+    "day": 1,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "outdoors",
+    "minute": 600.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "shore"
+   }
+  },
+  {
+   "name": "choose_out_of_range",
+   "ops": [
+    [
+     "play",
+     "shipwreck"
+    ],
+    [
+     "choose",
+     5
+    ],
+    [
+     "choose",
+     -1
+    ],
+    [
+     "choose",
+     0
+    ],
+    [
+     "choose",
+     0
+    ],
+    [
+     "dismiss"
+    ]
+   ],
+   "state": {
+    "day": 1,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "outdoors",
+    "minute": 600.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "shore"
+   }
+  },
+  {
+   "name": "no_options_choose",
+   "ops": [
+    [
+     "play",
+     "dusk_nudge"
+    ],
+    [
+     "choose",
+     0
+    ],
+    [
+     "dismiss"
+    ]
+   ],
+   "state": {
+    "day": 1,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "outdoors",
+    "minute": 600.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "shore"
+   }
+  },
+  {
+   "name": "confess_clears_flag",
+   "ops": [
+    [
+     "play",
+     "react_west_withheld"
+    ],
+    [
+     "choose",
+     0
+    ],
+    [
+     "dismiss"
+    ]
+   ],
+   "state": {
+    "day": 2,
+    "discovered": {},
+    "flags": [
+     "withheld_canister"
+    ],
+    "items": [],
+    "location": "outdoors",
+    "minute": 600.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "shore"
+   }
+  },
+  {
+   "name": "empty_conv_ignored",
+   "ops": [
+    [
+     "play",
+     "no_such_conv"
+    ],
+    [
+     "play",
+     "lighthouse"
+    ],
+    [
+     "dismiss"
+    ]
+   ],
+   "state": {
+    "day": 1,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "outdoors",
+    "minute": 600.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "shore"
+   }
+  },
+  {
+   "name": "queue_drains_in_order",
+   "ops": [
+    [
+     "play",
+     "lighthouse"
+    ],
+    [
+     "play",
+     "cottage"
+    ],
+    [
+     "play",
+     "forced_home"
+    ],
+    [
+     "dismiss"
+    ],
+    [
+     "dismiss"
+    ],
+    [
+     "dismiss"
+    ]
+   ],
+   "state": {
+    "day": 1,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "outdoors",
+    "minute": 600.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "shore"
+   }
+  }
+ ],
+ "reaction_scenarios": [
+  {
+   "name": "east_bar_rising",
+   "state": {
+    "day": 1,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "outdoors",
+    "minute": 596.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "east_bar"
+   },
+   "steps": [
+    [
+     "tick"
+    ],
+    [
+     "tick"
+    ],
+    [
+     "tick"
+    ],
+    [
+     "advance",
+     125
+    ],
+    [
+     "tick"
+    ],
+    [
+     "tick"
+    ],
+    [
+     "advance",
+     60
+    ],
+    [
+     "tick"
+    ]
+   ]
+  },
+  {
+   "name": "west_bar_first",
+   "state": {
+    "day": 1,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "outdoors",
+    "minute": 300.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "west_bar"
+   },
+   "steps": [
+    [
+     "tick"
+    ],
+    [
+     "tick"
+    ]
+   ]
+  },
+  {
+   "name": "west_stack_withheld",
+   "state": {
+    "day": 2,
+    "discovered": {},
+    "flags": [
+     "withheld_canister"
+    ],
+    "items": [],
+    "location": "outdoors",
+    "minute": 600.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "west_stack"
+   },
+   "steps": [
+    [
+     "tick"
+    ],
+    [
+     "tick"
+    ]
+   ]
+  },
+  {
+   "name": "west_stack_clean",
+   "state": {
+    "day": 2,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "outdoors",
+    "minute": 600.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "west_stack"
+   },
+   "steps": [
+    [
+     "tick"
+    ]
+   ]
+  },
+  {
+   "name": "storm_midday_indoors",
+   "state": {
+    "day": 4,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "cottage",
+    "minute": 740.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "cottage"
+   },
+   "steps": [
+    [
+     "tick"
+    ],
+    [
+     "tick"
+    ]
+   ]
+  },
+  {
+   "name": "storm_before_noon",
+   "state": {
+    "day": 4,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "cottage",
+    "minute": 600.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "cottage"
+   },
+   "steps": [
+    [
+     "tick"
+    ]
+   ]
+  },
+  {
+   "name": "indoors_day1",
+   "state": {
+    "day": 1,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "cottage",
+    "minute": 600.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "cottage"
+   },
+   "steps": [
+    [
+     "tick"
+    ]
+   ]
+  },
+  {
+   "name": "fog_day3_east_bar",
+   "state": {
+    "day": 3,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "outdoors",
+    "minute": 500.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "east_bar"
+   },
+   "steps": [
+    [
+     "tick"
+    ],
+    [
+     "tick"
+    ],
+    [
+     "tick"
+    ]
+   ]
+  },
+  {
+   "name": "north_cove",
+   "state": {
+    "day": 3,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "outdoors",
+    "minute": 500.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "north_cove"
+   },
+   "steps": [
+    [
+     "tick"
+    ],
+    [
+     "tick"
+    ]
+   ]
+  },
+  {
+   "name": "north_bar_rising",
+   "state": {
+    "day": 1,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "outdoors",
+    "minute": 700.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "north_bar"
+   },
+   "steps": [
+    [
+     "tick"
+    ],
+    [
+     "tick"
+    ]
+   ]
+  },
+  {
+   "name": "south_reef_first",
+   "state": {
+    "day": 5,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "outdoors",
+    "minute": 650.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "south_reef"
+   },
+   "steps": [
+    [
+     "tick"
+    ],
+    [
+     "tick"
+    ]
+   ]
+  },
+  {
+   "name": "south_bar_closing",
+   "state": {
+    "day": 5,
+    "discovered": {},
+    "flags": [],
+    "items": [],
+    "location": "outdoors",
+    "minute": 720.0,
+    "name": "x",
+    "phase": 1,
+    "trust": 0,
+    "zone": "south_bar"
+   },
+   "steps": [
+    [
+     "tick"
+    ],
+    [
+     "tick"
+    ],
+    [
+     "advance",
+     40
+    ],
+    [
+     "tick"
+    ]
+   ]
+  }
+ ],
+ "states": [
+  {
+   "day": 1,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "cottage",
+   "minute": 390.0,
+   "name": "fresh_d1_morning",
+   "phase": 0,
+   "trust": 0,
+   "zone": "cottage"
+  },
+  {
+   "day": 1,
+   "discovered": {},
+   "flags": [
+    "reported_canister"
+   ],
+   "items": [
+    "canister"
+   ],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d1_canister_reported",
+   "phase": 2,
+   "trust": 0,
+   "zone": "cottage"
+  },
+  {
+   "day": 1,
+   "discovered": {},
+   "flags": [
+    "withheld_canister"
+   ],
+   "items": [
+    "canister"
+   ],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d1_canister_withheld",
+   "phase": 2,
+   "trust": 0,
+   "zone": "cottage"
+  },
+  {
+   "day": 1,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d1_no_canister",
+   "phase": 2,
+   "trust": 0,
+   "zone": "cottage"
+  },
+  {
+   "day": 2,
+   "discovered": {},
+   "flags": [
+    "reported_canister"
+   ],
+   "items": [],
+   "location": "outdoors",
+   "minute": 600.0,
+   "name": "d2_trust2_reported",
+   "phase": 1,
+   "trust": 2,
+   "zone": "shore"
+  },
+  {
+   "day": 2,
+   "discovered": {},
+   "flags": [
+    "reported_canister"
+   ],
+   "items": [],
+   "location": "outdoors",
+   "minute": 600.0,
+   "name": "d2_trust1_reported",
+   "phase": 1,
+   "trust": 1,
+   "zone": "shore"
+  },
+  {
+   "day": 2,
+   "discovered": {},
+   "flags": [
+    "withheld_canister"
+   ],
+   "items": [],
+   "location": "outdoors",
+   "minute": 600.0,
+   "name": "d2_withheld",
+   "phase": 1,
+   "trust": 0,
+   "zone": "shore"
+  },
+  {
+   "day": 2,
+   "discovered": {},
+   "flags": [
+    "heard_tape_1"
+   ],
+   "items": [
+    "tape_1"
+   ],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d2_heard_tape1",
+   "phase": 2,
+   "trust": 0,
+   "zone": "cottage"
+  },
+  {
+   "day": 2,
+   "discovered": {},
+   "flags": [],
+   "items": [
+    "tape_1"
+   ],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d2_tape_unheard",
+   "phase": 2,
+   "trust": 0,
+   "zone": "cottage"
+  },
+  {
+   "day": 2,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d2_nothing",
+   "phase": 2,
+   "trust": 0,
+   "zone": "cottage"
+  },
+  {
+   "day": 3,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "cottage",
+   "minute": 390.0,
+   "name": "d3_trust3",
+   "phase": 0,
+   "trust": 3,
+   "zone": "cottage"
+  },
+  {
+   "day": 3,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "cottage",
+   "minute": 390.0,
+   "name": "d3_trust0",
+   "phase": 0,
+   "trust": 0,
+   "zone": "cottage"
+  },
+  {
+   "day": 3,
+   "discovered": {},
+   "flags": [
+    "reported_cable"
+   ],
+   "items": [
+    "cable_tag"
+   ],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d3_cable_reported",
+   "phase": 2,
+   "trust": 0,
+   "zone": "cottage"
+  },
+  {
+   "day": 3,
+   "discovered": {},
+   "flags": [
+    "withheld_cable"
+   ],
+   "items": [
+    "cable_tag"
+   ],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d3_cable_withheld",
+   "phase": 2,
+   "trust": 0,
+   "zone": "cottage"
+  },
+  {
+   "day": 3,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d3_cable_none",
+   "phase": 2,
+   "trust": 0,
+   "zone": "cottage"
+  },
+  {
+   "day": 4,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "cottage",
+   "minute": 740.0,
+   "name": "d4_trust6",
+   "phase": 1,
+   "trust": 6,
+   "zone": "cottage"
+  },
+  {
+   "day": 4,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "cottage",
+   "minute": 740.0,
+   "name": "d4_trust4",
+   "phase": 1,
+   "trust": 4,
+   "zone": "cottage"
+  },
+  {
+   "day": 4,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "cottage",
+   "minute": 740.0,
+   "name": "d4_trust1",
+   "phase": 1,
+   "trust": 1,
+   "zone": "cottage"
+  },
+  {
+   "day": 4,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "cottage",
+   "minute": 740.0,
+   "name": "d4_trust0",
+   "phase": 1,
+   "trust": 0,
+   "zone": "cottage"
+  },
+  {
+   "day": 5,
+   "discovered": {},
+   "flags": [
+    "clara_shared_father"
+   ],
+   "items": [],
+   "location": "cottage",
+   "minute": 390.0,
+   "name": "d5_father",
+   "phase": 0,
+   "trust": 6,
+   "zone": "cottage"
+  },
+  {
+   "day": 5,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "cottage",
+   "minute": 390.0,
+   "name": "d5_nofather",
+   "phase": 0,
+   "trust": 0,
+   "zone": "cottage"
+  },
+  {
+   "day": 5,
+   "discovered": {},
+   "flags": [
+    "reported_vault"
+   ],
+   "items": [
+    "tape_2"
+   ],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d5_vault_reported",
+   "phase": 2,
+   "trust": 0,
+   "zone": "cottage"
+  },
+  {
+   "day": 5,
+   "discovered": {},
+   "flags": [
+    "withheld_vault"
+   ],
+   "items": [
+    "tape_2"
+   ],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d5_vault_withheld",
+   "phase": 2,
+   "trust": 0,
+   "zone": "cottage"
+  },
+  {
+   "day": 5,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d5_vault_none",
+   "phase": 2,
+   "trust": 0,
+   "zone": "cottage"
+  },
+  {
+   "day": 6,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d6_trust13",
+   "phase": 2,
+   "trust": 13,
+   "zone": "cottage"
+  },
+  {
+   "day": 6,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d6_trust12",
+   "phase": 2,
+   "trust": 12,
+   "zone": "cottage"
+  },
+  {
+   "day": 6,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d6_trust11",
+   "phase": 2,
+   "trust": 11,
+   "zone": "cottage"
+  },
+  {
+   "day": 6,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d6_trust5",
+   "phase": 2,
+   "trust": 5,
+   "zone": "cottage"
+  },
+  {
+   "day": 6,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d6_trust3",
+   "phase": 2,
+   "trust": 3,
+   "zone": "cottage"
+  },
+  {
+   "day": 6,
+   "discovered": {},
+   "flags": [],
+   "items": [
+    "tape_6"
+   ],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d6_trust2_tape6",
+   "phase": 2,
+   "trust": 2,
+   "zone": "cottage"
+  },
+  {
+   "day": 6,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d6_trust2_notape",
+   "phase": 2,
+   "trust": 2,
+   "zone": "cottage"
+  },
+  {
+   "day": 7,
+   "discovered": {},
+   "flags": [
+    "clara_admitted"
+   ],
+   "items": [],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d7_admitted",
+   "phase": 2,
+   "trust": 15,
+   "zone": "cottage"
+  },
+  {
+   "day": 7,
+   "discovered": {},
+   "flags": [
+    "clara_partial"
+   ],
+   "items": [],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d7_partial",
+   "phase": 2,
+   "trust": 5,
+   "zone": "cottage"
+  },
+  {
+   "day": 7,
+   "discovered": {},
+   "flags": [
+    "clara_stonewalled"
+   ],
+   "items": [],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d7_stonewalled",
+   "phase": 2,
+   "trust": -3,
+   "zone": "cottage"
+  },
+  {
+   "day": 7,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "cottage",
+   "minute": 1000.0,
+   "name": "d7_nothing",
+   "phase": 2,
+   "trust": 0,
+   "zone": "cottage"
+  },
+  {
+   "day": 3,
+   "discovered": {
+    "cable": 3,
+    "lighthouse": 2,
+    "shipwreck": 1
+   },
+   "flags": [
+    "reported_canister",
+    "heard_tape_1",
+    "withheld_buoy"
+   ],
+   "items": [
+    "canister",
+    "tape_1",
+    "uni_logs"
+   ],
+   "location": "outdoors",
+   "minute": 596.0,
+   "name": "kitchen_sink",
+   "phase": 2,
+   "trust": 7,
+   "zone": "east_bar"
+  },
+  {
+   "day": 1,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "outdoors",
+   "minute": 596.0,
+   "name": "tide_rising_1_6",
+   "phase": 1,
+   "trust": 0,
+   "zone": "east_bar"
+  },
+  {
+   "day": 1,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "outdoors",
+   "minute": 721.0,
+   "name": "tide_rising_2_9",
+   "phase": 1,
+   "trust": 0,
+   "zone": "west_bar"
+  },
+  {
+   "day": 1,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "outdoors",
+   "minute": 900.0,
+   "name": "tide_falling",
+   "phase": 1,
+   "trust": 0,
+   "zone": "shore"
+  },
+  {
+   "day": 5,
+   "discovered": {},
+   "flags": [],
+   "items": [],
+   "location": "outdoors",
+   "minute": 650.0,
+   "name": "tide_spring_low",
+   "phase": 1,
+   "trust": 0,
+   "zone": "south_bar"
+  }
+ ],
+ "trust_policies": [
+  "honest",
+  "dishonest",
+  "mixed3",
+  "mixed2"
+ ]
+}

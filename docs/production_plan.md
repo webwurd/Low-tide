@@ -97,7 +97,8 @@ Arthur's backstory is still open. My default: a recently widowed schoolteacher t
 | **M4: Narrative systems** ✅ | Data-driven dialogue (`dialogue/dialogue.json`: variants, `when` conditions, trust/flags, chained replies) instead of the Dialogue Manager addon (its repo is outside this session's GitHub scope), satchel, cassette player, 3-page journal (log / satchel / tapes), zone-aware reactive lines. | Day 1 + Day 2 scripted with report/withhold branching. |
 | **M5: Full island blockout and weather** ✅ | North cove (cable hut + armored cable), south reef cable vault (Day 5 spring low only), 4 bell buoys (1 N / 2 E / 3 S / 4 W strikes) for fog navigation, morning mist + per-day fog, gravel/concrete/wet/sand/rock surfaces. | All locations reachable under the correct tides (verified by walking them with the real controller). |
 | **M6: Content** | Write and implement Days 1–7, 4–6 tapes, and 3 endings. | Full playthrough on all 3 ending paths. |
-| **M7: Art, audio, settings and ship** | Stylized art pass, **typography** (see below), music stings, **Settings menu** (see below), pause menu with "replay controls tutorial", accessibility (subtitle size, hold→toggle), Deck perf (≥40 fps at 800p), Steam build. | Release candidate. |
+| **M7: Unity port (replaces the Godot polish plan)** | See `docs/unity_port_plan.md`. Final build in **Unity 6 LTS + URP / C#** under `unity/`; Godot stays as the frozen reference. Typography, Settings/pause menus, procedural painterly look, stings and perf work now happen in Unity (stages U3-U6). Steam deferred. | U1 core parity done; U2+ pending a connected computer. |
+| *(superseded)* M7: Art, audio, settings and ship | Stylized art pass, **typography** (see below), music stings, **Settings menu** (see below), pause menu with "replay controls tutorial", accessibility (subtitle size, hold→toggle), Deck perf (≥40 fps at 800p), Steam build. | Release candidate. |
 
 ### M5 design notes
 - Day 5 has **two** spring lows (about 10:50 and 23:55). The reef is walkable for ~133 game minutes around the daytime one; the late one falls after Arthur is sent home at 21:00.
@@ -108,7 +109,7 @@ Arthur's backstory is still open. My default: a recently widowed schoolteacher t
 ### Audio
 No audio asset files exist; everything is synthesised (`autoload/audio_director.gd`). See `docs/audio_checklist.md` for what to listen to and `tools/export_audio.gd` to render every sound to WAV. Automated sanity checks cover clipping, silence, NaN and loop-seam clicks.
 
-### M7 Settings menu (requested; reachable from the title screen and the pause menu)
+### Settings menu spec (requested; to be built in Unity, reachable from the title screen and the pause menu)
 - **Graphics:** quality presets (Low / Medium / High / Deck), resolution, window mode, vsync, FPS cap, render scale, shadow quality and distance, fog quality, MSAA/FXAA, ocean detail, Compatibility-renderer fallback for older GPUs.
 - **Audio:** master, ambience (surf and wind), footsteps/SFX, radio/voice, music buses, radio static intensity, subtitles size and background, mono mix.
 - **Lighting:** brightness/gamma slider, exposure, night-brightness assist (lifts the darkest scenes), fog density scale, bloom/glow toggle, lamp-beam intensity, optional colour-grade strength.
@@ -116,7 +117,7 @@ No audio asset files exist; everything is synthesised (`autoload/audio_director.
 - **Accessibility:** Assist HUD default on/off, reduce head-bob, reduce screen shake/fade durations.
 - Persisted to `user://settings.cfg` through the existing `Settings` autoload. The controls tutorial shown in New Watch setup (M3) can be replayed from here.
 
-### M7 Typography (requested)
+### Typography (requested; now applies to the Unity build)
 Replace the placeholder default font with something different and fresh. Decision deferred; requirements, a text-surface inventory and an in-engine test plan are in `docs/typography.md`. Includes moving UI styling into one `Theme` resource.
 
 **Next session (on approval):** scaffold the Godot project on `claude/tender-brahmagupta-k7oa6r`, commit `docs/` (amended bible, this plan, narrative outline, tide tables), archive the prototype in `reference/`, then start M2.

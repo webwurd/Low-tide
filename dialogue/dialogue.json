@@ -1136,6 +1136,87 @@
     "speaker": "arthur",
     "options": []
    }
+  ],
+  "lighthouse": [
+   {
+    "text": "I see your beam sweeping clear through the fog bank, Arthur. Clockwork weights holding steady?",
+    "priority": 1,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Wound it an hour ago. Lens is turning smooth.",
+      "reply": "Good. Keep an eye on the tide chart. Low water should expose the outer bars right about now.",
+      "trust": 0
+     },
+     {
+      "text": "Fog's thick enough to chew, but the lamp cuts right through.",
+      "reply": "That's why they pay you the big bucks. Stay off the sandbars once the tide turns.",
+      "trust": 1
+     }
+    ]
+   }
+  ],
+  "cottage": [
+   {
+    "text": "Sounds warm in there. Did you find the spare kerosene cans in the stone shed?",
+    "priority": 1,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Stove's roaring and coffee's on. Plenty of fuel.",
+      "reply": "Jealous. All I've got is burnt machine coffee and static on channel 16.",
+      "trust": 1
+     },
+     {
+      "text": "Found some old 1970s oceanography logs on the shelf.",
+      "reply": "Huh... yeah, the university used Gannet Rock before automation. Mostly weather balloons and drift buoys.",
+      "trust": 0
+     }
+    ]
+   }
+  ],
+  "sandbar_warning": [
+   {
+    "text": "Careful crossing that sandbar, Arthur. Keep one eye on your pocket watch so you make it back before high tide.",
+    "priority": 0,
+    "speaker": "clara",
+    "options": []
+   }
+  ],
+  "swept": [
+   {
+    "text": "Arthur! My tide monitor spiked. Did you just get cut off on the sandbar?",
+    "priority": 2,
+    "speaker": "clara",
+    "options": [
+     {
+      "text": "Misjudged the swell. Back on the dock, just soaked boots.",
+      "reply": "Watch that pocket watch! Once the water tops two meters those bars are no place to be.",
+      "trust": 0
+     },
+     {
+      "text": "I'm fine, Clara. Water came in faster than the chart predicted.",
+      "reply": "Tides don't mess around out there. Wait for falling water before crossing again.",
+      "trust": 0
+     }
+    ]
+   }
+  ],
+  "dusk_nudge": [
+   {
+    "text": "Light's going, Arthur. Stay on high ground and get that lamp lit.",
+    "priority": 1,
+    "speaker": "clara",
+    "options": []
+   }
+  ],
+  "forced_home": [
+   {
+    "text": "Dark and bitter out there. Get in by the stove, Arthur. The rock will keep till morning.",
+    "priority": 1,
+    "speaker": "clara",
+    "options": []
+   }
   ]
  },
  "reactions": [

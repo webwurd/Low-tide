@@ -26,6 +26,11 @@ func _run() -> void:
 	var radio := root.get_node("RadioSystem")
 	var state := root.get_node("GameState")
 
+	print("== shared data")
+	var root_dlg := FileAccess.get_file_as_string("res://dialogue/dialogue.json")
+	var unity_copy := ProjectSettings.globalize_path("res://") + "unity/Assets/StreamingAssets/dialogue.json"
+	ok(FileAccess.file_exists(unity_copy) and FileAccess.get_file_as_string(unity_copy) == root_dlg, "Unity's copy of dialogue.json is identical (run tools/sync_unity_data.sh if not)")
+
 	print("== tide model")
 	near(tide.water_height(1, 450.0), 0.2, 0.01, "day 1 low water 07:30")
 	near(tide.water_height(1, 450.0 + 372.5), 4.2, 0.01, "high water half a cycle later")
