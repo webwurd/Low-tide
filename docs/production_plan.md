@@ -14,7 +14,7 @@
 | Carrying | A **satchel of key items** (tapes, documents, canister) with no combining or crafting. The bible guardrail #3 gets amended to match. |
 | Branching | A hidden **Trust** value plus report/withhold flags. These change Clara's tone, unlock optional evening talks, and pick one of **3 endings** of the same core truth. |
 | Voice | **Text + procedural radio squelch** at first. The dialogue pipeline has an optional audio-clip slot per line so VO can be added later. |
-| Art | **Stylized low-poly painterly**: flat shading, heavy fog, cool slate vs amber (#526373 / #3a434a / #ffb84d). |
+| Art | **Stylized painterly, medium detail** (revised for M6.5; was flat-shaded low-poly): layered colour fog, sky-driven palette, warm low sun against cool shadow, amber lamp light (#526373 / #3a434a / #ffb84d). See `docs/art_direction.md`. |
 | Mystery | **Cold War + personal grief** (draft below, needs your approval). |
 
 ---
@@ -97,7 +97,8 @@ Arthur's backstory is still open. My default: a recently widowed schoolteacher t
 | **M4: Narrative systems** | Dialogue Manager integration with conditions, trust/flags, satchel, cassette player, logbook UI, location-aware reactive lines. | One full day scripted with branching reports and withholds. |
 | **M5: Full island blockout and weather** | North cove, south reef vault, fog-density weather states, storm day, buoy bells, surface materials. | All locations reachable under the correct tides. |
 | **M6: Content** | Write and implement Days 1–7, 4–6 tapes, and 3 endings. | Full playthrough on all 3 ending paths. |
-| **M7: Art, audio, settings and ship** | Stylized art pass, music stings, **Settings menu** (see below), pause menu with "replay controls tutorial", accessibility (subtitle size, hold→toggle), Deck perf (≥40 fps at 800p), Steam build. | Release candidate. |
+| **M6.5: Ship-quality art pass** | Painterly "Firewatch" look on a real asset pipeline (see `docs/art_direction.md`): sky, sun path, layered colour fog, grading, generated textures and materials, terrain splat and water, vegetation, landmark/interior scenes, hero models for every interactable, quality presets, export presets. | Every screenshot vantage reads as finished art; tests pass; exported build matches the editor. |
+| **M7: Audio, settings and ship** | Music stings, **Settings menu** (see below), pause menu with "replay controls tutorial", accessibility (subtitle size, hold→toggle), Deck perf (≥40 fps at 800p), Steam build. | Release candidate. |
 
 ### M7 Settings menu (requested; reachable from the title screen and the pause menu)
 - **Graphics:** quality presets (Low / Medium / High / Deck), resolution, window mode, vsync, FPS cap, render scale, shadow quality and distance, fog quality, MSAA/FXAA, ocean detail, Compatibility-renderer fallback for older GPUs.
@@ -121,7 +122,7 @@ Arthur's backstory is still open. My default: a recently widowed schoolteacher t
 ---
 
 ## 7. Verification
-- **Unit + smoke tests (custom headless runner `tests/run_tests.gd`; GUT's repo is outside this session's GitHub scope):** tide interpolation against the tide tables, threshold events at 2.1m, depth-band classification, clock rollover and day advance, dialogue condition evaluation, save/load round-trip. Run with `godot --headless -s tests/run_tests.gd` (non-zero exit on failure). Screenshots: `xvfb-run -a godot --rendering-method gl_compatibility -s tests/screenshot.gd -- <outdir>`.
+- **Unit + smoke tests (custom headless runner `tests/run_tests.gd`; GUT's repo is outside this session's GitHub scope):** tide interpolation against the tide tables, threshold events at 2.1m, depth-band classification, clock rollover and day advance, dialogue condition evaluation, save/load round-trip. Run with `godot --headless -s tests/run_tests.gd` (non-zero exit on failure). Screenshots (Forward+, works on a software Vulkan driver too): `xvfb-run -a godot --rendering-driver vulkan -s tests/screenshot.gd -- <outdir>`.
 - **CI:** a GitHub Actions workflow using a Godot 4.4 headless container to run GUT and a Linux export smoke build.
 - **Playtest checklist per milestone:** cross the East bar at low tide and get swept on the rising tide (fade, dock, Clara line, −45 min); binocular rangefinder labels; dialogue while walking; gamepad-only full loop; Assist toggle; Deck framerate via Godot's monitor overlay.
 - **In this container:** install the Godot 4.4 headless Linux binary (if the network allows it) to run tests and a headless scene-load smoke test. Visual checks need your machine or a Deck.
