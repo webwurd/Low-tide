@@ -7,7 +7,12 @@ signal continue_pressed
 signal settings_requested
 
 const AMBER := Color("ffb84d")
-const CARD_BG := Color(0.07, 0.1, 0.13, 0.88)
+const CARD_BG := Color(0.06, 0.09, 0.12, 0.84)
+const INK := Color("101a21")
+const CREAM := Color("efe4c8")
+const POSTER_TEAL := Color("1f4b52")
+const POSTER_ORANGE := Color("d9a441")      # muted brass, used for thin rules only
+const TYPE_CPS := 55.0               # radio text types in at about reading speed
 
 var player: Player
 var _reticle: Control
@@ -39,6 +44,10 @@ var _modal_title: Label
 var _modal_body: Label
 var _modal_frame := -1
 var _card: Control
+var _card_band: ColorRect
+var _banner: Control
+var _banner_tween: Tween
+var _type_tween: Tween
 var _card_title: Label
 var _card_sub: Label
 var _tut_pages: Array = []
@@ -74,6 +83,7 @@ func _ready() -> void:
 	_build_watch()
 	_build_assist()
 	_build_radio()
+	_build_banner()
 	_build_fade()
 	_build_toasts()
 	_build_modal()
@@ -107,16 +117,28 @@ func _style(bg := CARD_BG, border := Color(0.85, 0.7, 0.42, 0.35)) -> StyleBoxFl
 	sb.bg_color = bg
 	sb.border_color = border
 	sb.set_border_width_all(1)
-	sb.set_corner_radius_all(10)
-	sb.set_content_margin_all(12)
+	sb.set_corner_radius_all(3)
+	sb.set_content_margin_all(14)
 	return sb
 
-func _label(text: String, size := 14, color := Color("e8dfc8")) -> Label:
+func _label(text: String, size := 14, color := Color("e8dfc8"), role := "ui") -> Label:
 	var l := Label.new()
 	l.text = text
-	l.add_theme_font_size_override("font_size", size)
+	UiFonts.style(l, role, size)
 	l.add_theme_color_override("font_color", color)
 	return l
+
+func _flat_box(bg: Color, left_accent := Color(0, 0, 0, 0), margin_h := 16, margin_v := 10) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = bg
+	sb.border_color = left_accent
+	sb.border_width_left = 3 if left_accent.a > 0.0 else 0
+	sb.set_corner_radius_all(2)
+	sb.content_margin_left = margin_h
+	sb.content_margin_right = margin_h
+	sb.content_margin_top = margin_v
+	sb.content_margin_bottom = margin_v
+	return sb
 
 # --- build -------------------------------------------------------------
 
@@ -196,31 +218,83 @@ func _build_assist() -> void:
 
 func _build_radio() -> void:
 	_radio = PanelContainer.new()
-	_radio.add_theme_stylebox_override("panel", _style())
+	# Minimal: a quiet dark strip with a thin amber edge, nothing else.
+	_radio.add_theme_stylebox_override("panel", _flat_box(Color(0.04, 0.07, 0.09, 0.78), AMBER, 18, 12))
 	_radio.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_radio.custom_minimum_size = Vector2(680, 0)
-	_radio.position = Vector2(-340, -250)
+	_radio.custom_minimum_size = Vector2(700, 0)
+	_radio.position = Vector2(-350, -250)
 	_radio.visible = false
 	add_child(_radio)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 8)
+	v.add_theme_constant_override("separation", 6)
 	_radio.add_child(v)
-	_radio_speaker = _label("", 12, AMBER)
-	_radio_text = _label("", 17)
+	_radio_speaker = _label("", 12, AMBER, "ui_bold")
+	_radio_text = _label("", 17, CREAM)
 	_radio_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_radio_text.custom_minimum_size = Vector2(650, 0)
+	_radio_text.custom_minimum_size = Vector2(660, 0)
+	_radio_text.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	_radio_text.add_theme_constant_override("shadow_offset_y", 1)
 	_radio_opts = HBoxContainer.new()
 	_radio_opts.add_theme_constant_override("separation", 10)
 	for i in 2:
 		var b := Button.new()
 		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		b.custom_minimum_size = Vector2(320, 0)
+		b.custom_minimum_size = Vector2(325, 0)
 		b.focus_mode = Control.FOCUS_NONE
+		UiFonts.style(b, "ui_bold", 14)
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.add_theme_stylebox_override("normal", _flat_box(Color(1, 1, 1, 0.07), Color(0, 0, 0, 0), 12, 8))
+		b.add_theme_stylebox_override("hover", _flat_box(Color(1, 0.72, 0.3, 0.2), Color(0, 0, 0, 0), 12, 8))
+		b.add_theme_stylebox_override("pressed", _flat_box(Color(1, 0.72, 0.3, 0.3), Color(0, 0, 0, 0), 12, 8))
+		b.add_theme_color_override("font_color", CREAM)
+		b.add_theme_color_override("font_hover_color", Color.WHITE)
 		b.pressed.connect(RadioSystem.choose.bind(i))
 		_radio_opts.add_child(b)
 		_opt_buttons.append(b)
 	for n in [_radio_speaker, _radio_text, _radio_opts]:
 		v.add_child(n)
+
+## "NEW RADIO MESSAGE": a small padded tag at the top of the screen on a solid
+## colour, so it reads as a notice rather than part of the world.
+func _build_banner() -> void:
+	var tag := PanelContainer.new()
+	tag.add_theme_stylebox_override("panel", _flat_box(Color(POSTER_TEAL.r, POSTER_TEAL.g, POSTER_TEAL.b, 0.96), Color(0, 0, 0, 0), 20, 9))
+	tag.anchor_left = 0.5
+	tag.anchor_right = 0.5
+	tag.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	tag.offset_top = 28.0
+	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tag.z_index = 6
+	tag.visible = false
+	add_child(tag)
+	_banner = tag
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	tag.add_child(row)
+	var dot := ColorRect.new()                          # small brass indicator light
+	dot.color = AMBER
+	dot.custom_minimum_size = Vector2(8, 8)
+	dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(dot)
+	row.add_child(_label("NEW RADIO MESSAGE", 20, CREAM, "display"))
+
+func show_banner() -> void:
+	var calm: bool = Settings.v("reduce_motion")
+	_banner.visible = true
+	_banner.offset_top = 28.0 if calm else 8.0
+	_banner.modulate.a = 1.0 if calm else 0.0
+	if _banner_tween:
+		_banner_tween.kill()
+	_banner_tween = create_tween()
+	if not calm:
+		_banner_tween.set_parallel(true)
+		_banner_tween.tween_property(_banner, "offset_top", 28.0, 0.3).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		_banner_tween.tween_property(_banner, "modulate:a", 1.0, 0.25)
+		_banner_tween.set_parallel(false)
+	_banner_tween.tween_interval(1.8)
+	_banner_tween.tween_property(_banner, "modulate:a", 0.0, 0.35)
+	_banner_tween.tween_callback(func(): _banner.visible = false)
 
 func _build_fade() -> void:
 	_fade = ColorRect.new()
@@ -234,46 +308,81 @@ func _build_fade() -> void:
 	_full(_fade_label)
 	_fade.add_child(_fade_label)
 
+func _title_button(text: String) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.flat = true
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.focus_mode = Control.FOCUS_ALL
+	UiFonts.style(b, "display", 34)
+	b.add_theme_color_override("font_color", CREAM)
+	b.add_theme_color_override("font_hover_color", AMBER)
+	b.add_theme_color_override("font_focus_color", AMBER)
+	b.add_theme_color_override("font_pressed_color", POSTER_ORANGE)
+	var empty := StyleBoxEmpty.new()
+	for st in ["normal", "hover", "pressed", "focus"]:
+		b.add_theme_stylebox_override(st, empty)
+	return b
+
 func _build_title() -> void:
-	_title = ColorRect.new()
-	(_title as ColorRect).color = Color(0.03, 0.05, 0.07, 0.82)
+	_title = Control.new()
 	_full(_title)
 	_title.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_title)
-	var c := CenterContainer.new()
-	_full(c)
-	_title.add_child(c)
+	# A dusk-coloured wash that is heaviest behind the text and clears to the island on the right.
+	var shade := TextureRect.new()
+	var grad := Gradient.new()
+	grad.set_color(0, Color(0.03, 0.06, 0.08, 0.92))
+	grad.set_color(1, Color(0.03, 0.06, 0.08, 0.0))
+	grad.add_point(0.45, Color(0.03, 0.06, 0.08, 0.72))
+	var gt := GradientTexture2D.new()
+	gt.gradient = grad
+	gt.fill_from = Vector2(0, 0.5)
+	gt.fill_to = Vector2(1, 0.5)
+	shade.texture = gt
+	shade.stretch_mode = TextureRect.STRETCH_SCALE
+	_full(shade)
+	_title.add_child(shade)
+	var m := MarginContainer.new()
+	_full(m)
+	m.add_theme_constant_override("margin_left", 96)
+	m.add_theme_constant_override("margin_right", 96)
+	_title.add_child(m)
 	_title_panel = PanelContainer.new()
-	_title_panel.add_theme_stylebox_override("panel", _style(CARD_BG, Color(0.85, 0.7, 0.42, 0.5)))
-	c.add_child(_title_panel)
+	_title_panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	_title_panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_title_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	m.add_child(_title_panel)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 12)
-	v.custom_minimum_size = Vector2(480, 0)
+	v.add_theme_constant_override("separation", 6)
+	v.custom_minimum_size = Vector2(520, 0)
 	_title_panel.add_child(v)
-	var t := _label("LOW TIDE", 40, Color.WHITE)
-	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var sub := _label("GANNET ROCK LIGHT STATION - MAINE COAST, WINTER 1998", 12, Color("9aa7b0"))
-	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var body := _label("You are Arthur, winter keeper on a fog-bound island. Read the tide, cross the sandbars while they last, and be back on high ground before the Atlantic returns.", 14)
+	var kicker := _label("GANNET ROCK LIGHT STATION  ·  MAINE COAST  ·  WINTER 1998", 13, AMBER, "ui_bold")
+	var t := _label("LOW TIDE", 148, CREAM, "display")
+	t.add_theme_constant_override("line_spacing", -20)
+	var rule := ColorRect.new()
+	rule.color = POSTER_ORANGE
+	rule.custom_minimum_size = Vector2(150, 6)
+	rule.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	var body := _label("You are Arthur, winter keeper on a fog-bound island. Read the tide, cross the sandbars while they last, and be back on high ground before the Atlantic returns.", 16, Color("cfd6d6"))
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var b_new := Button.new()
-	b_new.text = "NEW WATCH"
+	body.custom_minimum_size = Vector2(480, 0)
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 18)
+	var b_new := _title_button("NEW WATCH")
 	b_new.pressed.connect(_open_tutorial)
-	_continue_btn = Button.new()
-	_continue_btn.text = "CONTINUE"
+	_continue_btn = _title_button("CONTINUE")
 	_continue_btn.pressed.connect(func():
 		_title.visible = false
 		continue_pressed.emit())
 	_continue_btn.visible = SaveSystem.has_save()
-	_endings_label = _label("", 12, Color("9aa7b0"))
-	_endings_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_endings_label = _label("", 13, Color("9aa7b0"))
 	var seen: Array = SaveSystem.endings_seen()
 	if seen.size() > 0:
 		_endings_label.text = "Endings found: " + ", ".join(seen.map(func(k): return String(k).to_upper()))
-	var b_settings := Button.new()
-	b_settings.text = "SETTINGS"
+	var b_settings := _title_button("SETTINGS")
 	b_settings.pressed.connect(func(): settings_requested.emit())
-	for n in [t, sub, body, b_new, _continue_btn, b_settings, _endings_label]:
+	for n in [kicker, t, rule, body, gap, b_new, _continue_btn, b_settings, _endings_label]:
 		v.add_child(n)
 
 # --- setup / tutorial (shown before Arthur steps onto the island) -------
@@ -290,7 +399,7 @@ func _build_tutorial() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	_tut.add_child(v)
-	_tut_title = _label("", 24, Color.WHITE)
+	_tut_title = _label("", 36, CREAM, "display")
 	_tut_body = VBoxContainer.new()
 	_tut_body.add_theme_constant_override("separation", 6)
 	_tut_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -348,7 +457,7 @@ func _tut_go(i: int) -> void:
 # --- toasts, modal panel, day card --------------------------------------
 
 func _build_toasts() -> void:
-	_note = _label("", 17, Color("ffe9b8"))
+	_note = _label("", 26, Color("ffe9b8"), "paper")
 	_note.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_note.position = Vector2(-300, -120)
 	_note.size = Vector2(600, 30)
@@ -385,8 +494,8 @@ func _build_modal() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	_modal.add_child(v)
-	_modal_title = _label("", 18, Color("2b2418"))
-	_modal_body = _label("", 17, Color("2b2418"))
+	_modal_title = _label("", 22, Color("2b2418"), "display")
+	_modal_body = _label("", 24, Color("2b2418"), "paper")
 	_modal_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_modal_body.custom_minimum_size = Vector2(640, 0)
 	_modal_scroll = ScrollContainer.new()
@@ -395,9 +504,10 @@ func _build_modal() -> void:
 	_modal_scroll.add_child(_modal_body)
 	v.add_child(_modal_title)
 	v.add_child(_modal_scroll)
-	v.add_child(_label("[E / Tab / Esc] close     [W / S or right stick] scroll", 12, Color("6a5a3a")))
+	v.add_child(_label("[E / Tab / Esc] close     [W / S or right stick] scroll", 12, Color("6a5a3a"), "ui_bold"))
 
-func _open_modal(title: String, body: String) -> void:
+func _open_modal(title: String, body: String, role := "paper") -> void:
+	UiFonts.style(_modal_body, role, 24 if role == "paper" else 18)
 	_modal_title.text = title
 	_modal_body.text = body
 	_modal.visible = true
@@ -423,7 +533,7 @@ func show_tide_table(day: int, extremes: Array) -> void:
 		lines.append("%s   %02d:%02d %s     %.1f m" % ["HIGH" if e["high"] else "LOW ", h12, m % 60, "PM" if h24 >= 12 else "AM", e["height"]])
 	lines.append("")
 	lines.append("Sandbars close above 2.1 m.")
-	_open_modal("TIDE TABLE   -   Day %d" % day, "\n".join(lines))
+	_open_modal("TIDE TABLE   -   Day %d" % day, "\n".join(lines), "ui")
 
 func _build_ending_card() -> void:
 	_ending_panel = ColorRect.new()
@@ -518,33 +628,56 @@ func _render_journal() -> void:
 					body.append("")
 			if body.is_empty():
 				body.append("No tapes yet.")
-	_open_modal("KEEPER'S JOURNAL     " + "   ".join(head) + "     (A / D to turn)", "\n".join(body))
+	_open_modal("KEEPER'S JOURNAL    " + "  ".join(head) + "    (A / D)", "\n".join(body))
 
+## Day cards: a bold poster band across the screen, big condensed caps.
 func _build_card() -> void:
 	_card = Control.new()
 	_full(_card)
 	_card.modulate.a = 0.0
 	_card.z_index = 3
 	add_child(_card)
+	_card_band = ColorRect.new()
+	_card_band.color = Color(POSTER_TEAL.r, POSTER_TEAL.g, POSTER_TEAL.b, 0.94)
+	_card_band.set_anchors_preset(Control.PRESET_CENTER_LEFT)
+	_card_band.anchor_right = 1.0
+	_card_band.offset_top = -270.0
+	_card_band.offset_bottom = -70.0
+	_card_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_card.add_child(_card_band)
 	var c := CenterContainer.new()
 	_full(c)
-	c.offset_top = -190.0
-	c.offset_bottom = -190.0
-	_card.add_child(c)
+	_card_band.add_child(c)
 	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 4)
 	c.add_child(v)
-	_card_title = _label("", 44, Color.WHITE)
+	var rule := ColorRect.new()
+	rule.color = POSTER_ORANGE
+	rule.custom_minimum_size = Vector2(110, 5)
+	rule.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_card_title = _label("", 92, CREAM, "display")
 	_card_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_card_sub = _label("", 16, AMBER)
+	_card_sub = _label("", 19, AMBER, "ui_bold")
 	_card_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(_card_title)
-	v.add_child(_card_sub)
+	for n in [rule, _card_title, _card_sub]:
+		v.add_child(n)
 
 func show_card(title: String, sub: String, seconds := 3.0) -> void:
-	_card_title.text = title
-	_card_sub.text = sub
+	_card_title.text = title.to_upper()
+	_card_sub.text = sub.to_upper().replace("  -  ", "   ·   ")
+	_card_sub.visible = sub != ""
 	var tw := create_tween()
-	tw.tween_property(_card, "modulate:a", 1.0, 0.6)
+	if Settings.v("reduce_motion"):
+		_card_band.scale.y = 1.0
+		tw.tween_property(_card, "modulate:a", 1.0, 0.4)
+	else:
+		_card_band.pivot_offset = Vector2(0, 100)
+		_card_band.scale.y = 0.0
+		tw.set_parallel(true)
+		tw.tween_property(_card_band, "scale:y", 1.0, 0.45).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tw.tween_property(_card, "modulate:a", 1.0, 0.3)
+		tw.set_parallel(false)
 	tw.tween_interval(seconds)
 	tw.tween_property(_card, "modulate:a", 0.0, 1.0)
 
@@ -630,12 +763,26 @@ func apply_text_scale() -> void:
 		b.add_theme_font_size_override("font_size", int(14 * k))
 	_tape_title.add_theme_font_size_override("font_size", int(12 * k))
 	_tape_text.add_theme_font_size_override("font_size", int(17 * k))
-	_note.add_theme_font_size_override("font_size", int(17 * k))
+	_note.add_theme_font_size_override("font_size", int(26 * k))
+
+func _type_in(text: String) -> void:
+	_radio_text.text = '"' + text + '"'
+	if _type_tween:
+		_type_tween.kill()
+	if Settings.v("reduce_motion"):
+		_radio_text.visible_characters = -1
+		return
+	_radio_text.visible_characters = 0
+	_type_tween = create_tween()
+	_type_tween.tween_property(_radio_text, "visible_characters", _radio_text.text.length(), _radio_text.text.length() / TYPE_CPS)
+	_type_tween.tween_callback(func(): _radio_text.visible_characters = -1)
 
 func _on_line(speaker: String, text: String, options: Array) -> void:
+	if not _radio.visible:
+		show_banner()                      # a new call, not a follow-up line
 	_radio.visible = true
 	_radio_speaker.text = speaker
-	_radio_text.text = '"' + text + '"'
+	_type_in(text)
 	_radio_opts.visible = options.size() > 0
 	for i in 2:
 		_opt_buttons[i].visible = i < options.size()
@@ -644,7 +791,7 @@ func _on_line(speaker: String, text: String, options: Array) -> void:
 
 func _on_reply(speaker: String, text: String) -> void:
 	_radio_speaker.text = speaker
-	_radio_text.text = '"' + text + '"'
+	_type_in(text)
 	_radio_opts.visible = false
 
 func fade_out(duration := 0.7) -> void:

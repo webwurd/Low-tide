@@ -1,4 +1,8 @@
-# Typography (decision deferred to M7)
+# Typography
+
+**Decided (UI pass):** three-face system, roles in `ui/ui_fonts.gd`, licences in `docs/licences.md`. Display = Oswald (poster voice: day cards, banners, title). UI = Inter (radio, prompts, menus). Paper = Caveat (journal, Arthur's inner voice). The text below is the original brief.
+
+## Original brief (deferred to M7)
 
 **Status:** every piece of UI text currently uses Godot's built-in default font. It is a placeholder.
 **Direction from the project owner:** use something *different and fresh*, not the stock default and not a generic "retro typewriter" look.
