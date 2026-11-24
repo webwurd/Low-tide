@@ -20,7 +20,7 @@ Writers edit this file; no code changes needed. Top-level keys: `convs`, `reacti
 Zones: `pier summit shore east_bar west_bar east_stack west_stack`.
 
 ## reactions
-`{ "id", "when": [...], "conv": "conv_id", "once": true, "cooldown": <game minutes> }`, checked once a second outdoors while the radio is idle; first match plays.
+`{ "id", "when": [...], "conv": "conv_id", "once": true, "cooldown": <game minutes>, "anywhere": false }`, checked once a second while the radio is idle; first match plays. Reactions only fire outdoors unless `"anywhere": true` (used for the storm-day midday call).
 
 ## tapes
 `"tape_1": { "title": "...", "lines": [ {"t": <seconds>, "text": "..."} ] }`. Heard tapes set `heard_<id>`.
@@ -29,3 +29,9 @@ Zones: `pier summit shore east_bar west_bar east_stack west_stack`.
 Defined in `story/items.gd`. Pickups: set `give_item` on an Interactable.
 
 Note: exported builds must include `*.json` (add to the export filter in M7).
+
+## Endings
+Choosing an option that sets `ending_a`, `ending_b` or `ending_c` (day 7 `evening_d7`) plus an optional `next` closing line starts the ending scene when the radio finishes (`RadioSystem.hidden` fires only after the last chained line). Flags used for branching: `clara_admitted`, `clara_partial`, `clara_stonewalled`. See `docs/narrative_outline.md`.
+
+## Radio chaining
+`next` lines replace the panel directly (the panel hides only once, after the final line).

@@ -13,7 +13,9 @@ var island: Island
 var interiors: Interiors
 var ocean: Ocean
 var hud: HUD
+var menus: Menus
 var env: Environment
+var sky_mat: ShaderMaterial
 var sun: DirectionalLight3D
 var rain: CPUParticles3D
 var location := "cottage"          # outdoors | cottage | tower_base | tower_top
@@ -22,6 +24,15 @@ var _busy := false
 var _sweeping := false
 var _elapsed := 0.0
 var _forced_home_done := false
+var ending_kind := ""
+var ending_reload := true          # tests turn this off
+var _boat: Node3D
+var _boat_target := Vector3.ZERO
+var _boat_speed := 2.4
+var _boat_arrived := false
+var _boat_player: AudioStreamPlayer3D
+
+const ENDINGS := Endings.DATA
 
 func _ready() -> void:
 	_build_environment()
@@ -42,8 +53,18 @@ func _ready() -> void:
 	add_child(hud)
 	hud.new_game_pressed.connect(new_game)
 	hud.continue_pressed.connect(continue_game)
+	menus = Menus.new()
+	add_child(menus)
+	hud.settings_requested.connect(menus.open_settings_from_title)
+	menus.resumed.connect(_on_resumed)
+	menus.title_requested.connect(_return_to_title)
+	menus.quit_requested.connect(func(): get_tree().quit())
 	_wire_interactables()
-	DayDirector.week_ended.connect(func(): hud.show_card("ONE WEEK ON GANNET ROCK", "End of the current build. Story content arrives in M6.", 6.0))
+	RadioSystem.hidden.connect(_on_radio_hidden)
+	RadioSystem.line_shown.connect(func(_sp, _tx, _op): _on_radio_line_for_sting())
+	TapePlayer.finished.connect(_on_tape_finished)
+	hud.ending_closed.connect(_on_ending_closed)
+	DayDirector.week_ended.connect(func(): hud.show_card("One week on Gannet Rock", "The relief boat is due at first light.", 6.0))
 	_place("cottage", interiors.spawn["cottage"], 0.0)
 	if autostart:
 		hud.show_title(false)
@@ -52,15 +73,17 @@ func _ready() -> void:
 # --- game start / load --------------------------------------------------
 
 func new_game() -> void:
+	TapePlayer.cancel()
 	GameState.reset()
 	DayDirector.begin_day(1)
 	_forced_home_done = false
 	_place("cottage", interiors.spawn["cottage"], 0.0)
 	_begin()
 	_autosave()
-	hud.show_card("DAY 1", DayDirector.data().title + "  -  " + DayDirector.data().weather, 3.5)
+	hud.show_card("Day 1", _day_subtitle(), 3.5)
 
 func continue_game() -> void:
+	TapePlayer.cancel()
 	var loc := SaveSystem.load_game()
 	if loc == "":
 		new_game()
@@ -69,7 +92,12 @@ func continue_game() -> void:
 	var sp: Vector3 = interiors.spawn.get(loc, interiors.spawn["cottage"])
 	_place(loc, sp, 0.0)
 	_begin()
-	hud.show_card("DAY %d" % GameClock.day, DayDirector.data().title + "  -  " + DayDirector.data().weather, 3.0)
+	hud.show_card("Day %d" % GameClock.day, _day_subtitle(), 3.0)
+
+## "First Watch, fog": title in title case, the weather as ordinary lower-case text.
+func _day_subtitle() -> String:
+	var dd := DayDirector.data()
+	return "%s, %s" % [dd.title, dd.weather.to_lower()]
 
 func _begin() -> void:
 	started = true
@@ -180,7 +208,7 @@ func _on_radio_desk() -> void:
 			D.complete_ritual("checkin")
 			RadioSystem.play(Conversations.get_conv(D.data().morning_conv))
 	elif D.phase == D.Phase.EVENING:
-		if D.evening_call_done:
+		if D.evening_call_done and not D.final_pending():
 			GameState.note("Already spoke with Clara tonight.")
 		elif not D.lamp_lit or not D.log_written:
 			GameState.note("Lamp and log first, then I'll call Clara.")
@@ -190,15 +218,20 @@ func _on_radio_desk() -> void:
 	else:
 		GameState.note("Nothing to report yet.")
 
-## Next unheard tape in the satchel, else the most recent tape, else "".
+## Lowest-numbered unheard tape in the satchel (story order, not pickup order);
+## if all are heard, the highest-numbered one for replay; "" if none.
 func _next_tape() -> String:
-	var last := ""
+	var ids: Array = []
 	for id in GameState.items:
 		if String(id).begins_with("tape_"):
-			if not TapePlayer.is_heard(id):
-				return id
-			last = id
-	return last
+			ids.append(String(id))
+	if ids.is_empty():
+		return ""
+	ids.sort()
+	for id in ids:
+		if not TapePlayer.is_heard(id):
+			return id
+	return ids[ids.size() - 1]
 
 func _on_cassette() -> void:
 	var id := _next_tape()
@@ -267,9 +300,9 @@ func _on_bed() -> void:
 		_place("cottage", interiors.spawn["bed"], 0.0)
 		_autosave()
 		hud.fade_in(1.2)
-		hud.show_card("DAY %d" % GameClock.day, DayDirector.data().title + "  -  " + DayDirector.data().weather, 3.5)
+		hud.show_card("Day %d" % GameClock.day, _day_subtitle(), 3.5)
 	else:
-		hud.show_card("ONE WEEK ON GANNET ROCK", "End of the current build. Story content arrives in M6.", 6.0)
+		hud.show_card("One week on Gannet Rock", "The relief boat is due at first light.", 6.0)
 	await get_tree().create_timer(0.8).timeout
 	player.locked = false
 	_busy = false
@@ -287,6 +320,15 @@ func _daylight() -> float:
 func _build_environment() -> void:
 	env = Environment.new()
 	env.background_mode = Environment.BG_COLOR
+	sky_mat = ShaderMaterial.new()
+	sky_mat.shader = load("res://world/sky.gdshader")
+	var sky := Sky.new()
+	sky.sky_material = sky_mat
+	sky.process_mode = Sky.PROCESS_MODE_INCREMENTAL
+	sky.radiance_size = Sky.RADIANCE_SIZE_32       # we never light from the sky texture, only look at it
+	env.sky = sky
+	env.fog_sky_affect = 0.0                         # the sky shader paints its own haze
+	env.fog_sun_scatter = 0.2
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.tonemap_exposure = 0.95
@@ -300,6 +342,15 @@ func _build_environment() -> void:
 	sun.position = Vector3(-45, 75, 35)
 	add_child(sun)
 	sun.look_at(Vector3.ZERO)
+
+## Brightness / exposure / bloom from the Lighting settings.
+func _apply_display_settings() -> void:
+	env.adjustment_enabled = true
+	env.adjustment_saturation = 1.12                 # a touch of storybook colour
+	env.adjustment_contrast = 1.05
+	env.adjustment_brightness = float(Settings.v("brightness"))
+	env.tonemap_exposure = 0.95 * float(Settings.v("exposure"))
+	env.glow_enabled = bool(Settings.v("glow"))
 
 func _build_rain() -> void:
 	rain = CPUParticles3D.new()
@@ -324,10 +375,12 @@ func _build_rain() -> void:
 	add_child(rain)
 
 func _apply_lighting() -> void:
+	_apply_display_settings()
 	var dd := DayDirector.data()
 	var outdoors := location == "outdoors"
 	if not outdoors:
 		env.fog_enabled = false
+		env.background_mode = Environment.BG_COLOR
 		env.background_color = Color.BLACK
 		env.ambient_light_color = INDOOR_AMBIENT
 		env.ambient_light_energy = 0.8
@@ -335,20 +388,45 @@ func _apply_lighting() -> void:
 		rain.emitting = false
 		return
 	var d := clampf(_daylight() * dd.light_scale, 0.0, 1.0)
-	var fog_col := NIGHT_FOG.lerp(dd.fog_tint, d)
+	var sk := SkyModel.describe(GameClock.minute_of_day, dd.cloud, dd.fog_tint, dd.fog_density, dd.light_scale)
+	var fog_col: Color = sk["fog_color"]
+	env.background_mode = Environment.BG_SKY
 	env.fog_enabled = true
-	env.fog_density = dd.fog_density
+	env.fog_density = dd.fog_density * lerpf(1.5, 1.0, smoothstep(390.0, 660.0, GameClock.minute_of_day)) * float(Settings.v("fog_scale"))   # morning mist burns off
 	env.fog_light_color = fog_col
 	env.background_color = fog_col
-	env.ambient_light_color = Color("6f84a6").lerp(Color("9fb4c7"), d)
-	env.ambient_light_energy = lerpf(0.3, 0.4, d)
+	var ambient_sky: Color = (sk["zenith"] as Color).lerp(sk["horizon"], 0.45)
+	env.ambient_light_color = ambient_sky.lerp(Color("6f84a6").lerp(Color("9fb4c7"), d), 0.35)
+	env.ambient_light_energy = lerpf(0.3, 0.4, d) + float(Settings.v("night_assist")) * (1.0 - d) * 0.45
+	_feed_sky(sk)
+	ocean.set_sky_color((sk["horizon"] as Color).lerp(sk["zenith"], 0.3))
+	var sun_h: float = sk["sun_height"]
+	var key := SkyModel.key_light(sun_h, sk["sun_dir"], sk["moon_dir"], dd.cloud)
 	sun.visible = true
-	sun.light_color = Color("5f78a8").lerp(Color("dce6f0"), d)
-	sun.light_energy = lerpf(0.14, 0.6, d)
-	sun.shadow_enabled = d > 0.15
+	sun.position = (key["dir"] as Vector3) * 80.0
+	sun.look_at(Vector3.ZERO)
+	sun.light_color = key["color"]
+	# The key light fades out as the sun crosses the horizon, so the swap to the moon
+	# (the opposite side of the sky) never shows as a jump in shadows or colour.
+	sun.light_energy = lerpf(0.14, 0.6, d) * float(key["fade"])
+	sun.shadow_enabled = d > 0.15 and float(key["fade"]) > 0.02 and Settings.shadow_distance() > 0.0
+	sun.directional_shadow_max_distance = maxf(Settings.shadow_distance(), 1.0)
 	island.set_lamp(DayDirector.lamp_lit, DayDirector.weights_wound, _daylight())
 	rain.emitting = dd.rain
 	rain.global_position = player.global_position + Vector3(0, 14, 0)
+
+func _feed_sky(sk: Dictionary) -> void:
+	sky_mat.set_shader_parameter("zenith_color", sk["zenith"])
+	sky_mat.set_shader_parameter("horizon_color", sk["horizon"])
+	sky_mat.set_shader_parameter("glow_color", sk["glow"])
+	sky_mat.set_shader_parameter("fog_color", sk["fog_color"])
+	sky_mat.set_shader_parameter("sun_dir", sk["sun_dir"])
+	sky_mat.set_shader_parameter("moon_dir", sk["moon_dir"])
+	sky_mat.set_shader_parameter("glow_strength", sk["glow_strength"])
+	sky_mat.set_shader_parameter("haze_height", sk["haze_height"])
+	sky_mat.set_shader_parameter("cloud_cover", sk["cloud"])
+	sky_mat.set_shader_parameter("star_amount", sk["stars"])
+	sky_mat.set_shader_parameter("sun_height", sk["sun_height"])
 
 # --- frame -----------------------------------------------------------------
 
@@ -357,7 +435,7 @@ func _process(delta: float) -> void:
 	if not started:
 		GameClock.paused = true
 		return
-	GameClock.paused = location != "outdoors"
+	GameClock.paused = location != "outdoors" or ending_kind != ""
 	if location == "outdoors":
 		var pp := player.global_position
 		GameState.zone = Terrain.zone_at(pp.x, pp.z, pp.y)
@@ -368,9 +446,8 @@ func _process(delta: float) -> void:
 	AudioDirector.update_ambient(_elapsed, player.global_position.y if location == "outdoors" else 0.0, TideSystem.current_height)
 	if Input.is_action_just_pressed("debug_skip") and OS.is_debug_build():
 		GameClock.advance(60.0)
-	if Input.is_action_just_pressed("pause"):
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_check_day_events()
+	_update_ending_scene(delta)
 
 func _check_day_events() -> void:
 	if location != "outdoors" or _busy:
@@ -385,8 +462,36 @@ func _check_day_events() -> void:
 		RadioSystem.play(Conversations.get_conv("forced_home"))
 		travel("cottage", interiors.spawn["cottage"], 0.0)
 
+func _unhandled_input(event: InputEvent) -> void:
+	if not event.is_action_pressed("pause"):
+		return
+	get_viewport().set_input_as_handled()
+	if hud.modal_open:
+		hud.close_modal()
+	elif menus.is_open():
+		menus.back()
+	elif started and ending_kind == "" and not _busy:
+		open_pause()
+
+func open_pause() -> void:
+	if not started or menus.is_open():
+		return
+	menus.open_pause()
+
+func _on_resumed() -> void:
+	if started and not hud.modal_open:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+func _return_to_title() -> void:
+	TapePlayer.cancel()
+	# Leaving mid-expedition means heading home: Continue always resumes indoors.
+	SaveSystem.save_game(location if location != "outdoors" else "cottage")
+	GameState.reset()
+	DayDirector.begin_day(1)
+	get_tree().reload_current_scene()
+
 func _input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and started and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not hud.modal_open:
+	if event is InputEventMouseButton and event.pressed and started and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not hud.modal_open and not menus.is_open():
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 ## Swept by the tide: fade, return to the pier, lose 45 minutes, Clara reacts.
@@ -404,3 +509,150 @@ func _on_swept() -> void:
 	player.locked = false
 	_sweeping = false
 	RadioSystem.play(Conversations.get_conv("swept"))
+
+# --- endings -----------------------------------------------------------------
+
+## Music is rare: only turning points get a sting (once each per run).
+const CONVERSATION_STINGS := {"evening_d6": "sting_confront"}
+const TAPE_STINGS := {"tape_2": "sting_june", "tape_4": "sting_walt"}
+
+func _on_radio_line_for_sting() -> void:
+	var id: String = RadioSystem.current.get("id", "")
+	if CONVERSATION_STINGS.has(id) and not GameState.has_flag("sting_" + id):
+		GameState.set_flag("sting_" + id)
+		AudioDirector.play_sting(CONVERSATION_STINGS[id])
+
+func _on_tape_finished(id: String) -> void:
+	if TAPE_STINGS.has(id) and not GameState.has_flag("sting_" + id):
+		GameState.set_flag("sting_" + id)
+		AudioDirector.play_sting(TAPE_STINGS[id])
+
+func _on_radio_hidden() -> void:
+	if ending_kind != "":
+		return
+	for k in ["a", "b", "c"]:
+		if GameState.has_flag("ending_" + k):
+			start_ending(k)
+			return
+
+## Dawn on the pier. A and B end on the relief boat's light seen through the
+## binoculars; C ends on the sweeping beam and static.
+func start_ending(kind: String) -> void:
+	if ending_kind != "":
+		return
+	ending_kind = kind
+	GameState.ending = kind
+	_busy = true
+	player.locked = true
+	if kind == "b":
+		GameState.set_flag("buoy_off")
+	hud.fade_out(1.6)
+	await get_tree().create_timer(2.0).timeout
+	GameClock.set_time(7, 410.0)                       # first light
+	TideSystem.refresh()
+	_place("outdoors", Vector3(0.0, Terrain.PIER_TOP + 0.05, 31.0), PI)
+	player.binoculars = false
+	hud.fade_in(1.8)
+	await get_tree().create_timer(3.5).timeout
+	RadioSystem.play(Conversations.get_conv("ending_%s_radio" % kind))
+	if kind == "c":
+		await get_tree().create_timer(6.0).timeout
+	else:
+		_spawn_boat()
+		player.binoculars = true
+		while not _boat_arrived:
+			await get_tree().process_frame
+		await get_tree().create_timer(2.0).timeout
+	_show_ending_card(kind)
+
+func _spawn_boat() -> void:
+	_boat = Node3D.new()
+	_boat.position = Vector3(62.0, 0.3, 150.0)
+	_boat_target = Vector3(6.0, 0.3, 58.0)
+	add_child(_boat)
+	var hull := MeshInstance3D.new()
+	var hb := BoxMesh.new(); hb.size = Vector3(2.6, 1.0, 7.0)
+	hull.mesh = hb
+	var hm := StandardMaterial3D.new(); hm.albedo_color = Color("2a3138")
+	hull.material_override = hm
+	_boat.add_child(hull)
+	var cabin := MeshInstance3D.new()
+	var cb := BoxMesh.new(); cb.size = Vector3(1.8, 1.2, 2.2)
+	cabin.mesh = cb
+	cabin.material_override = hm
+	cabin.position = Vector3(0, 1.0, 0.6)
+	_boat.add_child(cabin)
+	var lamp := MeshInstance3D.new()          # white masthead light, visible through fog
+	var sph := SphereMesh.new(); sph.radius = 0.35; sph.height = 0.7
+	lamp.mesh = sph
+	var lm := StandardMaterial3D.new()
+	lm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	lm.albedo_color = Color(1.0, 0.97, 0.85)
+	lm.disable_fog = true
+	lamp.material_override = lm
+	lamp.position = Vector3(0, 2.4, 0.4)
+	_boat.add_child(lamp)
+	var omni := OmniLight3D.new()
+	omni.light_color = Color(1.0, 0.95, 0.8)
+	omni.light_energy = 3.0
+	omni.omni_range = 30.0
+	omni.position = lamp.position
+	_boat.add_child(omni)
+	_boat_player = AudioStreamPlayer3D.new()
+	_boat_player.bus = "Ambience"
+	_boat_player.stream = AudioDirector.boat_engine_stream()
+	_boat_player.unit_size = 20.0
+	_boat_player.max_distance = 300.0
+	_boat_player.volume_db = -4.0
+	_boat.add_child(_boat_player)
+	_boat_player.play()
+	_boat.look_at(_boat_target + Vector3(0, 0, 0))
+	_boat.rotate_y(PI)         # bow (local -z in look_at) forward
+	_boat.set_meta("label", "Relief boat, first light")
+	_boat.add_to_group("bino_target")
+	_boat_arrived = false
+
+func _update_ending_scene(delta: float) -> void:
+	if ending_kind == "":
+		return
+	if ending_kind == "c":
+		# Look up at the beam from the pier.
+		player.yaw = lerp_angle(player.yaw, 0.0, minf(1.0, delta * 1.5))
+		player.pitch = lerpf(player.pitch, 0.45, minf(1.0, delta * 1.5))
+	elif _boat != null:
+		var to := _boat_target - _boat.position
+		to.y = 0.0                              # the boat rides the water; judge arrival in the plane
+		if to.length() > 1.0:
+			_boat.position += to.normalized() * _boat_speed * delta
+		else:
+			_boat_arrived = true
+		_boat.position.y = TideSystem.current_height + 0.25 + sin(Time.get_ticks_msec() * 0.0015) * 0.1
+		var eye := player.global_position + Vector3(0, Player.EYE, 0)
+		var dir := (_boat.global_position + Vector3(0, 2.4, 0) - eye)
+		var want_yaw := atan2(-dir.x, -dir.z)
+		var want_pitch := asin(clampf(dir.y / maxf(dir.length(), 0.001), -1.0, 1.0))
+		player.yaw = lerp_angle(player.yaw, want_yaw, minf(1.0, delta * 2.0))
+		player.pitch = lerpf(player.pitch, want_pitch, minf(1.0, delta * 2.0))
+		player.bino_label = "Relief boat, first light"
+		player.bino_dist = int(dir.length())
+	player.rotation.y = player.yaw
+	player.cam.rotation.x = player.pitch
+	var want_fov := Player.FOV_BINO if player.binoculars else Player.FOV_NORMAL
+	player.cam.fov = lerpf(player.cam.fov, want_fov, minf(1.0, delta * 3.0))
+
+func _ending_body(kind: String) -> String:
+	return Endings.body(kind)
+
+func _show_ending_card(kind: String) -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	SaveSystem.record_ending(kind)
+	SaveSystem.delete_save()
+	AudioDirector.play_sting("sting_end_" + kind)
+	hud.show_ending(kind, ENDINGS[kind]["name"], _ending_body(kind))
+
+func _on_ending_closed() -> void:
+	RadioSystem.dismiss()
+	GameState.reset()
+	DayDirector.begin_day(1)
+	if ending_reload:
+		get_tree().reload_current_scene()

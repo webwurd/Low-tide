@@ -17,9 +17,11 @@ func _process(delta: float) -> void:
 
 ## Returns the id of the reaction played, or "".
 func tick() -> String:
-	if not enabled or RadioSystem.active or GameState.location != "outdoors":
+	if not enabled or RadioSystem.active:
 		return ""
 	for r in Conversations.reactions():
+		if GameState.location != "outdoors" and not r.get("anywhere", false):
+			continue
 		var id: String = r["id"]
 		if r.get("once", false) and GameState.has_flag("seen_" + id):
 			continue

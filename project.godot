@@ -21,6 +21,8 @@ ReactiveDirector="*res://autoload/reactive_director.gd"
 [display]
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 
 [rendering]
 environment/defaults/default_clear_color=Color(0.086, 0.125, 0.165, 1)

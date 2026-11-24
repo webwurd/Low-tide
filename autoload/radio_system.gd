@@ -29,8 +29,16 @@ func play(conv: Dictionary) -> void:
 	if active:
 		var cur_prio: int = current.get("priority", 1)
 		if prio > cur_prio:
+			# The urgent call goes first; the interrupted call's follow-up (if any)
+			# plays right after it instead of jumping ahead of it.
+			var follow := _pending_next
+			_pending_next = ""
 			_queue.push_front(conv)
 			_finish()
+			if follow != "":
+				var f := Conversations.get_conv(follow)
+				if not f.is_empty():
+					_queue.push_front(f)
 			return
 		if prio == 0:
 			return    # idle chatter never queues behind a live call
@@ -53,7 +61,7 @@ func choose(index: int) -> void:
 		GameState.clear_flag(String(f))
 	_pending_next = String(opt.get("next", ""))
 	AudioDirector.play_sfx("squelch")
-	reply_shown.emit("CH-16 // CLARA (REPLY)", opt.get("reply", ""))
+	reply_shown.emit("Clara, replying", opt.get("reply", ""))
 	_timer.start(reading_time(opt.get("reply", "")))
 
 func dismiss() -> void:
@@ -78,7 +86,6 @@ func _finish() -> void:
 	active = false
 	awaiting_choice = false
 	current = {}
-	hidden.emit()
 	var nxt := _pending_next
 	_pending_next = ""
 	if nxt != "":
@@ -86,4 +93,6 @@ func _finish() -> void:
 	while _queue.size() > 0 and _queue[0].is_empty():
 		_queue.pop_front()
 	if _queue.size() > 0:
-		_show.call_deferred(_queue.pop_front())
+		_show(_queue.pop_front())    # synchronous, so active/current are right at once; no hide in between
+	else:
+		hidden.emit()

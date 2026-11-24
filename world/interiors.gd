@@ -125,6 +125,11 @@ func _build_cottage() -> void:
 	_prop(o + Vector3(-0.8, 0.4, 2.3), Vector3(0.8, 0.8, 0.6), Color("5c4938"))
 	_prop(o + Vector3(-0.8, 0.88, 2.3), Vector3(0.4, 0.16, 0.25), Color("2b3138"), false)
 	_it("cassette_player", "Cassette player", o + Vector3(-0.8, 1.1, 1.8), 1.8)
+	# loose floorboard (Walt's tape 3), found from day 3
+	_prop(o + Vector3(0.0, 0.01, -1.0), Vector3(1.1, 0.03, 0.22), Color("8a7352"), false)
+	var board := _it("floorboard", "Lift the loose floorboard", o + Vector3(0.0, 1.0, -1.0), 1.6)
+	board.give_item = "tape_3"
+	board.visible_fn = func(): return GameClock.day >= 3 and not GameState.has_item("tape_3")
 	# door
 	_prop(o + Vector3(2.4, 1.05, 3.0), Vector3(1.1, 2.1, 0.1), Color("5c4938"), false)
 	_it("door_cottage_out", "Step outside", o + Vector3(2.4, 1.1, 2.2))
@@ -162,6 +167,11 @@ func _build_lantern_room() -> void:
 	for sx in [-1, 1]:
 		_prop(o + Vector3(sx * 1.99, 1.4, -0.4), Vector3(0.04, 0.8, 1.2), Color("2b4156"), false, true)
 	_it("stairs_down", "Go down the stairs", o + Vector3(1.4, 1.0, 1.6), 2.0)
+	# keeper's locker (Walt's last tape), found from day 4
+	_prop(o + Vector3(-1.5, 0.7, -1.85), Vector3(0.9, 1.4, 0.35), Color("46505a"))
+	var locker := _it("locker", "Open the keeper's locker", o + Vector3(-1.5, 1.1, -1.4), 1.8)
+	locker.give_item = "tape_4"
+	locker.visible_fn = func(): return GameClock.day >= 4 and not GameState.has_item("tape_4")
 
 ## Called by Main when the lamp state changes.
 func set_lamp(lit: bool) -> void:

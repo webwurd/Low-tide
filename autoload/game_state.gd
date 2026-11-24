@@ -14,10 +14,12 @@ var flag_day: Dictionary = {}         # flag -> day it was set
 var reaction_last: Dictionary = {}    # reaction id -> abs minute last played
 var zone := "cottage"                 # where Arthur is (set by Main)
 var location := "cottage"
+var ending := ""                      # "a" | "b" | "c" once an ending has begun
 
 func reset() -> void:
 	discovered.clear(); discovered_day.clear(); flags.clear(); logbook.clear()
 	items.clear(); flag_day.clear(); reaction_last.clear()
+	ending = ""
 	trust = 0
 
 func discover(id: String) -> bool:
@@ -56,7 +58,7 @@ func add_log(day: int, text: String) -> void:
 func to_dict() -> Dictionary:
 	return {"discovered": discovered, "discovered_day": discovered_day, "flags": flags,
 		"trust": trust, "logbook": logbook, "items": items, "flag_day": flag_day,
-		"reaction_last": reaction_last}
+		"reaction_last": reaction_last, "ending": ending}
 
 func from_dict(d: Dictionary) -> void:
 	reset()
@@ -71,6 +73,7 @@ func from_dict(d: Dictionary) -> void:
 	for k in d.get("flag_day", {}):
 		flag_day[k] = int(d["flag_day"][k])
 	reaction_last = d.get("reaction_last", {})
+	ending = String(d.get("ending", ""))
 	logbook = []
 	for e in d.get("logbook", []):
 		logbook.append({"day": int(e["day"]), "text": String(e["text"])})

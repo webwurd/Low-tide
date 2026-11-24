@@ -24,6 +24,9 @@ func build() -> void:
 	_build_wreck()
 	_build_cave()
 	_build_rocks()
+	_build_cove()
+	_build_vault()
+	_build_buoys()
 
 func _process(delta: float) -> void:
 	if beam_pivot and beam_spinning:
@@ -45,7 +48,7 @@ func set_lamp(lit: bool, wound: bool, daylight: float) -> void:
 	beam_spinning = lit and wound
 	for a in beam_arms:
 		a.visible = lit
-	beam_mat.albedo_color.a = lerpf(0.26, 0.07, daylight)
+	beam_mat.albedo_color.a = lerpf(0.26, 0.07, daylight) * float(Settings.v("beam_scale"))
 	lantern_mat.albedo_color = Color("ffd27d") if lit else Color("2a2f33")
 	lamp_light.light_energy = 2.2 if lit else 0.0
 
@@ -175,7 +178,7 @@ func _build_lighthouse() -> void:
 	set_lamp(false, false, 1.0)
 
 	tower_door = _interactable("lighthouse", "Enter the lighthouse", Vector3(0, 11.3, -1.2), 3.2, "lighthouse")
-	_bino_target("GANNET ROCK LIGHTHOUSE (1884)", Vector3(0, 30, -6))
+	_bino_target("Gannet Rock lighthouse (1884)", Vector3(0, 30, -6))
 
 # --- cottage -----------------------------------------------------------
 
@@ -243,6 +246,7 @@ func _tide_marks(base: Vector3) -> void:
 			lbl.font_size = 64
 			lbl.pixel_size = 0.004
 			lbl.modulate = Color("e8dfc8")
+			UiFonts.style_3d(lbl, "ui")
 			lbl.position = base + Vector3(-0.3, h + 0.12, 0.0)
 			lbl.rotation.y = -PI / 2.0
 			add_child(lbl)
@@ -260,7 +264,7 @@ func _build_wreck() -> void:
 	var wreck_it := _interactable("shipwreck", "Take the canister from the hull", Vector3(78.5, 6.2, 8.2), 5.5, "shipwreck")
 	wreck_it.give_item = "canister"
 	wreck_it.visible_fn = func(): return not GameState.has_item("canister")
-	_bino_target("EAST SEA STACK // UNCHARTED WRECK", Vector3(76, 8, 6))
+	_bino_target("East sea stack: uncharted wreck", Vector3(76, 8, 6))
 
 # --- west sea stack: echo cave -----------------------------------------
 
@@ -279,7 +283,15 @@ func _build_cave() -> void:
 	var cave_it := _interactable("seacave", "Check the buoy's hatch", Vector3(-72.5, 6.5, -8), 6.0, "seacave")
 	cave_it.give_item = "tape_1"
 	cave_it.visible_fn = func(): return not GameState.has_item("tape_1")
-	_bino_target("WEST SEA STACK // ECHO SEA CAVE", Vector3(-74, 9, -8))
+	# West buoy service hatch: Clara's own tape (tape 6), from day 6.
+	_mesh(g, _box(Vector3(0.5, 0.35, 0.3)), _mat(Color("2e3438"), 0.5, 0.6), Vector3(1.5, 0.5, 1.3))
+	var service := _interactable("buoy_service", "Check the buoy's service hatch", Vector3(-72.5, 6.2, -6.7), 2.4, "")
+	service.give_item = "tape_6"
+	service.visible_fn = func(): return GameClock.day >= 6 and not GameState.has_item("tape_6")
+	var hydro := Hydrophone.new()
+	hydro.position = Vector3(-72.5, 6.7, -8.0)
+	add_child(hydro)
+	_bino_target("West sea stack: echo cave", Vector3(-74, 9, -8))
 
 func _build_rocks() -> void:
 	var rng := RandomNumberGenerator.new()
@@ -296,3 +308,115 @@ func _build_rocks() -> void:
 		var mi := _mesh(self, sphere, rock_mat, Vector3(c[0], y + s * 0.3, c[1]),
 			Vector3(rng.randf() * 3.0, rng.randf() * 3.0, rng.randf() * 3.0))
 		mi.scale = Vector3(s * 1.2, s * 0.85, s)
+
+# --- north cove: cable hut + armored cable ------------------------------
+
+func _build_cove() -> void:
+	var hut_pos := Vector3(-13.5, Terrain.height(-13.5, -50.0), -50.0)
+	var g := Node3D.new()
+	g.position = hut_pos
+	add_child(g)
+	_mesh(g, _box(Vector3(3.2, 2.4, 2.8)), _mat(Color("5d655f"), 0.9), Vector3(0, 1.2, 0))
+	_mesh(g, _box(Vector3(3.6, 0.2, 3.2)), _mat(Color("3b3f42"), 0.8), Vector3(0, 2.5, 0))
+	_mesh(g, _box(Vector3(0.9, 1.7, 0.1)), _mat(Color("2b2f33"), 0.5, 0.4), Vector3(0, 0.9, 1.42))
+	_solid(g, _box_shape(Vector3(3.2, 2.4, 2.8)), Vector3(0, 1.2, 0))
+	# The cable runs from the hut toward the open sea, hugging the seabed.
+	var dir := Vector2(0.35, -0.94).normalized()
+	var cable_mat := _mat(Color("1d2024"), 0.5, 0.6)
+	var pos2 := Vector2(hut_pos.x, hut_pos.z) + dir * 2.0
+	for i in 26:
+		var y := maxf(Terrain.height(pos2.x, pos2.y), -3.8) + 0.12
+		var seg := _mesh(self, _box(Vector3(0.28, 0.28, 2.1)), cable_mat, Vector3(pos2.x, y, pos2.y), Vector3(0, atan2(dir.x, dir.y), 0))
+		seg.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		pos2 += dir * 2.0
+	var it := _interactable("cable", "Inspect the cable and the hut", hut_pos + Vector3(0, 1.3, 2.6), 3.2, "cable")
+	it.give_item = "cable_tag"
+	it.visible_fn = func(): return not GameState.has_item("cable_tag")
+	# Biscuit tin on a crate beside the hut: Tom Dunmore's boat log (tape 5).
+	_mesh(self, _box(Vector3(0.9, 0.7, 0.9)), _mat(Color("5c4938"), 0.9), hut_pos + Vector3(-2.7, 0.35, 0.8))
+	_mesh(self, _box(Vector3(0.4, 0.2, 0.3)), _mat(Color("8f2d2d"), 0.5, 0.4), hut_pos + Vector3(-2.7, 0.8, 0.8))
+	var tin := _interactable("tin", "Open the biscuit tin", hut_pos + Vector3(-2.7, 1.2, 0.8), 1.8, "")
+	tin.give_item = "tape_5"
+	tin.visible_fn = func(): return GameState.has_flag("heard_tape_4") and not GameState.has_item("tape_5")
+	_bino_target("North cove: cable landing", Vector3(-17, 5, -52))
+
+# --- south reef: cable vault ---------------------------------------------
+
+func _build_vault() -> void:
+	var c := Terrain.VAULT_C
+	var base_y := Terrain.height(c.x, c.y)
+	var disc := CylinderMesh.new()
+	disc.top_radius = 4.0; disc.bottom_radius = 4.0; disc.height = 0.12; disc.radial_segments = 16
+	_mesh(self, disc, _mat(Color("8a8d8f"), 0.95), Vector3(c.x, base_y + 0.04, c.y))
+	var hatch := _cyl(1.0, 1.0, 0.25, 12)
+	_mesh(self, hatch, _mat(Color("2e3438"), 0.5, 0.7), Vector3(c.x, base_y + 0.15, c.y))
+	for a in [0.0, 2.1, 4.2]:
+		_mesh(self, _cyl(0.12, 0.12, 1.2, 6), _mat(Color("3b3f42"), 0.6, 0.6),
+			Vector3(c.x + cos(a) * 3.3, base_y + 0.6, c.y + sin(a) * 3.3))
+	_build_reef_markers()
+	var it := _interactable("vault", "Open the hatch and look inside", Vector3(c.x - 1.6, base_y + 1.3, c.y - 1.2), 3.0, "vault")
+	it.give_item = "tape_2"
+	it.visible_fn = func(): return not GameState.has_item("tape_2")
+	_bino_target("South reef: cable vault", Vector3(c.x, 3, c.y))
+
+# --- bell buoys (navigate by ear: 1 N, 2 E, 3 S, 4 W) ---------------------
+
+func _build_buoys() -> void:
+	var defs := [
+		["Bell buoy 1 (north)", 1, 440.0, Vector3(10, 0, -88)],
+		["Bell buoy 2 (east)", 2, 523.0, Vector3(92, 0, -34)],
+		["Bell buoy 3 (south)", 3, 349.0, Vector3(-26, 0, 90)],
+		["Bell buoy 4 (west)", 4, 392.0, Vector3(-92, 0, 30)],
+	]
+	for d in defs:
+		var b := BellBuoy.new()
+		b.label = d[0]; b.strikes = d[1]; b.pitch = d[2]
+		b.position = d[3]
+		add_child(b)
+		_bino_target(d[0], d[3] + Vector3(0, 2, 0))
+
+## Sign post + lane-edge poles for the south causeway, so the 2 m safe lane
+## is readable on the day the water drops.
+func _build_reef_markers() -> void:
+	var a := Terrain.SOUTH_A
+	var d := (Terrain.SOUTH_B - a).normalized()
+	var n := Vector2(d.y, -d.x)                 # perpendicular to the lane
+	var wood := _mat(Color("5c4938"), 0.9)
+	var white := _mat(Color("d8d4c8"), 0.8)
+	var orange := _mat(Color("e8742a"), 0.6)
+	var half := Terrain.LANE_HALF_WIDTH
+	var s := 4.0
+	while s <= 34.0:
+		for side in [-1.0, 1.0]:
+			var q: Vector2 = a + d * s + n * half * side
+			var pole := Node3D.new()
+			pole.position = Vector3(q.x, -1.0, q.y)
+			pole.add_to_group("reef_pole")
+			add_child(pole)
+			var shaft := _mesh(pole, _cyl(0.07, 0.07, 2.6, 6), white, Vector3(0, 1.3, 0))
+			shaft.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			_mesh(pole, _cyl(0.1, 0.1, 0.5, 6), orange, Vector3(0, 2.35, 0))
+		s += 5.0
+	# Sign: tall enough that its board stays above the 4.2 m high tide.
+	var sp: Vector2 = a - d * 3.0 + n * 3.5
+	var base_y := maxf(Terrain.height(sp.x, sp.y), -1.0)
+	var post_h := 4.2 - base_y + 3.0
+	var sign_node := Node3D.new()
+	sign_node.position = Vector3(sp.x, base_y, sp.y)
+	sign_node.add_to_group("reef_sign_board")
+	sign_node.set_meta("board_y", base_y + post_h - 0.6)
+	add_child(sign_node)
+	_mesh(sign_node, _cyl(0.12, 0.14, post_h, 6), wood, Vector3(0, post_h / 2.0, 0))
+	_mesh(sign_node, _box(Vector3(4.2, 1.8, 0.12)), _mat(Color("c9c2ac"), 0.9), Vector3(0, post_h - 0.6, -0.2))   # board stands proud of the post
+	var text := Label3D.new()
+	text.text = "Causeway.\nSpring low water only.\nKeep between the poles."
+	text.font_size = 56
+	text.pixel_size = 0.0052
+	text.modulate = Color("2b2418")
+	text.outline_size = 0
+	UiFonts.style_3d(text, "display")
+	text.position = Vector3(0, post_h - 0.6, -0.28)
+	text.rotation.y = PI               # faces north, toward Arthur coming off the island
+	sign_node.add_child(text)
+	var it := _interactable("reef_sign", "Read the sign", Vector3(sp.x, base_y + 1.5, sp.y), 3.5, "")
+	it.used.connect(func(): GameState.note("Painted board: Causeway. Spring low water only. Keep between the poles."))

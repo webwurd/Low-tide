@@ -12,6 +12,21 @@ const PIER_TOP := 4.7           # above max high tide (4.2m) + wave height
 const COTTAGE_POS := Vector2(-8.5, 1.5)
 const COTTAGE_Y := 8.0
 const COTTAGE_YAW := 0.45
+## North cove: tide-gated shingle bar (crest ~1.05 m) to a sheltered shelf.
+const NORTH_A := Vector2(-5.0, -22.0)
+const NORTH_B := Vector2(-15.0, -46.0)
+const COVE_C := Vector2(-17.0, -52.0)
+## South reef: a deep bar (crest ~-1.0 m) that only walks at the Day 5 spring
+## low, leading to the cable-vault pad (~0.5 m).
+const SOUTH_A := Vector2(12.0, 20.0)
+const SOUTH_B := Vector2(18.0, 56.0)
+const VAULT_C := Vector2(18.0, 62.0)
+const LANE_HALF_WIDTH := 2.0
+
+static func _seg_dist(p: Vector2, a: Vector2, b: Vector2) -> float:
+	var ab := b - a
+	var t := clampf((p - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
+	return p.distance_to(a + ab * t)
 
 static func height(x: float, z: float) -> float:
 	var dist_main := Vector2(x, z).length()
@@ -62,24 +77,69 @@ static func height(x: float, z: float) -> float:
 		var t3 := maxf(0.0, 1.0 - d_west / 18.0)
 		h_west_stack = -2.5 + pow(t3, 1.25) * 9.5
 
-	return maxf(maxf(maxf(h_main, h_east_bar), maxf(h_east_stack, h_west_bar)), h_west_stack)
+	# North cove bar + shelf + backdrop stack
+	var p := Vector2(x, z)
+	var h_north := -4.0
+	var dn := _seg_dist(p, NORTH_A, NORTH_B)
+	if dn < 5.0:
+		h_north = -2.0 + cos(dn / 5.0 * (PI / 2.0)) * 3.05
+	var dc := p.distance_to(COVE_C)
+	if dc < 9.0:
+		h_north = maxf(h_north, lerpf(1.25, -2.0, smoothstep(5.5, 9.0, dc)))
+	var dback := p.distance_to(Vector2(-20.0, -60.0))
+	if dback < 8.0:
+		h_north = maxf(h_north, -2.5 + pow(1.0 - dback / 8.0, 1.2) * 8.0)
+
+	# South reef bar + vault pad
+	var h_south := -4.0
+	var dr := _seg_dist(p, SOUTH_A, SOUTH_B)
+	if dr < LANE_HALF_WIDTH + 2.0:
+		# Dead-level lane (-1.0 m) out to LANE_HALF_WIDTH, then a 1:1 slope
+		# into the trench. A planar slope survives the 0.7 m terrain mesh
+		# exactly (a sharp cliff does not). Safe at the -0.4 m spring low out
+		# to 2 m; swept from roughly 2.4 m.
+		h_south = -1.0 - 2.0 * clampf((dr - LANE_HALF_WIDTH) / 2.0, 0.0, 1.0)
+	var dv := p.distance_to(VAULT_C)
+	if dv < 10.0:
+		# Linear ramp (~30 deg) from the lane up onto the pad; a steeper
+		# smoothstep here exceeded the controller's slope limit.
+		h_south = maxf(h_south, lerpf(0.5, -3.0, clampf((dv - 4.0) / 6.0, 0.0, 1.0)))
+
+	var best := maxf(maxf(maxf(h_main, h_east_bar), maxf(h_east_stack, h_west_bar)), h_west_stack)
+	return maxf(best, maxf(h_north, h_south))
 
 static func on_pier(x: float, z: float) -> bool:
 	return absf(x) <= PIER_X and z >= PIER_Z0 and z <= PIER_Z1
 
-## Footstep surface: "wood", "sand" or "rock".
+## Footstep surface: wood, concrete, gravel, sand, wet, rock.
 static func surface_at(x: float, z: float, y: float) -> String:
 	if on_pier(x, z) and y >= PIER_TOP - 0.3:
 		return "wood"
+	var p := Vector2(x, z)
+	if p.distance_to(VAULT_C) < 7.0:
+		return "concrete"
+	if p.distance_to(COVE_C) < 9.5 or (_seg_dist(p, NORTH_A, NORTH_B) < 5.0 and z < -26.0):
+		return "gravel"
+	if _seg_dist(p, SOUTH_A, SOUTH_B) < 5.0 and z > 24.0:
+		return "sand"
 	if absf(x) > 20.0 and y < 2.2:
 		return "sand"
+	if y > 0.4 and y < 2.8 and p.length() < 32.0:
+		return "wet"          # barnacled intertidal rock
 	return "rock"
 
-static func color_for(h: float, x: float) -> Color:
+static func _base_color(h: float, x: float, z := 0.0) -> Color:
+	var cp := Vector2(x, z)
+	if cp.distance_to(VAULT_C) < 7.0 and h > 0.3:
+		return Color("8a8d8f")                       # concrete pad
+	if (cp.distance_to(COVE_C) < 9.0 or (_seg_dist(cp, NORTH_A, NORTH_B) < 5.0 and z < -26.0)) and h < 2.5:
+		return Color("77706a")                       # shingle
 	var sand := Color("9e957e")
 	var wet := Color("3a434a")
 	var granite := Color("6b747c")
 	var moss := Color("4d5e53")
+	if h > 0.4 and h < 1.35 and cp.length() < 32.0:
+		return Color("35403f")                       # kelp / barnacle line
 	if (absf(x) > 25.0 and absf(x) < 67.0 and h > 0.3 and h < 2.2) or h < 1.35:
 		return sand
 	if h < 3.4:
@@ -88,8 +148,45 @@ static func color_for(h: float, x: float) -> Color:
 		return granite
 	return granite.lerp(moss, minf(1.0, (h - 7.5) / 3.0))
 
+static func _hash(ix: int, iz: int) -> float:
+	var n := ix * 374761393 + iz * 668265263
+	n = (n ^ (n >> 13)) * 1274126177
+	return float((n ^ (n >> 16)) & 0xffff) / 65535.0
+
+static func _vnoise(x: float, z: float) -> float:
+	var ix := floori(x)
+	var iz := floori(z)
+	var fx := x - ix
+	var fz := z - iz
+	fx = fx * fx * (3.0 - 2.0 * fx)
+	fz = fz * fz * (3.0 - 2.0 * fz)
+	return lerpf(lerpf(_hash(ix, iz), _hash(ix + 1, iz), fx), lerpf(_hash(ix, iz + 1), _hash(ix + 1, iz + 1), fx), fz)
+
+## Painted ground colour: the base zones, broken up by patches of moss, straw
+## grass, warm rust-stained rock and per-face brush variation.
+static func color_for(h: float, x: float, z := 0.0) -> Color:
+	var base := _base_color(h, x, z)
+	var cp := Vector2(x, z)
+	var man_made := cp.distance_to(VAULT_C) < 7.0 or cp.distance_to(COVE_C) < 9.0
+	if man_made or h < 1.35:
+		var f := 0.94 + _vnoise(x * 0.5, z * 0.5) * 0.12     # sand ripples: only brightness
+		return base * Color(f, f, f, 1.0)
+	var patch := _vnoise(x * 0.11 + 31.0, z * 0.11 - 7.0)
+	var fine := _vnoise(x * 0.9, z * 0.9)
+	var col := base
+	if h > 3.4:
+		var grass := Color("73804f").lerp(Color("a39a62"), _vnoise(x * 0.23, z * 0.23))   # moss to straw
+		var amt := smoothstep(3.4, 6.5, h) * smoothstep(0.3, 0.6, patch)
+		col = base.lerp(grass, amt * 0.85)
+		var rust := Color("8a6a52")
+		col = col.lerp(rust, smoothstep(0.7, 0.85, _vnoise(x * 0.17 - 12.0, z * 0.17 + 5.0)) * 0.45 * (1.0 - amt))
+	elif h > 1.35:
+		col = col.lerp(Color("4a6355"), smoothstep(0.55, 0.8, patch) * 0.5)   # green weed on the splash zone
+	var v := 0.9 + fine * 0.2
+	return Color(col.r * v, col.g * v, col.b * v, 1.0)
+
 ## Builds the flat-shaded terrain ArrayMesh (per-face colour).
-static func build_mesh(size := 210.0, seg := 180) -> ArrayMesh:
+static func build_mesh(size := 210.0, seg := 300) -> ArrayMesh:   # 0.7 m cells so the 2 m causeway lane is honoured by the physical mesh
 	var step := size / seg
 	var half := size / 2.0
 	var n := seg + 1
@@ -115,7 +212,7 @@ static func build_mesh(size := 210.0, seg := 180) -> ArrayMesh:
 	return st.commit()
 
 static func _tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
-	var col := color_for((a.y + b.y + c.y) / 3.0, (a.x + b.x + c.x) / 3.0)
+	var col := color_for((a.y + b.y + c.y) / 3.0, (a.x + b.x + c.x) / 3.0, (a.z + b.z + c.z) / 3.0)
 	for p in [a, b, c]:
 		st.set_color(col)
 		st.add_vertex(p)
@@ -128,6 +225,15 @@ static func zone_at(x: float, z: float, y: float) -> String:
 		return "east_stack"
 	if Vector2(x + 74.0, z + 8.0).length() < 18.0 and y > 3.0:
 		return "west_stack"
+	var p := Vector2(x, z)
+	if p.distance_to(VAULT_C) < 8.5 and y > -0.5:
+		return "south_reef"
+	if _seg_dist(p, SOUTH_A, SOUTH_B) < 5.0 and z > 24.0:
+		return "south_bar"
+	if p.distance_to(COVE_C) < 9.0 and y > 0.0:
+		return "north_cove"
+	if _seg_dist(p, NORTH_A, NORTH_B) < 5.5 and z < -26.0:
+		return "north_bar"
 	if Vector2(x, z + 4.0).length() < 12.0 or y > 7.0:
 		return "summit"
 	if x > 20.0 and y < 3.0:

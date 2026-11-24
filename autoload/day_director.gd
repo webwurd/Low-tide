@@ -84,13 +84,23 @@ func write_log() -> void:
 func start_evening_call() -> void:
 	evening_call_done = true
 
+## The last evening is not over until Arthur has made his choice.
+func ending_chosen() -> bool:
+	return GameState.has_flag("ending_a") or GameState.has_flag("ending_b") or GameState.has_flag("ending_c")
+
+func final_pending() -> bool:
+	return GameClock.day >= Days.LAST_DAY and not ending_chosen()
+
 func can_sleep() -> bool:
+	if final_pending():
+		return false
 	return lamp_lit and log_written and evening_call_done
 
 func sleep_blockers() -> String:
 	if not lamp_lit: return "The lamp isn't lit yet."
 	if not log_written: return "I haven't written up the log."
 	if not evening_call_done: return "I should call Clara before turning in."
+	if final_pending(): return "I haven't decided what to do about the tapes."
 	return ""
 
 ## Ends the day. Returns false when the final day has been completed.

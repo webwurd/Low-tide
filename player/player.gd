@@ -32,6 +32,7 @@ var ui_lock := false              # a modal panel (logbook, tide table) is open
 var hold_progress := 0.0          # 0..1 while holding a hold-to-use interactable
 var _hold_t := 0.0
 var _hold_done := false
+var _hold_active := false
 
 func _ready() -> void:
 	var cs := CollisionShape3D.new()
@@ -54,8 +55,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if locked or ui_lock:
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		var s := BINO_SENS if binoculars else MOUSE_SENS
-		_look(-event.relative.x * s, -event.relative.y * s)
+		var s: float = (BINO_SENS * float(Settings.v("bino_sens"))) if binoculars else (MOUSE_SENS * float(Settings.v("mouse_sens")))
+		var inv := -1.0 if Settings.v("invert_y") else 1.0
+		_look(-event.relative.x * s, -event.relative.y * s * inv)
 	elif event.is_action_pressed("interact"):
 		if nearby and nearby.hold_time <= 0.0:
 			nearby.interact()
@@ -75,11 +77,16 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector3.ZERO
 		hold_progress = 0.0
 		return
-	binoculars = Input.is_action_pressed("binoculars")
+	if Settings.v("toggle_binoculars"):
+		if Input.is_action_just_pressed("binoculars"):
+			binoculars = not binoculars
+	else:
+		binoculars = Input.is_action_pressed("binoculars")
 	var pad := Input.get_vector("look_left", "look_right", "look_up", "look_down")
 	if pad != Vector2.ZERO:
-		var rate := PAD_RATE * (0.35 if binoculars else 1.0)
-		_look(-pad.x * rate * delta, -pad.y * rate * delta)
+		var rate: float = PAD_RATE * float(Settings.v("pad_sens")) * (0.35 if binoculars else 1.0)
+		var inv_pad := -1.0 if Settings.v("invert_y") else 1.0
+		_look(-pad.x * rate * delta, -pad.y * rate * delta * inv_pad)
 	rotation.y = yaw
 	cam.rotation.x = pitch
 
@@ -116,7 +123,7 @@ func _physics_process(delta: float) -> void:
 	var planar := Vector2(velocity.x, velocity.z).length()
 	if is_on_floor() and planar > 0.3:
 		_bob_t += delta * planar * 2.6
-		cam.position.y = EYE + sin(_bob_t) * 0.045
+		cam.position.y = EYE + sin(_bob_t) * (0.0 if Settings.v("reduce_motion") else 0.045)
 		_stride += planar * delta
 		if _stride >= (1.9 if not wants_brisk else 2.4):
 			_stride = 0.0
@@ -138,17 +145,37 @@ func _physics_process(delta: float) -> void:
 
 func _update_hold(delta: float) -> void:
 	var holdable := nearby != null and nearby.hold_time > 0.0
-	if not holdable or not Input.is_action_pressed("interact"):
-		_hold_t = 0.0
-		hold_progress = 0.0
-		_hold_done = false if not Input.is_action_pressed("interact") else _hold_done
-		return
+	if Settings.v("toggle_hold"):
+		# Press once to start; it completes by itself while Arthur stays in range. Press again to cancel.
+		if not holdable:
+			_hold_t = 0.0
+			hold_progress = 0.0
+			_hold_active = false
+			_hold_done = false
+			return
+		if Input.is_action_just_pressed("interact"):
+			_hold_done = false
+			_hold_active = not _hold_active
+			if not _hold_active:
+				_hold_t = 0.0
+				hold_progress = 0.0
+		if not _hold_active:
+			return
+	else:
+		_hold_active = Input.is_action_pressed("interact") and holdable
+		if not _hold_active:
+			_hold_t = 0.0
+			hold_progress = 0.0
+			_hold_done = false if not Input.is_action_pressed("interact") else _hold_done
+			return
 	if _hold_done:
 		return
 	_hold_t += delta
 	hold_progress = clampf(_hold_t / nearby.hold_time, 0.0, 1.0)
 	if _hold_t >= nearby.hold_time:
 		_hold_done = true
+		_hold_active = false
+		_hold_t = 0.0
 		hold_progress = 0.0
 		nearby.interact()
 
