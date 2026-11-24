@@ -1,0 +1,30 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/wreck.res" id="1_lc4pg"]
+[ext_resource type="ArrayMesh" path="res://assets/models/canister.res" id="2_4qq3b"]
+[ext_resource type="Script" path="res://world/interactable.gd" id="3_n4cg2"]
+
+[node name="Wreck" type="Node3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 76, 5.4, 6)
+
+[node name="Model" type="MeshInstance3D" parent="."]
+mesh = ExtResource("1_lc4pg")
+metadata/prop = "wreck"
+
+[node name="Canister" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.263085, -0.78682, 0.558302, 0.964767, 0.216547, -0.149438, -0.00331804, 0.577946, 0.816068, 2.5, 0.55, 2.2)
+mesh = ExtResource("2_4qq3b")
+metadata/prop = "canister"
+metadata/highlight_for = "shipwreck"
+
+[node name="@Node3D@2" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.8, 2.2)
+script = ExtResource("3_n4cg2")
+id = "shipwreck"
+title = "Inspect 1974 Waterproof Canister"
+radius = 5.5
+conversation = "shipwreck"
+
+[node name="BinoTarget" type="Node3D" parent="." groups=["bino_target"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6, 0)
+metadata/label = "EAST SEA STACK // UNCHARTED WRECK"

@@ -12,9 +12,9 @@ global uniform float wetness;
 global uniform float tide_height;
 
 uniform vec4 albedo : source_color = vec4(0.7, 0.7, 0.7, 1.0);
-uniform sampler2D detail_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable, hint_default_gray;
+uniform sampler2D detail_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable, hint_default_white;
 uniform sampler2D normal_tex : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform sampler2D macro_tex : filter_linear_mipmap, repeat_enable, hint_default_gray;
+uniform sampler2D macro_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable, hint_default_white;
 uniform float detail_strength : hint_range(0.0, 1.5) = 1.0;
 uniform float normal_strength : hint_range(0.0, 2.0) = 0.6;
 uniform float tex_scale = 0.5;               // tiles per metre

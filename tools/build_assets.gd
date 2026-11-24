@@ -14,7 +14,7 @@ func _initialize() -> void:
 	var t := Time.get_ticks_msec()
 	match stage:
 		"textures":
-			TextureKit.build_all()
+			load("res://tools/texture_kit.gd").build_all()
 		"import":
 			_set_import_flags()
 		"assets":
@@ -54,5 +54,7 @@ func _set_import_flags() -> void:
 			cfg.save(p)
 			print("  import flags: ", f)
 
+## Loaded at runtime: the builders reference autoload singletons (through
+## Interactable), which a `-s` script can't see at its own compile time.
 func _build_assets() -> void:
-	await AssetFactory.build_all(self)
+	await load("res://tools/asset_factory.gd").build_all(self)

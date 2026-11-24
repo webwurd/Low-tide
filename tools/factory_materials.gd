@@ -12,8 +12,8 @@ static func build_all() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(DIR))
 	var P := {}   # name -> [albedo, texture, scale, extra params]
 	# Lighthouse + exteriors
-	P["whitewash"] = ["e4e1d8", "stone_courses", 0.22, {"roughness": 0.82, "normal_strength": 0.7, "macro_strength": 0.3}]
-	P["keeper_red"] = ["8f2d2d", "stone_courses", 0.22, {"roughness": 0.66, "normal_strength": 0.6, "macro_strength": 0.25}]
+	P["whitewash"] = ["e4e1d8", "stone_courses", 0.22, {"roughness": 0.82, "normal_strength": 0.35, "detail_strength": 0.5, "macro_strength": 0.3}]
+	P["keeper_red"] = ["8f2d2d", "stone_courses", 0.22, {"roughness": 0.66, "normal_strength": 0.3, "detail_strength": 0.45, "macro_strength": 0.25}]
 	P["red_paint"] = ["8a2c2a", "wood", 0.7, {"roughness": 0.55, "detail_strength": 0.6}]
 	P["green_paint"] = ["2f4a3e", "wood", 0.7, {"roughness": 0.55, "detail_strength": 0.6}]
 	P["trim_white"] = ["e2ded2", "wood", 0.8, {"roughness": 0.7, "detail_strength": 0.6, "normal_strength": 0.3}]

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="WeatherLook" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://art/weather_look.gd" id="1_cao1k"]
+
+[resource]
+script = ExtResource("1_cao1k")
+cloud_cover = 1.0
+cloud_darkness = 0.7
+sun_scale = 0.08
+ambient_scale = 0.9
+saturation = 0.85
+sky_to_fog = 0.5
+fog_scale = 0.8
+fog_tint_amount = 0.7
+height_fog = 0.04
+volumetric_density = 0.025
+wind = 1.0
+wetness = 1.0
+tint = Color(0.86, 0.94, 0.96, 1)
