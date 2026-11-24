@@ -19,7 +19,7 @@ const page = await browser.newPage();
 page.on('pageerror', (e) => console.error('page error:', e.message));
 await page.goto(pathToFileURL(path.join(here, 'export.html')).href, { waitUntil: 'networkidle' });
 await page.evaluate(async () => {
-  await Promise.all([document.fonts.load('400 40px Gloock'), document.fonts.load('500 20px "IBM Plex Mono"')]);
+  await Promise.all([document.fonts.load('400 40px Marcellus'), document.fonts.load('500 20px "IBM Plex Mono"')]);
 });
 
 const kinds = process.argv.slice(2).length ? process.argv.slice(2) : await page.evaluate(() => Object.keys(LT.ASSETS));
@@ -37,8 +37,8 @@ for (const kind of kinds) {
 if (!process.argv.slice(2).length) {
   const logos = await page.evaluate(() => ({
     'low-tide_wordmark.svg': LT.logoSVG({ id: 'w' }),
-    'low-tide_wordmark_flat.svg': LT.logoSVG({ id: 'f', reflect: false }),
-    'low-tide_wordmark_ink.svg': LT.logoSVG({ id: 'i', fill: '#162029', sun1: '#d9822b', sun2: '#d9822b' }),
+    'low-tide_wordmark_flat.svg': LT.logoSVG({ id: 'f', reflect: false, beam: false }),
+    'low-tide_wordmark_ink.svg': LT.logoSVG({ id: 'i', fill: '#162029', onLight: true }),
     'low-tide_mark.svg': LT.logoSVG({ id: 'm', layout: 'mark' }),
     'low-tide_icon.svg': LT.logoSVG({ id: 'k', layout: 'mark', bg: '#162029' }),
   }));

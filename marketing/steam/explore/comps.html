@@ -1,0 +1,34 @@
+<!doctype html><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=IM+Fell+English+SC&family=Marcellus&family=Big+Shoulders+Stencil+Display:wght@700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>body{margin:0;background:#0b1118;display:grid;grid-template-columns:1fr 1fr;gap:2px;font-family:'IBM Plex Mono',monospace}
+.c{position:relative;height:430px;background:radial-gradient(ellipse at 50% 70%,#1d2c39 0%,#0f1822 55%,#0a1016 100%);display:grid;place-items:center;overflow:hidden}
+.c b{position:absolute;left:14px;top:10px;font:500 11px monospace;color:#7ea99b;letter-spacing:.1em}
+.c svg{width:86%;height:auto;overflow:visible}</style>
+<body><script>
+const FOG='#d9e1e0', LAMP='#ffb84d';
+function slices(id,wl,depth,n,w,content,op0=.5){ // reflection slices below waterline wl
+  let y=wl+3,out='',clips='';
+  for(let i=0;i<n;i++){const h=depth/n*(1.15-0.07*i),o=op0*Math.pow(1-i/n,1.5),dx=(i%2?1:-1)*(1+i*.6);
+    clips+=`<clipPath id="${id}c${i}"><rect x="-50" y="${y}" width="${w+100}" height="${h}"/></clipPath>`;
+    out+=`<g clip-path="url(#${id}c${i})"><g transform="translate(${dx} 0)" opacity="${o}">${content}</g></g>`; y+=h+1.5+i*1.1;}
+  return {clips,out};
+}
+function route(id,{font,weight,size,track,text,cut,anchorW,lampRight,fill=FOG,extra=''}){
+  const W=1000,B=180,cap=size*0.7,wl=B-cap*cut;
+  const t=(y,tr='')=>`<text x="${W/2}" y="${y}" text-anchor="middle" font-family="${font}" font-weight="${weight}" font-size="${size}" letter-spacing="${track}" fill="${fill}" ${tr}>${text}</text>`;
+  const above=`<clipPath id="${id}a"><rect x="-50" y="-100" width="${W+100}" height="${wl+100}"/></clipPath>`;
+  const refl=slices(id,wl,cap*0.9,8,W,`<g transform="translate(0 ${2*wl}) scale(1 -1)">${t(B)}</g>`);
+  return `<svg viewBox="0 0 ${W} 330"><defs>${above}${refl.clips}<radialGradient id="${id}g"><stop offset="0" stop-color="#ffd98a"/><stop offset=".25" stop-color="${LAMP}"/><stop offset="1" stop-color="${LAMP}" stop-opacity="0"/></radialGradient></defs>
+   <g clip-path="url(#${id}a)">${t(B)}</g>${refl.out}${extra}</svg>`;
+}
+const A=route('A',{font:'Marcellus',weight:400,size:150,track:42,text:'LOW TIDE',cut:.28,
+  extra:`<path d="M60 ${180-105*.28} H940" stroke="${FOG}" stroke-opacity=".5" stroke-width="1.2"/><circle cx="940" cy="${180-105*.28-5}" r="26" fill="url(#Ag)" opacity=".5"/><circle cx="940" cy="${180-105*.28-5}" r="4.2" fill="#ffe3a8"/>`});
+const D=route('D',{font:'IM Fell English SC',weight:400,size:150,track:22,text:'LOW TIDE',cut:.26,
+  extra:`<path d="M60 ${180-105*.26} H940" stroke="${FOG}" stroke-opacity=".45" stroke-width="1.2"/><circle cx="940" cy="${180-105*.26-5}" r="26" fill="url(#Dg)" opacity=".5"/><circle cx="940" cy="${180-105*.26-5}" r="4.2" fill="#ffe3a8"/>`});
+const B=`<svg viewBox="0 0 1000 330"><text id="bt" x="500" y="190" text-anchor="middle" font-family="Cormorant Garamond" font-weight="500" font-size="190" letter-spacing="14" fill="${FOG}">low t&#305;de</text><path d="M120 214 H880" stroke="${FOG}" stroke-opacity=".35" stroke-width="1"/><circle id="dot" r="9" fill="${LAMP}"/><circle id="dotg" r="40" fill="${LAMP}" opacity=".18"/></svg>`;
+const C=`<svg viewBox="0 0 1000 330"><text x="500" y="170" text-anchor="middle" font-family="Big Shoulders Stencil Display" font-weight="700" font-size="190" letter-spacing="26" fill="${FOG}">LOW TIDE</text><path d="M120 210 H880" stroke="${LAMP}" stroke-width="2"/><text x="500" y="256" text-anchor="middle" font-family="IBM Plex Mono" font-size="22" letter-spacing="9" fill="#9db0b3">GANNET ROCK  ·  1998</text></svg>`;
+document.body.innerHTML=[['A  Marcellus · waterline + lone lamp',A],['B  Cormorant lowercase · lamp as the i',B],['C  Stencil · PELAGIC canister',C],['D  IM Fell · waterline + lone lamp',D]].map(([n,s])=>`<div class="c"><b>${n}</b>${s}</div>`).join('');
+document.fonts.ready.then(()=>{const t=document.getElementById('bt');const i=t.getNumberOfChars()-1; // dotless i position
+ const s=t.getText?0:0; const txt=t.textContent; const k=txt.indexOf('ı'); const p=t.getStartPositionOfChar(k), e=t.getEndPositionOfChar(k);
+ const cx=(p.x+e.x)/2, cy=190-190*0.5*1.0-120+0; const d=document.getElementById('dot'),g=document.getElementById('dotg'); [d,g].forEach(x=>{x.setAttribute('cx',cx);x.setAttribute('cy',190-190*.54);});});
+</script>

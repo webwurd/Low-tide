@@ -46,76 +46,73 @@
   }
 
   /* ---------- logo ---------- */
-  // Layouts: 'line' (LOW ◗ TIDE), 'mark' (sun on the waterline). The sun is the word space and the lamp.
+  // The "I" in TIDE is the lighthouse: a serifed stem (gallery and base) with the lamp lit above it.
+  // The lamp throws a thin beam across the title and a streak of light down into the water.
+  // Everything else is cold. Units are font units (em = 1000, cap height 700).
+  // opts: layout 'line' | 'mark'; fill; reflect; beam; line; bg (square badge); onLight (ink version); id.
   LT.logoSVG = function (opts) {
     const o = Object.assign(
-      { layout: 'line', fill: PAL.fog, sun1: PAL.glow, sun2: PAL.lantern, reflect: true, id: 'lt', bg: null, line: true },
+      { layout: 'line', fill: PAL.fog, reflect: true, beam: true, line: true, id: 'lt', bg: null, onLight: false },
       opts
     );
-    const WM = LT.WORDMARK;
-    const cap = o.layout === 'mark' ? 100 : WM.cap;
-    const r = cap * 0.44;
-    const gap = cap * 1.18;
-    let w, content, x0;
-    if (o.layout === 'mark') {
-      w = r * 2;
-      x0 = 0;
-      content = `<path d="M0 0 A${r} ${r} 0 0 1 ${2 * r} 0 Z" fill="url(#${o.id}-sun)"/>`;
-    } else {
-      w = WM.LOW.w + gap + WM.TIDE.w;
-      x0 = 0;
-      const sx = WM.LOW.w + gap / 2;
-      content =
-        `<path d="${WM.LOW.d}" fill="${o.fill}"/>` +
-        `<path d="${WM.TIDE.d}" transform="translate(${WM.LOW.w + gap} 0)" fill="${o.fill}"/>` +
-        `<path d="M${sx - r} 0 A${r} ${r} 0 0 1 ${sx + r} 0 Z" fill="url(#${o.id}-sun)"/>`;
-    }
+    const WM = LT.WORDMARK, cap = WM.cap, id = o.id;
+    const amber = o.onLight ? '#c46a14' : PAL.lantern, core = o.onLight ? '#e08a2a' : '#fff4d6', warm = o.onLight ? '#c46a14' : '#ffd98a';
+    const isMark = o.layout === 'mark';
+    const W = isMark ? 1500 : WM.w;                   // width the horizon and beam are laid out against
+    const cx = isMark ? 750 : WM.iCx;                 // x of the tower
+    const lampY = isMark ? -(cap + 110) : -(cap + 135), lampR = 38, haloR = 330;
+    // mark: a drawn tower, tapered, with a gallery ledge; the wordmark uses the font's own I
+    const tower = `M${cx - 74} 0 L${cx - 46} ${-cap} L${cx + 46} ${-cap} L${cx + 74} 0Z M${cx - 82} ${-cap - 4} H${cx + 82} V${-cap - 32} H${cx - 82}Z`;
+    const art = isMark ? `<path d="${tower}" fill="${o.fill}"/>` : `<path d="${WM.d}" fill="${o.fill}"/>`;
 
-    // Reflection: horizontal slices of the flipped artwork, thinning and drifting as they fall.
-    let slices = '', clips = '';
-    let bottom = cap * 0.12;
+    // reflection of the artwork in thin drifting slices
+    let slices = '', clips = '', bottom = 60;
     if (o.reflect) {
-      const n = 7;
-      let y = cap * 0.05;
+      const n = 6, depth = cap * 0.78, op0 = o.onLight ? 0.34 : 0.27;
+      let y = 18;
       for (let i = 0; i < n; i++) {
-        const h = cap * 0.115 * (1 - 0.07 * i);
-        const op = 0.62 * Math.pow(1 - i / n, 1.35);
-        const dx = (i % 2 ? 1 : -1) * cap * 0.012 * i;
-        clips += `<clipPath id="${o.id}-c${i}"><rect x="${-cap}" y="${y.toFixed(1)}" width="${w + cap * 2}" height="${h.toFixed(1)}"/></clipPath>`;
-        slices += `<g clip-path="url(#${o.id}-c${i})"><g transform="translate(${dx.toFixed(1)} 0) scale(1 -1)" opacity="${op.toFixed(2)}"><use href="#${o.id}-art"/></g></g>`;
-        y += h + cap * (0.035 + 0.012 * i);
+        const h = (depth / n) * (1.2 - 0.09 * i), op = op0 * Math.pow(1 - i / n, 1.4), dx = (i % 2 ? 1 : -1) * (7 + i * 5);
+        clips += `<clipPath id="${id}-s${i}"><rect x="${-W}" y="${y.toFixed(1)}" width="${W * 3}" height="${h.toFixed(1)}"/></clipPath>`;
+        slices += `<g clip-path="url(#${id}-s${i})"><g transform="translate(${dx} 0)" opacity="${op.toFixed(3)}"><use href="#${id}-art" transform="scale(1 -1)"/></g></g>`;
+        y += h + 9 + i * 7;
       }
       bottom = y;
     }
+    // the lamp's own reflection: a column of short broken strokes, the brightest thing in the water
+    let streak = '', sy = 26;
+    if (o.reflect) {
+      for (let i = 0; i < 14; i++) {
+        const w = 62 * (1 - i / 18) * (0.6 + ((i * 37) % 7) / 10), h = 11 + i;
+        streak += `<rect x="${(cx - w / 2).toFixed(1)}" y="${sy.toFixed(1)}" width="${w.toFixed(1)}" height="${h}" fill="${amber}" opacity="${(0.66 * (1 - i / 15)).toFixed(2)}"/>`;
+        sy += h + 15 + i * 4.7;
+      }
+      bottom = Math.max(bottom, sy);
+    }
+    // beam: two long thin wedges at lamp height
+    const bl = isMark ? -60 : -0.05 * W, br = isMark ? W + 60 : W * 1.06;
+    const beam = o.beam && !o.onLight
+      ? `<path d="M${cx} ${lampY} L${bl} ${lampY - 68} L${bl} ${lampY + 68}Z" fill="url(#${id}-bl)"/><path d="M${cx} ${lampY} L${br} ${lampY - 68} L${br} ${lampY + 68}Z" fill="url(#${id}-br)"/>`
+      : '';
+    const defs =
+      `<linearGradient id="${id}-bl" x1="1" x2="0"><stop offset="0" stop-color="${warm}" stop-opacity=".34"/><stop offset=".55" stop-color="${amber}" stop-opacity=".08"/><stop offset="1" stop-color="${amber}" stop-opacity="0"/></linearGradient>` +
+      `<linearGradient id="${id}-br" x1="0" x2="1"><stop offset="0" stop-color="${warm}" stop-opacity=".34"/><stop offset=".55" stop-color="${amber}" stop-opacity=".08"/><stop offset="1" stop-color="${amber}" stop-opacity="0"/></linearGradient>` +
+      `<radialGradient id="${id}-h"><stop offset="0" stop-color="${core}" stop-opacity=".9"/><stop offset=".12" stop-color="${warm}" stop-opacity=".8"/><stop offset=".4" stop-color="${amber}" stop-opacity="${o.onLight ? 0 : 0.2}"/><stop offset="1" stop-color="${amber}" stop-opacity="0"/></radialGradient>` +
+      `<g id="${id}-art">${art}</g>${clips}`;
+    const hline = o.line ? `<path d="M${isMark ? 0 : -0.03 * W} 0 H${isMark ? W : W * 1.03}" stroke="${o.fill}" stroke-opacity="${o.onLight ? 0.5 : 0.3}" stroke-width="8" fill="none"/>` : '';
+    const lamp = `<circle cx="${cx}" cy="${lampY}" r="${haloR}" fill="url(#${id}-h)"/><circle cx="${cx}" cy="${lampY}" r="${lampR}" fill="${core}"/>`;
 
-    const padX = cap * (o.layout === 'mark' ? 0.55 : 0.28);
-    const top = -(o.layout === 'mark' ? r : cap) - cap * 0.12;
-    const vbX = x0 - padX, vbW = w + padX * 2;
-    let vbY = top, vbH = bottom - top + cap * 0.06;
-    let bg = '';
+    const top = lampY - 280, padX = isMark ? 0 : W * 0.075;
+    let vb = [(isMark ? 0 : -padX), top, (isMark ? W : W + padX * 2.05), bottom + 40 - top];
+    let bgRect = '';
     if (o.bg) {
-      // square badge for icons
-      const side = Math.max(vbW, vbH);
-      const cy = (vbY + vbY + vbH) / 2 + cap * 0.06;
-      const cx = vbX + vbW / 2;
-      bg = `<rect x="${cx - side / 2}" y="${cy - side / 2}" width="${side}" height="${side}" fill="${o.bg}"/>`;
-      return svgWrap(`${cx - side / 2} ${cy - side / 2} ${side} ${side}`);
+      const side = Math.max(vb[2], vb[3]) * 1.04, mx = vb[0] + vb[2] / 2, my = vb[1] + vb[3] / 2 + 60;
+      vb = [mx - side / 2, my - side / 2, side, side];
+      bgRect = `<rect x="${vb[0]}" y="${vb[1]}" width="${side}" height="${side}" fill="${o.bg}"/>`;
     }
-    return svgWrap(`${vbX} ${vbY} ${vbW} ${vbH}`);
-
-    function svgWrap(viewBox) {
-      const line = o.line
-        ? `<path d="M${-padX * 0.7} 0 H${w + padX * 0.7}" stroke="${o.fill}" stroke-opacity=".5" stroke-width="${cap * 0.014}" fill="none"/>`
-        : '';
-      return (
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" role="img" aria-label="Low Tide">` +
-        `<defs><linearGradient id="${o.id}-sun" x1="0" y1="-1" x2="0" y2="0" gradientUnits="objectBoundingBox">` +
-        `<stop offset="0" stop-color="${o.sun1}"/><stop offset="1" stop-color="${o.sun2}"/></linearGradient>` +
-        `<g id="${o.id}-art">${content}</g>${clips}</defs>` +
-        bg + `<use href="#${o.id}-art"/>` + line + slices +
-        `</svg>`
-      );
-    }
+    return (
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.map((v) => +v.toFixed(1)).join(' ')}" role="img" aria-label="Low Tide">` +
+      `<defs>${defs}</defs>${bgRect}${beam}<use href="#${id}-art"/>${hline}${slices}${streak}${lamp}</svg>`
+    );
   };
 
   /* ---------- scene ---------- */
@@ -517,14 +514,14 @@
   const SCENE_WIDE = { lx: 0.7, hz: 0.52, base: 0.72, lh: 0.52, barX: 0.42, pilX: 0.03, pilH: 0.6, figT: 0.4 };
   LT.ASSETS = {
     library_hero:     { w: 3840, h: 1240, scene: { ...SCENE_WIDE, lx: 0.69, lh: 0.56, base: 0.7 } },
-    header_capsule:   { w: 920,  h: 430,  scene: { ...SCENE_WIDE, lx: 0.77, lh: 0.62, base: 0.78, barX: 0.5, pilX: 0.035, pilH: 0.7, fig: false }, scrim: 'left', logo: { x: 0.05, y: 0.34, w: 0.5 }, tagline: { x: 0.052, y: 0.84 } },
+    header_capsule:   { w: 920,  h: 430,  scene: { ...SCENE_WIDE, lx: 0.77, lh: 0.62, base: 0.78, barX: 0.5, pilX: 0.035, pilH: 0.7, fig: false }, scrim: 'left', logo: { x: 0.04, y: 0.3, w: 0.56 }, tagline: { x: 0.052, y: 0.86 } },
     small_capsule:    { w: 462,  h: 174,  scene: { ...SCENE_WIDE, lx: 0.84, lh: 0.62, base: 0.9, barX: 0.6, pilX: 0.03, pilH: 0.8, fig: false, grain: 0.14 }, scrim: 'left', logo: { x: 0.05, y: 0.22, w: 0.58 } },
     main_capsule:     { w: 1232, h: 706,  scene: { ...SCENE_WIDE, lx: 0.76, lh: 0.58, base: 0.74, barX: 0.7, figT: 0.3, pilX: 0.03 }, scrim: 'bottom', logo: { x: 0.075, y: 0.62, w: 0.46 }, tagline: { x: 0.078, y: 0.93 } },
     vertical_capsule: { w: 748,  h: 896,  scene: { lx: 0.58, hz: 0.4, base: 0.55, lh: 0.36, barX: 0.3, pilX: 0.06, pilH: 0.34, figT: 0.5 }, scrim: 'bottom', logo: { x: 0.13, y: 0.745, w: 0.76 }, eyebrow: { x: 0.5, y: 0.725, center: true }, tagline: { x: 0.5, y: 0.96, center: true } },
     library_capsule:  { w: 600,  h: 900,  scene: { lx: 0.58, hz: 0.4, base: 0.55, lh: 0.36, barX: 0.3, pilX: 0.06, pilH: 0.34, figT: 0.5 }, scrim: 'bottom', logo: { x: 0.13, y: 0.745, w: 0.76 }, eyebrow: { x: 0.5, y: 0.725, center: true }, tagline: { x: 0.5, y: 0.96, center: true } },
     page_background:  { w: 1438, h: 810,  scene: { ...SCENE_WIDE, lx: 0.965, lh: 0.66, base: 0.8, barX: 0.8, pilX: 0.02, pilH: 0.6, fig: false, cottage: false, dim: 0.5, vig: 0.75 }, fadeBottom: true },
     key_art:          { w: 1920, h: 1080, scene: { ...SCENE_WIDE, lx: 0.66, lh: 0.58, base: 0.74 } },
-    logo_transparent: { w: 1280, h: 720,  transparent: true, logo: { x: 0.06, y: 0.28, w: 0.88 } },
+    logo_transparent: { w: 1280, h: 720,  transparent: true, logoBeam: true, logo: { x: 0.06, y: 0.28, w: 0.88 } },
     community_icon:   { w: 184,  h: 184,  icon: true },
   };
 
@@ -565,7 +562,7 @@
     }
     if (A.logo) {
       const lw = A.logo.w * A.w;
-      const img = await loadSVG(LT.logoSVG({ id: 'a' }), lw);
+      const img = await loadSVG(LT.logoSVG({ id: 'a', beam: !!A.logoBeam }), lw);
       ctx.drawImage(img, A.logo.x * A.w, A.logo.y * A.h, lw, lw * (img.naturalHeight / img.naturalWidth));
     }
     const type = (spec, text, font, color, track, size) => {
@@ -578,7 +575,7 @@
     };
     const small = A.w < 600;
     if (A.eyebrow) type(A.eyebrow, 'WINTER 1998 · GANNET ROCK', `500 ${Math.round(Math.max(11, 17 * u * (A.w / A.h > 1.6 ? 1.15 : 1.5)))}px "IBM Plex Mono", monospace`, PAL.sea, `${Math.round(3 * u * 1.6)}px`);
-    if (A.tagline) type(A.tagline, 'Mind the tide.', `400 ${Math.round(Math.max(18, 42 * u * (A.w / A.h > 1.6 ? 1.0 : 1.35)))}px Gloock, serif`, PAL.fog, '0.5px');
+    if (A.tagline) type(A.tagline, 'What the tide leaves.', `400 ${Math.round(Math.max(22, 42 * u * (A.w / A.h > 1.6 ? 1.0 : 1.35)))}px Marcellus, serif`, PAL.fog, '0.5px');
     return canvas;
   };
 })();

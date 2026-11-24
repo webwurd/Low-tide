@@ -1,0 +1,39 @@
+<!doctype html><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Marcellus&family=Forum&family=Cinzel:wght@500&display=swap">
+<style>body{margin:0;background:#0b1118;display:grid;grid-template-columns:1fr 1fr;gap:2px;font-family:monospace}
+.c{position:relative;height:430px;background:radial-gradient(ellipse at 50% 72%,#1d2c39 0%,#0f1822 58%,#0a1016 100%);display:grid;place-items:center;overflow:hidden}
+.c b{position:absolute;left:14px;top:10px;font:500 11px monospace;color:#7ea99b;letter-spacing:.1em}
+.c svg{width:90%;height:auto;overflow:visible}</style>
+<body><script>
+const FOG='#d9e1e0', LAMP='#ffb84d';
+function build(id,{font,weight,size,track,text,iChar='I',lower=false}){
+  const W=1000,B=215,x0=500;
+  // measure
+  const probe=document.createElementNS('http://www.w3.org/2000/svg','svg');probe.style.cssText='position:absolute;visibility:hidden';document.body.appendChild(probe);
+  const pt=document.createElementNS('http://www.w3.org/2000/svg','text');pt.setAttribute('font-family',font);pt.setAttribute('font-weight',weight);pt.setAttribute('font-size',size);pt.setAttribute('letter-spacing',track);pt.setAttribute('x',0);pt.setAttribute('y',B);pt.textContent=text;probe.appendChild(pt);
+  const k=text.indexOf(iChar), p=pt.getStartPositionOfChar(k), e=pt.getEndPositionOfChar(k), tw=pt.getComputedTextLength();
+  const bb=pt.getBBox(); probe.remove();
+  const sx=(W-tw)/2, icx=sx+(p.x+e.x)/2, cap=lower?size*.42:size*.70, top=lower?size*.62:size*.70;
+  const t=(y)=>`<text x="${sx}" y="${y}" font-family="${font}" font-weight="${weight}" font-size="${size}" letter-spacing="${track}" fill="${FOG}">${text}</text>`;
+  let sl='',cl='',y=B+3;const n=6,depth=top*.75;
+  for(let i=0;i<n;i++){const h=depth/n*(1.2-.09*i),o=.26*Math.pow(1-i/n,1.4),dx=(i%2?1:-1)*(1+i*.7);
+    cl+=`<clipPath id="${id}s${i}"><rect x="-50" y="${y}" width="${W+100}" height="${h}"/></clipPath>`;
+    sl+=`<g clip-path="url(#${id}s${i})"><g transform="translate(${dx} 0)" opacity="${o}"><g transform="translate(0 ${2*B}) scale(1 -1)">${t(B)}</g></g></g>`;y+=h+1.4+i*1.1;}
+  // lamp
+  const dotY=B-top-size*.13, r=size*.036;
+  let lamp='',yy=B+4;for(let i=0;i<14;i++){const w=(size*.06)*(1-i/18)*(.6+((i*37)%7)/10),h=1.6+i*.15;lamp+=`<rect x="${icx-w/2}" y="${yy}" width="${w}" height="${h}" fill="${LAMP}" opacity="${.62*(1-i/15)}"/>`;yy+=h+2.2+i*.7;}
+  const beam=`<linearGradient id="${id}bl" x1="1" x2="0"><stop offset="0" stop-color="#ffd48a" stop-opacity=".30"/><stop offset=".6" stop-color="${LAMP}" stop-opacity=".07"/><stop offset="1" stop-color="${LAMP}" stop-opacity="0"/></linearGradient><linearGradient id="${id}br" x1="0" x2="1"><stop offset="0" stop-color="#ffd48a" stop-opacity=".30"/><stop offset=".6" stop-color="${LAMP}" stop-opacity=".07"/><stop offset="1" stop-color="${LAMP}" stop-opacity="0"/></linearGradient><radialGradient id="${id}h"><stop offset="0" stop-color="#fff2cf" stop-opacity=".9"/><stop offset=".12" stop-color="#ffd98a" stop-opacity=".8"/><stop offset=".4" stop-color="${LAMP}" stop-opacity=".18"/><stop offset="1" stop-color="${LAMP}" stop-opacity="0"/></radialGradient>`;
+  return `<svg viewBox="0 0 ${W} 330"><defs>${cl}${beam}</defs>
+    <path d="M${icx} ${dotY} L${icx-480} ${dotY-10} L${icx-480} ${dotY+10}Z" fill="url(#${id}bl)"/><path d="M${icx} ${dotY} L${icx+480} ${dotY-10} L${icx+480} ${dotY+10}Z" fill="url(#${id}br)"/>
+    ${t(B)}<path d="M${sx-30} ${B} H${sx+tw+30}" stroke="${FOG}" stroke-opacity=".28" stroke-width="1"/>${sl}${lamp}
+    <circle cx="${icx}" cy="${dotY}" r="${size*.34}" fill="url(#${id}h)"/><circle cx="${icx}" cy="${dotY}" r="${r}" fill="#fff4d6"/></svg>`;
+}
+const E=build('E',{font:'Marcellus',weight:400,size:150,track:34,text:'LOW TIDE'});
+const F=build('F',{font:'Cormorant Garamond',weight:600,size:200,track:12,text:'low tıde',iChar:'ı',lower:true});
+const G=build('G',{font:'Forum',weight:400,size:150,track:34,text:'LOW TIDE'});
+const H=build('H',{font:'Cormorant Garamond',weight:600,size:160,track:30,text:'LOW TIDE'});
+document.fonts.ready.then(()=>{document.body.innerHTML=[['E  Marcellus caps',E],['F  Cormorant lowercase',F],['G  Forum caps',G],['H  Cormorant caps',H]].map(([n,s])=>`<div class="c"><b>${n}</b>${s}</div>`).join('');});
+Promise.all(['400 40px Marcellus','600 40px "Cormorant Garamond"','400 40px Forum'].map(f=>document.fonts.load(f))).then(()=>{ // re-run with fonts loaded
+ const E2=build('E',{font:'Marcellus',weight:400,size:150,track:34,text:'LOW TIDE'}),F2=build('F',{font:'Cormorant Garamond',weight:600,size:200,track:12,text:'low tıde',iChar:'ı',lower:true}),G2=build('G',{font:'Forum',weight:400,size:150,track:34,text:'LOW TIDE'}),H2=build('H',{font:'Cormorant Garamond',weight:600,size:160,track:30,text:'LOW TIDE'});
+ document.body.innerHTML=[['E  Marcellus caps',E2],['F  Cormorant lowercase',F2],['G  Forum caps',G2],['H  Cormorant caps',H2]].map(([n,s])=>`<div class="c"><b>${n}</b>${s}</div>`).join('');});
+</script>
