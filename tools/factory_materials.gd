@@ -60,6 +60,16 @@ static func build_all() -> void:
 	P["book"] = ["b8ae9c", "plaster", 2.0, {"roughness": 0.8, "detail_strength": 0.4}]
 	P["radio_case"] = ["46544a", "rust", 0.9, {"roughness": 0.6, "metallic": 0.2, "detail_strength": 0.35}]
 	P["bakelite"] = ["2a2624", "plaster", 1.0, {"roughness": 0.35, "detail_strength": 0.2, "specular": 0.6}]
+	# First-person hands (tools/hand_assets.gd). Skin is the palest tone: the
+	# mesh's vertex colour paints the darker back of the hand, cold-red
+	# knuckles and fingertips, pale nails and crease shading on top of it.
+	# High wrap stands in for subsurface scatter; detail is faint so pores
+	# never read as noise at 0.3 m.
+	P["skin"] = ["d79a7a", "plaster", 9.0, {"roughness": 0.62, "detail_strength": 0.18, "normal_strength": 0.12, "specular": 0.32, "wrap": 0.8, "shadow_fill": 0.75, "rim_strength": 0.55, "macro_strength": 0.12, "macro_tint": Color("ffd2c4")}]
+	# Waxed-cotton slicker, same yellow family as the coat on the peg (canister).
+	P["oilskin"] = ["c08a2c", "fabric", 1.6, {"roughness": 0.6, "detail_strength": 0.22, "normal_strength": 0.25, "specular": 0.4, "spec_strength": 0.3, "wet_response": 1.0, "macro_strength": 0.3, "macro_tint": Color("ffe0a0")}]
+	P["wool_knit"] = ["3c4352", "fabric", 14.0, {"roughness": 0.98, "detail_strength": 0.7, "normal_strength": 1.1, "specular": 0.2, "wrap": 0.65}]
+	P["wool_glove"] = ["5d5446", "fabric", 16.0, {"roughness": 0.98, "detail_strength": 0.7, "normal_strength": 1.0, "specular": 0.2, "wrap": 0.65, "macro_strength": 0.3}]
 	for name in P:
 		var d: Array = P[name]
 		_painterly(name, Color(d[0]), d[1], d[2], d[3])

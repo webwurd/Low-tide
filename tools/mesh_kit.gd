@@ -11,6 +11,12 @@ class_name MeshKit extends RefCounted
 ##
 ## Vertex colour = `tint` x ambient occlusion (darker near `ao_ground_y`);
 ## the painterly shader multiplies it into albedo.
+##
+## Skinning: pass 4 bone indices + 4 weights per vertex to emit() (or set
+## `bone` for rigid parts) and commit() writes ARRAY_BONES / ARRAY_WEIGHTS.
+## Once any surface is skinned, every surface is (rigid on `bone`).
+## mirrored_x() returns a copy reflected through x = 0 with the winding
+## flipped, so left/right pairs never need a negative scale.
 
 const MAT_DIR := "res://assets/materials/"
 
@@ -18,8 +24,10 @@ var tint := Color(1, 1, 1)
 var ao_ground_y := 0.0
 var ao_range := 0.0          ## 0 disables ground AO
 var ao_min := 0.6
+var bone := 0               ## rigid bone for emits without per-vertex weights
+var _skinned := false
 var _stack: Array[Transform3D] = [Transform3D.IDENTITY]
-var _surf := {}              # mat -> {v, n, c, i}
+var _surf := {}              # mat -> {v, n, c, u, i, b, w}
 
 # --- transform stack ---------------------------------------------------------
 
@@ -38,13 +46,24 @@ func at(pos: Vector3, rot := Vector3.ZERO, scl := Vector3.ONE) -> Transform3D:
 func _buf(mat: String) -> Dictionary:
 	if not _surf.has(mat):
 		_surf[mat] = {"v": PackedVector3Array(), "n": PackedVector3Array(), "c": PackedColorArray(),
-			"u": PackedVector2Array(), "i": PackedInt32Array()}
+			"u": PackedVector2Array(), "i": PackedInt32Array(), "b": PackedInt32Array(), "w": PackedFloat32Array()}
 	return _surf[mat]
 
 ## Appends an indexed triangle list (local space) through the current transform.
+## `bones` / `weights`: 4 entries per vertex (optional; see the header).
 func emit(mat: String, verts: PackedVector3Array, norms: PackedVector3Array, idx: PackedInt32Array,
-		cols := PackedColorArray(), uvs := PackedVector2Array()) -> void:
+		cols := PackedColorArray(), uvs := PackedVector2Array(),
+		bones := PackedInt32Array(), weights := PackedFloat32Array()) -> void:
 	var b := _buf(mat)
+	if bones.size() > 0:
+		assert(bones.size() == verts.size() * 4 and weights.size() == verts.size() * 4, "MeshKit: 4 bones/weights per vertex")
+		_skinned = true
+		b.b.append_array(bones)
+		b.w.append_array(weights)
+	else:
+		for k in verts.size():
+			b.b.append_array([bone, 0, 0, 0])
+			b.w.append_array([1.0, 0.0, 0.0, 0.0])
 	var t: Transform3D = _stack.back()
 	var nb := t.basis.inverse().transposed()
 	var base: int = b.v.size()
@@ -77,6 +96,9 @@ func commit(lods := true) -> ArrayMesh:
 		arr[Mesh.ARRAY_COLOR] = b.c
 		arr[Mesh.ARRAY_TEX_UV] = b.u
 		arr[Mesh.ARRAY_INDEX] = b.i
+		if _skinned:
+			arr[Mesh.ARRAY_BONES] = b.b
+			arr[Mesh.ARRAY_WEIGHTS] = b.w
 		var m: Material = null
 		var p: String = MAT_DIR + mat + ".tres"
 		if ResourceLoader.exists(p):
@@ -87,6 +109,33 @@ func commit(lods := true) -> ArrayMesh:
 	if lods:
 		im.generate_lods(25.0, 60.0, [])
 	return im.get_mesh()
+
+## A copy reflected through the plane x = 0: positions and normals mirrored,
+## triangle winding reversed (so faces stay front-facing), weights kept.
+func mirrored_x() -> MeshKit:
+	var k: MeshKit = get_script().new()
+	k._skinned = _skinned
+	for mat in _surf:
+		var s: Dictionary = _surf[mat]
+		var d := k._buf(mat)
+		for p in s.v:
+			d.v.append(Vector3(-p.x, p.y, p.z))
+		for n in s.n:
+			d.n.append(Vector3(-n.x, n.y, n.z))
+		d.c = s.c.duplicate(); d.u = s.u.duplicate(); d.b = s.b.duplicate(); d.w = s.w.duplicate()
+		for t in range(0, s.i.size(), 3):
+			d.i.append_array([s.i[t], s.i[t + 2], s.i[t + 1]])
+	return k
+
+func is_skinned() -> bool:
+	return _skinned
+
+## Raw buffers of one surface (for tests and tools): {v, n, c, u, i, b, w}.
+func surface(mat: String) -> Dictionary:
+	return _surf.get(mat, {})
+
+func materials() -> Array:
+	return _surf.keys()
 
 func tri_count() -> int:
 	var n := 0

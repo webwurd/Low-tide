@@ -3,6 +3,7 @@ extends SceneTree
 ##   textures   -> res://assets/textures/*.png        (TextureKit)
 ##   import     -> sets VRAM compression / normal-map flags in *.import
 ##   assets     -> materials, meshes, scenes, look resources (needs imported textures)
+##   hands      -> materials + first-person hands only (fast iteration on tools/hand_assets.gd)
 ## Use tools/build_assets.sh, which runs the stages with a Godot import between them.
 ##   godot --headless -s tools/build_assets.gd -- <stage>
 
@@ -19,6 +20,9 @@ func _initialize() -> void:
 			_set_import_flags()
 		"assets":
 			await _build_assets()
+		"hands":
+			load("res://tools/factory_materials.gd").build_all()
+			load("res://tools/hand_assets.gd").build_all()
 		_:
 			printerr("unknown stage ", stage)
 			quit(1)
