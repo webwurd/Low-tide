@@ -56,7 +56,7 @@ Amber is for people. About 5 percent of a frame, never above 10.
 ## Type
 Cormorant Garamond (display, taglines, direction B and H), Big Shoulders Stencil Display (direction C title only), IBM Plex Sans (text), IBM Plex Mono (anything the island measures), Caveat (Arthur's logbook only). All SIL OFL, from Google Fonts.
 
-In-game UI type is set separately (`docs/typography.md`: Newsreader, IBM Plex Mono, Caveat, bundled in `ui/fonts/`). Marketing uses Cormorant Garamond for the logo and display, and shares IBM Plex Mono and Caveat with the game.
+The game's own type (`docs/typography.md`) is Cormorant Garamond for the title, cards and prologue, Work Sans for UI, and Caveat for text written on paper. The in-game title is set in sentence case, and the game avoids all-caps UI text. So directions B and H match the in-game title, and direction C (capitals in a stencil face) is the odd one out. Marketing shares Cormorant Garamond and Caveat with the game and adds IBM Plex Mono for small labels.
 
 ## Voice
 Plain, dry, exact. Write like a keeper's log: the number, the time, the thing seen. Never breathless, never jokey.

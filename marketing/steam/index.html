@@ -610,16 +610,17 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
     canvas.width = w; canvas.height = h;
     LT.drawScene(canvas.getContext('2d'), w, h, opts);
   }
-  // Real captures from the Godot build (main, Charm pass), 1920 x 1080. See marketing/steam/README.md to retake them.
+  // Real captures from the Godot build (main, after the art pass), 1920 x 1080. See marketing/steam/README.md to retake them.
   const shots = [
-    ['01_night_beam', 'The lamp is lit and the beam sweeps the cottage and the rocks.'],
-    ['02_storm_day', 'Day 4. A storm: the bars stay shut and the pier is slick.'],
-    ['03_south_reef_spring_low', 'Day 5. The spring low uncovers the south reef.'],
-    ['04_causeway_lane', 'The causeway between the poles, open for a short window.'],
-    ['05_causeway_sign', 'Causeway. Spring low water only. Keep between the poles.'],
-    ['06_north_cove', 'The north cove, where the cable runs into the sea.'],
-    ['07_keepers_journal', "The keeper's journal: log, satchel and tapes."],
-    ['08_tide_table', 'The paper tide table for Day 5.'],
+    ['01_night_beam', 'Night on Gannet Rock. The beam sweeps the island.'],
+    ['02_golden_hour', 'Day 5. The last golden light of the spring low.'],
+    ['03_cottage', 'The keeper\'s cottage: stove, radio and a table for the log.'],
+    ['04_desk', 'The desk by the window: the logbook, an oil lamp and the radio.'],
+    ['05_lantern_room', 'The lantern room, where the lamp is lit every evening.'],
+    ['06_dawn_pier', 'Day 1. Dawn in fog on the pier.'],
+    ['07_storm', 'Day 4. The blow. The sea comes over the pier.'],
+    ['08_watch_room', 'The watch room at the foot of the tower.'],
+    ['09_keepers_journal', "The keeper's journal: log, satchel and tapes."],
   ];
   const vimg = $('#viewImg'), thumbs = $('#thumbs');
   function show(i) {
@@ -690,7 +691,7 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
     [1, 'Capsule art at all Steam sizes', 'Header, small, main, vertical, library capsule, library hero, page background, logo, icon.'],
     [1, 'Short description under 300 characters', sd.length + ' characters.'],
     [1, 'About text and tags', 'Drafted on the Store page tab.'],
-    [1, 'Five or more real screenshots, 1920 x 1080', '8 captures in assets/game, taken from main. May be refreshed after the art overhaul lands.'],
+    [1, 'Five or more real screenshots, 1920 x 1080', '9 captures in assets/game, taken from main after the art pass. Retake them if the look changes.'],
     [0, 'Trailer', 'Open on the lamp, end on the tagline and logo.'],
     [0, 'Developer and publisher names', 'Placeholders on the page until confirmed.'],
     [0, 'Release date and price', 'Not decided. Page says To be announced.'],
