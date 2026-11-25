@@ -22,6 +22,7 @@ const DEFAULTS := {
 	# audio
 	"vol_master": 1.0, "vol_ambience": 1.0, "vol_sfx": 1.0, "vol_radio": 1.0, "vol_music": 1.0,
 	"radio_static": 1.0,
+	"music_score": 2,          # 0 stings only, 1 sparse, 2 full adaptive score
 	# lighting
 	"brightness": 1.0, "exposure": 1.0, "night_assist": 0.0, "fog_scale": 1.0, "glow": true, "beam_scale": 1.0,
 	# controls
@@ -36,7 +37,7 @@ const RANGES := {
 	"window_mode": [0, 2], "vsync": [0, 2], "fps_cap": [0, 240], "render_scale": [0.5, 1.0], "msaa": [0, 3],
 	"shadow_quality": [0, 3], "ocean_detail": [0, 2], "quality_preset": [0, 4],
 	"vol_master": [0.0, 1.0], "vol_ambience": [0.0, 1.0], "vol_sfx": [0.0, 1.0], "vol_radio": [0.0, 1.0],
-	"vol_music": [0.0, 1.0], "radio_static": [0.0, 1.0],
+	"vol_music": [0.0, 1.0], "radio_static": [0.0, 1.0], "music_score": [0, 2],
 	"brightness": [0.6, 1.6], "exposure": [0.6, 1.6], "night_assist": [0.0, 1.0], "fog_scale": [0.3, 1.5], "beam_scale": [0.4, 2.0],
 	"mouse_sens": [0.3, 3.0], "bino_sens": [0.3, 3.0], "pad_sens": [0.3, 3.0], "deadzone": [0.05, 0.5],
 	"ui_scale": [0.8, 1.5], "subtitle_scale": [0.8, 1.8],

@@ -129,7 +129,7 @@ Replace the placeholder default font with something different and fresh. Decisio
 - Arthur's backstory: the widowed-teacher default above.
 - Character names Walt, June and "Station Penobscot" are placeholders. (Resolved: renamed to the fictional "Station Penobscot".)
 - Should Clara ever appear in person? Default: no, only the ending's boat light, which respects the two-person cast.
-- Music composer or sourcing is TBD. Default: stings only, added in M7.
+- Music composer or sourcing is TBD. Default: synthesised placeholder stings (M7b) and an adaptive score in swells (M7d), each replaceable by composed files.
 - Is there a team or deadline? Default: solo or small team, no fixed date.
 
 ---
