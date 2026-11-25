@@ -23,6 +23,7 @@ var _radio_who: Label
 var _radio_line: Label
 var _skip: Label
 var _typing: Tween
+var _look_tween: Tween          # shade / caption / scrim fades (one at a time)
 var _waiting_choice := false
 var _shot_left := 0.0
 var _skip_t := 0.0
@@ -59,7 +60,7 @@ func _ready() -> void:
 	_lines.add_theme_constant_override("line_spacing", 6)
 	_card.add_child(_lines)
 	_choices = VBoxContainer.new()
-	_choices.add_theme_constant_override("separation", 4)
+	_choices.add_theme_constant_override("separation", 10)
 	_card.add_child(_choices)
 	# Crossing caption: large, semi-bold, outlined and on a dark scrim, so it reads over
 	# bright water and dark sky alike.
@@ -94,23 +95,42 @@ func _ready() -> void:
 	_caption.modulate.a = 0.0
 	_scrim.modulate.a = 0.0
 	add_child(_caption)
-	_radio = PanelContainer.new()
-	_radio.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_radio.position = Vector2(-340, -210)
-	_radio.custom_minimum_size = Vector2(680, 0)
+	# Clara's first call: the same frosted radio panel as in the game.
+	var rkit := UiTheme.glass_panel(Vector2(32, 24))
+	_radio = rkit[0]
+	_radio.anchor_left = 0.5
+	_radio.anchor_right = 0.5
+	_radio.anchor_top = 1.0
+	_radio.anchor_bottom = 1.0
+	_radio.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_radio.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_radio.offset_left = -400.0
+	_radio.offset_right = 400.0
+	_radio.offset_top = -200.0
+	_radio.offset_bottom = -200.0
 	_radio.visible = false
 	add_child(_radio)
 	var rv := VBoxContainer.new()
-	_radio.add_child(rv)
+	rv.add_theme_constant_override("separation", 10)
+	(rkit[1] as Control).add_child(rv)
+	var rhead := HBoxContainer.new()
+	rhead.add_theme_constant_override("separation", 10)
+	var dot := ColorRect.new()
+	dot.color = UiTheme.ACCENT
+	dot.custom_minimum_size = Vector2(8, 8)
+	dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	rhead.add_child(dot)
 	_radio_who = Label.new()
-	_radio_who.add_theme_font_size_override("font_size", 12)
-	_radio_who.add_theme_color_override("font_color", UiTheme.AMBER)
+	UiFonts.style(_radio_who, "ui_bold", 15)
+	_radio_who.add_theme_color_override("font_color", UiTheme.ACCENT)
+	rhead.add_child(_radio_who)
 	_radio_line = Label.new()
 	_radio_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_radio_line.custom_minimum_size = Vector2(650, 0)
+	_radio_line.custom_minimum_size = Vector2(736, 0)
 	_radio_line.add_theme_font_override("font", UiTheme.title_font(500))
-	_radio_line.add_theme_font_size_override("font_size", 22)
-	rv.add_child(_radio_who)
+	_radio_line.add_theme_font_size_override("font_size", 24)
+	_radio_line.add_theme_color_override("font_color", UiTheme.CREAM)
+	rv.add_child(rhead)
 	rv.add_child(_radio_line)
 	_skip = Label.new()
 	_skip.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
@@ -143,12 +163,12 @@ func _next() -> void:
 	if b.has("shot"):
 		_hide_card()
 		_radio.visible = false
-		create_tween().tween_property(_shade, "color:a", 0.0, 1.2)
+		_restart_look()
+		_look_tween.tween_property(_shade, "color:a", 0.0, 1.2)
 		_caption.text = b.get("caption", "")
-		var tw := create_tween()
-		tw.tween_interval(0.8)
-		tw.tween_property(_caption, "modulate:a", 1.0 if _caption.text != "" else 0.0, 1.0)
-		tw.parallel().tween_property(_scrim, "modulate:a", 1.0 if _caption.text != "" else 0.0, 1.0)
+		_look_tween.tween_interval(0.8)
+		_look_tween.tween_property(_caption, "modulate:a", 1.0 if _caption.text != "" else 0.0, 1.0)
+		_look_tween.parallel().tween_property(_scrim, "modulate:a", 1.0 if _caption.text != "" else 0.0, 1.0)
 		_shot_left = b.get("seconds", 6.0)
 		shot_requested.emit(int(b["shot"]), _shot_left)
 	elif b.has("radio"):
@@ -161,11 +181,20 @@ func _next() -> void:
 	else:
 		_show_text(b)
 
+## Starts a fresh fade, killing the previous one: overlapping tweens on the
+## same property let a stale "fade out" finish last and win.
+func _restart_look() -> void:
+	if _look_tween and _look_tween.is_valid():
+		_look_tween.kill()
+	_look_tween = create_tween()
+
 func _show_text(b: Dictionary) -> void:
 	_shot_left = 0.0
-	create_tween().tween_property(_caption, "modulate:a", 0.0, 0.5)
-	create_tween().tween_property(_scrim, "modulate:a", 0.0, 0.5)
-	create_tween().tween_property(_shade, "color:a", 0.86, 1.0)
+	_restart_look()
+	_look_tween.set_parallel(true)
+	_look_tween.tween_property(_caption, "modulate:a", 0.0, 0.5)
+	_look_tween.tween_property(_scrim, "modulate:a", 0.0, 0.5)
+	_look_tween.tween_property(_shade, "color:a", 0.86, 1.0)
 	_lines.text = "\n\n".join(PackedStringArray(b["text"]))
 	_lines.visible_characters = 0
 	for c in _choices.get_children():
@@ -188,9 +217,11 @@ func _show_choices(b: Dictionary) -> void:
 		var btn := Button.new()
 		btn.text = ch["text"]
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		btn.custom_minimum_size = Vector2(720, 0)
+		UiTheme.style_button(btn, "choice", 24)
 		btn.add_theme_font_override("font", UiTheme.title_font(600))
-		btn.add_theme_font_size_override("font_size", 24)
-		btn.add_theme_color_override("font_color", Color(1, 0.86, 0.62))
+		btn.add_theme_color_override("font_color", Color(1, 0.88, 0.68))
 		btn.pressed.connect(_choose.bind(ch))
 		_choices.add_child(btn)
 		if first == null:

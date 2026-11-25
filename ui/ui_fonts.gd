@@ -3,6 +3,7 @@ class_name UiFonts
 ## in docs/art_direction.md).
 ##   display : Cormorant Garamond (600)  - title, day cards, ending names, headings
 ##   ui      : Work Sans (420)           - HUD, radio, prompts, menus
+##   ui_bold : Work Sans (600)           - buttons, speaker names, labels
 ##   paper   : Caveat Medium             - journal entries, tide table (handwriting)
 ##   tape    : Cormorant Garamond (500), obliqued - tape subtitles
 ## Cormorant Garamond and Work Sans are variable fonts (SIL OFL, assets/fonts/).
@@ -11,10 +12,11 @@ class_name UiFonts
 const ROLE_FILES := {
 	"display": "res://assets/fonts/CormorantGaramond.ttf",
 	"ui": "res://assets/fonts/WorkSans.ttf",
+	"ui_bold": "res://assets/fonts/WorkSans.ttf",
 	"paper": "res://ui/fonts/Caveat-Medium.woff",
 	"tape": "res://assets/fonts/CormorantGaramond.ttf",
 }
-const ROLE_WEIGHT := {"display": 600, "ui": 420, "tape": 500}
+const ROLE_WEIGHT := {"display": 600, "ui": 420, "ui_bold": 600, "tape": 500}
 static var _cache: Dictionary = {}
 
 ## Returns the Font for a role, or null to use the theme default.

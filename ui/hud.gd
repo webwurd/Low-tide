@@ -13,10 +13,25 @@ const CREAM := Color("efe4c8")
 const POSTER_TEAL := Color("1f4b52")
 const POSTER_BRASS := Color("d9a441")      # thin rules only
 const TYPE_CPS := 55.0                     # radio text types in at about reading speed
+# Radio panel (sizes at subtitle scale 1.0; apply_text_scale() multiplies them).
+const RADIO_SPEAKER_SIZE := 15
+const RADIO_TEXT_SIZE := 21
+const RADIO_OPT_SIZE := 18
+const RADIO_PAD := Vector2(32, 24)
+const RADIO_WIDTH := 860.0
+const RADIO_GAP := 12                      # between speaker, text and replies
+const TAPE_TITLE_SIZE := 14
+const TAPE_TEXT_SIZE := 22
+const NOTE_SIZE := 18
+const PROMPT_SIZE := 17
 
 var player: Player
 var _reticle: Control
 var _prompt: Label
+var _prompt_box: Control
+var _prompt_key: Label
+var _note_box: PanelContainer
+var _pad_input := false           # last input came from a gamepad (prompts show A, not E)
 var _bino: ColorRect
 var _bino_range: Label
 var _bino_label: Label
@@ -41,6 +56,8 @@ var _note_t := 0.0
 var _hold_bar: ProgressBar
 var _modal: PanelContainer
 var _modal_title: Label
+var _modal_tabs: HBoxContainer
+var _modal_hint: Label
 var _modal_body: Label
 var _modal_frame := -1
 var _card: Control
@@ -156,13 +173,37 @@ func _build_reticle() -> void:
 	dot.position = Vector2(-2, -2)
 	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_reticle.add_child(dot)
-	_prompt = _label("", 15, Color("ffe9b8"))
-	_prompt.set_anchors_preset(Control.PRESET_CENTER)
-	_prompt.position = Vector2(-140, 26)
-	_prompt.size = Vector2(280, 30)
-	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_prompt.visible = false
-	_reticle.add_child(_prompt)
+	# Interaction prompt: a frosted pill under the reticle with a key cap.
+	var kit := UiTheme.glass_panel(Vector2(16, 8), 999)
+	_prompt_box = kit[0]
+	_prompt_box.anchor_left = 0.5
+	_prompt_box.anchor_right = 0.5
+	_prompt_box.anchor_top = 0.5
+	_prompt_box.anchor_bottom = 0.5
+	_prompt_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_prompt_box.offset_top = 30.0
+	_prompt_box.offset_bottom = 30.0
+	_prompt_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_prompt_box.visible = false
+	_reticle.add_child(_prompt_box)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	(kit[1] as Control).add_child(row)
+	var cap := PanelContainer.new()
+	var cap_sb := StyleBoxFlat.new()
+	cap_sb.bg_color = Color(1, 0.96, 0.88, 0.92)
+	cap_sb.set_corner_radius_all(5)
+	cap_sb.content_margin_left = 8
+	cap_sb.content_margin_right = 8
+	cap_sb.content_margin_top = 1
+	cap_sb.content_margin_bottom = 1
+	cap.add_theme_stylebox_override("panel", cap_sb)
+	cap.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_prompt_key = _label("E", 15, Color("1c140a"), "ui_bold")
+	cap.add_child(_prompt_key)
+	row.add_child(cap)
+	_prompt = _label("", PROMPT_SIZE, UiTheme.CREAM)
+	row.add_child(_prompt)
 
 func _build_binoculars() -> void:
 	_bino = ColorRect.new()
@@ -192,37 +233,41 @@ func _build_watch() -> void:
 	add_child(_watch)
 
 func _build_assist() -> void:
-	_assist = PanelContainer.new()
-	_assist.add_theme_stylebox_override("panel", _style())
-	_assist.position = Vector2(20, 20)
+	var akit := UiTheme.glass_panel(Vector2(20, 16))
+	_assist = akit[0]
+	_assist.position = Vector2(24, 24)
 	_assist.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_assist)
 	var v := VBoxContainer.new()
-	_assist.add_child(v)
-	_assist_clock = _label("", 18, Color("ffe9b8"))
-	_assist_tide = _label("", 14)
-	_assist_level = _label("", 14)
+	v.add_theme_constant_override("separation", 6)
+	(akit[1] as Control).add_child(v)
+	_assist_clock = _label("", 20, UiTheme.CREAM, "ui_bold")
+	_assist_tide = _label("", 15, UiTheme.CREAM)
+	_assist_level = _label("", 15, UiTheme.CREAM)
 	_assist_bar = ProgressBar.new()
-	_assist_bar.custom_minimum_size = Vector2(200, 8)
+	_bar_style(_assist_bar, 8)
+	_assist_bar.custom_minimum_size = Vector2(220, 8)
 	_assist_bar.max_value = 4.6
 	_assist_bar.min_value = -0.4
 	_assist_bar.show_percentage = false
-	_assist_log = _label("", 13, Color("b8c4cc"))
+	_assist_log = _label("", 14, UiTheme.MUTED)
 	for n in [_assist_clock, _assist_tide, _assist_level, _assist_bar, _assist_log]:
 		v.add_child(n)
 	_stamina = ProgressBar.new()
+	_bar_style(_stamina, 5)
 	_stamina.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	_stamina.position = Vector2(20, -24)
-	_stamina.size = Vector2(160, 4)
+	_stamina.position = Vector2(24, -28)
+	_stamina.size = Vector2(180, 5)
 	_stamina.show_percentage = false
 	_stamina.max_value = 100
 	_stamina.modulate.a = 0.0
 	add_child(_stamina)
 
 func _build_radio() -> void:
-	_radio = PanelContainer.new()
-	# Minimal: a quiet dark strip with a thin amber edge.
-	_radio.add_theme_stylebox_override("panel", _flat_box(Color(0.04, 0.07, 0.09, 0.78), AMBER, 18, 12))
+	# A frosted glass panel: the scene shows through, blurred, so the text
+	# stays legible over sky or snow without a heavy slab.
+	var kit := UiTheme.glass_panel(RADIO_PAD)
+	_radio = kit[0]
 	# Bottom-centre, growing upward, so tall text never runs off the screen.
 	_radio.anchor_left = 0.5
 	_radio.anchor_right = 0.5
@@ -233,52 +278,59 @@ func _build_radio() -> void:
 	_radio.visible = false
 	add_child(_radio)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 8)
-	_radio.add_child(v)
-	_radio_speaker = _label("", 12, AMBER)
-	_radio_text = _label("", 17, CREAM)
-	_radio_text.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	v.add_theme_constant_override("separation", RADIO_GAP)
+	(kit[1] as Control).add_child(v)
+	# Header: a small amber "on air" light and the speaker.
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	var dot := ColorRect.new()
+	dot.color = UiTheme.ACCENT
+	dot.custom_minimum_size = Vector2(8, 8)
+	dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_child(dot)
+	_radio_speaker = _label("", RADIO_SPEAKER_SIZE, UiTheme.ACCENT, "ui_bold")
+	head.add_child(_radio_speaker)
+	_radio_text = _label("", RADIO_TEXT_SIZE, UiTheme.CREAM)
+	_radio_text.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.45))
 	_radio_text.add_theme_constant_override("shadow_offset_y", 1)
+	_radio_text.add_theme_constant_override("line_spacing", 5)
 	_radio_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_radio_text.custom_minimum_size = Vector2(750, 0)
 	_radio_opts = HBoxContainer.new()
-	_radio_opts.add_theme_constant_override("separation", 10)
+	_radio_opts.add_theme_constant_override("separation", RADIO_GAP)
 	for i in 2:
 		var b := Button.new()
 		b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		b.custom_minimum_size = Vector2(365, 0)
 		b.focus_mode = Control.FOCUS_NONE
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.add_theme_stylebox_override("normal", _flat_box(Color(1, 1, 1, 0.07), Color(0, 0, 0, 0), 12, 8))
-		b.add_theme_stylebox_override("hover", _flat_box(Color(1, 0.72, 0.3, 0.2), Color(0, 0, 0, 0), 12, 8))
-		b.add_theme_stylebox_override("pressed", _flat_box(Color(1, 0.72, 0.3, 0.3), Color(0, 0, 0, 0), 12, 8))
-		b.add_theme_color_override("font_color", CREAM)
-		b.add_theme_color_override("font_hover_color", Color.WHITE)
+		b.size_flags_vertical = Control.SIZE_FILL
+		UiTheme.style_button(b, "choice", RADIO_OPT_SIZE)
 		b.pressed.connect(RadioSystem.choose.bind(i))
 		_radio_opts.add_child(b)
 		_opt_buttons.append(b)
-	for n in [_radio_speaker, _radio_text, _radio_opts]:
+	for n in [head, _radio_text, _radio_opts]:
 		v.add_child(n)
 	_layout_radio()
 
 ## The radio panel widens with the subtitle size so large text still fits.
 func _layout_radio() -> void:
 	var k: float = float(Settings.v("subtitle_scale"))
-	var w: float = clampf(780.0 + (k - 1.0) * 520.0, 780.0, 1220.0)
+	var w: float = clampf(RADIO_WIDTH + (k - 1.0) * 480.0, RADIO_WIDTH, 1220.0)
 	_radio.offset_left = -w * 0.5
 	_radio.offset_right = w * 0.5
-	_radio.offset_bottom = -60.0
-	_radio.offset_top = -60.0
+	_radio.offset_bottom = -56.0
+	_radio.offset_top = -56.0
 	_radio.custom_minimum_size = Vector2(w, 0)
-	_radio_text.custom_minimum_size = Vector2(w - 34.0, 0)
+	var inner := w - RADIO_PAD.x * 2.0
+	_radio_text.custom_minimum_size = Vector2(inner, 0)
 	for b in _opt_buttons:
-		b.custom_minimum_size = Vector2((w - 44.0) * 0.5, 0)
+		b.custom_minimum_size = Vector2((inner - RADIO_GAP) * 0.5, 0)
 
 ## "New radio message": a small padded tag at the top of the screen on a solid
 ## colour, so it reads as a notice rather than part of the world.
 func _build_banner() -> void:
 	var tag := PanelContainer.new()
-	tag.add_theme_stylebox_override("panel", _flat_box(Color(POSTER_TEAL.r, POSTER_TEAL.g, POSTER_TEAL.b, 0.96), Color(0, 0, 0, 0), 20, 9))
+	tag.add_theme_stylebox_override("panel", UiTheme.pill(Color(POSTER_TEAL.r, POSTER_TEAL.g, POSTER_TEAL.b, 0.96), Vector2(20, 12)))
 	tag.anchor_left = 0.5
 	tag.anchor_right = 0.5
 	tag.grow_horizontal = Control.GROW_DIRECTION_BOTH
@@ -292,7 +344,7 @@ func _build_banner() -> void:
 	row.add_theme_constant_override("separation", 12)
 	tag.add_child(row)
 	var dot := ColorRect.new()                          # small brass indicator light
-	dot.color = AMBER
+	dot.color = UiTheme.ACCENT
 	dot.custom_minimum_size = Vector2(8, 8)
 	dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -387,56 +439,48 @@ func _start_prologue() -> void:
 # --- setup / tutorial (shown before Arthur steps onto the island) -------
 
 func _build_tutorial() -> void:
-	_tut = PanelContainer.new()
-	_tut.add_theme_stylebox_override("panel", _style(Color(0.06, 0.09, 0.12, 0.96), Color(0.85, 0.7, 0.42, 0.5)))
-	_tut.set_anchors_preset(Control.PRESET_CENTER)
-	_tut.custom_minimum_size = Vector2(860, 460)
-	_tut.position = Vector2(-430, -230)
+	# Frosted glass over the title backdrop, sized to its content.
+	var kit := UiTheme.glass_panel(Vector2(40, 32), UiTheme.RADIUS, Color(0.035, 0.05, 0.065, 0.74))
+	_tut = kit[0]
+	_tut.anchor_left = 0.5
+	_tut.anchor_right = 0.5
+	_tut.anchor_top = 0.5
+	_tut.anchor_bottom = 0.5
+	_tut.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_tut.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_tut.custom_minimum_size = Vector2(880, 0)
 	_tut.visible = false
 	_tut.z_index = 5
 	add_child(_tut)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 10)
-	_tut.add_child(v)
-	_tut_title = _label("", 26, Color.WHITE, "display")
+	v.add_theme_constant_override("separation", 16)
+	(kit[1] as Control).add_child(v)
+	_tut_title = _label("", 34, UiTheme.CREAM, "display")
 	_tut_body = VBoxContainer.new()
-	_tut_body.add_theme_constant_override("separation", 6)
-	_tut_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_tut_body.add_theme_constant_override("separation", 10)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 18)
-	_tut_back = _tut_button("Back", Vector2(150, 56), false)
+	row.alignment = BoxContainer.ALIGNMENT_END
+	row.add_theme_constant_override("separation", 14)
+	_tut_back = _tut_button("Back", Vector2(150, 52), false)
 	_tut_back.pressed.connect(func(): _tut_go(_tut_idx - 1))
-	_tut_next = _tut_button("Next", Vector2(280, 56), true)
+	_tut_next = _tut_button("Next", Vector2(280, 52), true)
 	_tut_next.pressed.connect(func(): _tut_go(_tut_idx + 1))
 	row.add_child(_tut_back)
 	row.add_child(_tut_next)
-	for n in [_tut_title, _tut_body, row]:
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 6)
+	for n in [_tut_title, _tut_body, gap, row]:
 		v.add_child(n)
 	_tut_pages = TutorialData.pages_for("kb")
 
-## A clearly visible button: filled, with a hover and focus state, sized to be easy to hit.
+## A clearly visible button, sized to be easy to hit. Primary = the amber
+## "do this next" button; the rest are quiet glass chips (UiTheme).
 func _tut_button(text: String, min_size: Vector2, primary: bool) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.custom_minimum_size = min_size
 	b.focus_mode = Control.FOCUS_ALL
-	UiFonts.style(b, "ui_bold", 20 if primary else 17)
-	var fill := Color(0.85, 0.62, 0.22, 0.95) if primary else Color(1, 1, 1, 0.10)
-	var hover := Color(0.95, 0.72, 0.3, 1.0) if primary else Color(1, 1, 1, 0.2)
-	var text_col := Color("1a1308") if primary else CREAM
-	b.add_theme_color_override("font_color", text_col)
-	b.add_theme_color_override("font_hover_color", text_col)
-	b.add_theme_color_override("font_focus_color", text_col)
-	b.add_theme_color_override("font_pressed_color", text_col)
-	b.add_theme_stylebox_override("normal", _flat_box(fill, Color(0, 0, 0, 0), 20, 12))
-	b.add_theme_stylebox_override("hover", _flat_box(hover, Color(0, 0, 0, 0), 20, 12))
-	b.add_theme_stylebox_override("pressed", _flat_box(hover, Color(0, 0, 0, 0), 20, 12))
-	var focus := _flat_box(hover, Color(0, 0, 0, 0), 20, 12)
-	focus.set_border_width_all(2)
-	focus.border_color = Color.WHITE
-	b.add_theme_stylebox_override("focus", focus)
+	UiTheme.style_button(b, "primary" if primary else "secondary", 19 if primary else 17)
 	return b
 
 func _open_tutorial() -> void:
@@ -446,6 +490,13 @@ func _open_tutorial() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE      # the buttons need a cursor
 	_tut_device = ""
 	_tut_go(0)
+
+## Prompts show the key for whatever the player last touched.
+func _input(event: InputEvent) -> void:
+	if event is InputEventJoypadButton or (event is InputEventJoypadMotion and absf((event as InputEventJoypadMotion).axis_value) > 0.4):
+		_pad_input = true
+	elif event is InputEventKey or event is InputEventMouseButton:
+		_pad_input = false
 
 ## Esc / B steps back through the setup pages, so there is always a way out.
 func _unhandled_input(event: InputEvent) -> void:
@@ -471,24 +522,31 @@ func _tut_go(i: int) -> void:
 		return
 	_tut_idx = i
 	for ch in _tut_body.get_children():
+		_tut_body.remove_child(ch)
 		ch.queue_free()
+	_tut.offset_left = 0.0
+	_tut.offset_right = 0.0
+	_tut.offset_top = 0.0
+	_tut.offset_bottom = 0.0
 	_tut_back.text = "Back" if i > 0 else "Title"
 	if i == 0:
 		_tut_title.text = "How are you playing?"
 		_tut_next.visible = false
-		var intro := _label("Pick one and the next pages show only those controls. You can change this any time in Settings.", 16, Color("cfd6d6"))
+		var intro := _label("Pick one and the next pages show only those controls. You can change this any time in Settings.", 18, UiTheme.MUTED)
 		intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		intro.custom_minimum_size = Vector2(820, 0)
+		intro.custom_minimum_size = Vector2(800, 0)
 		_tut_body.add_child(intro)
 		var gap := Control.new()
-		gap.custom_minimum_size = Vector2(0, 24)
+		gap.custom_minimum_size = Vector2(0, 14)
 		_tut_body.add_child(gap)
 		var choices := HBoxContainer.new()
 		choices.alignment = BoxContainer.ALIGNMENT_CENTER
-		choices.add_theme_constant_override("separation", 24)
-		var kb := _tut_button("Keyboard and mouse", Vector2(320, 84), true)
+		choices.add_theme_constant_override("separation", 20)
+		var kb := _tut_button("Keyboard and mouse", Vector2(360, 96), false)
+		kb.add_theme_font_size_override("font_size", 21)
 		kb.pressed.connect(_tut_pick.bind("kb"))
-		var pad := _tut_button("Gamepad", Vector2(320, 84), true)
+		var pad := _tut_button("Gamepad", Vector2(360, 96), false)
+		pad.add_theme_font_size_override("font_size", 21)
 		pad.pressed.connect(_tut_pick.bind("pad"))
 		choices.add_child(kb)
 		choices.add_child(pad)
@@ -502,16 +560,21 @@ func _tut_go(i: int) -> void:
 	if rows.size() > 0:
 		var grid := GridContainer.new()
 		grid.columns = 2
-		grid.add_theme_constant_override("h_separation", 48)
-		grid.add_theme_constant_override("v_separation", 10)
+		grid.add_theme_constant_override("h_separation", 56)
+		grid.add_theme_constant_override("v_separation", 12)
 		for r in rows.size():
-			for cell in rows[r]:
-				grid.add_child(_label(cell, 17, AMBER if r == 0 else Color("e8dfc8")))
+			for c in rows[r].size():
+				var cell: String = rows[r][c]
+				if r == 0:
+					grid.add_child(_label(cell, 15, UiTheme.ACCENT, "ui_bold"))
+				else:
+					grid.add_child(_label(cell, 18, UiTheme.CREAM, "ui_bold" if c == 1 else "ui"))
 		_tut_body.add_child(grid)
 	if pg["text"] != "":
-		var t := _label(pg["text"], 16)
+		var t := _label(pg["text"], 18, UiTheme.CREAM)
 		t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		t.custom_minimum_size = Vector2(820, 0)
+		t.add_theme_constant_override("line_spacing", 4)
+		t.custom_minimum_size = Vector2(800, 0)
 		_tut_body.add_child(t)
 	_tut_next.text = "Next" if i < _tut_pages.size() else "Step into the cottage"
 	_tut_next.grab_focus.call_deferred()      # Enter / Space / A advance without the mouse
@@ -519,57 +582,122 @@ func _tut_go(i: int) -> void:
 # --- toasts, modal panel, day card --------------------------------------
 
 func _build_toasts() -> void:
-	_note = _label("", 17, Color("ffe9b8"))
-	_note.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	_note.position = Vector2(-380, -120)
-	_note.size = Vector2(760, 30)
+	# Arthur's short inner-voice notes: a frosted pill, bottom centre.
+	var nkit := UiTheme.glass_panel(Vector2(26, 12), 999)
+	_note_box = nkit[0]
+	_note_box.anchor_left = 0.5
+	_note_box.anchor_right = 0.5
+	_note_box.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_note_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_note_box.modulate.a = 0.0
+	add_child(_note_box)
+	_note = _label("", NOTE_SIZE, Color("ffe9c4"))
 	_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_note.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
-	_note.add_theme_constant_override("shadow_offset_x", 1)
-	_note.add_theme_constant_override("shadow_offset_y", 1)
-	_note.modulate.a = 0.0
-	add_child(_note)
+	(nkit[1] as Control).add_child(_note)
 	_hold_bar = ProgressBar.new()
+	_bar_style(_hold_bar, 6)
 	_hold_bar.set_anchors_preset(Control.PRESET_CENTER)
-	_hold_bar.position = Vector2(-70, 62)
-	_hold_bar.size = Vector2(140, 6)
+	_hold_bar.position = Vector2(-80, 78)
+	_hold_bar.size = Vector2(160, 6)
 	_hold_bar.show_percentage = false
 	_hold_bar.max_value = 1.0
 	_hold_bar.visible = false
 	add_child(_hold_bar)
 
+## Rounded track + amber fill for the small progress bars.
+func _bar_style(bar: ProgressBar, h: int) -> void:
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0, 0, 0, 0.38)
+	bg.set_corner_radius_all(h)
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = UiTheme.ACCENT
+	fill.set_corner_radius_all(h)
+	bar.add_theme_stylebox_override("background", bg)
+	bar.add_theme_stylebox_override("fill", fill)
+
 func show_note(text: String) -> void:
 	_note.text = text
-	_note.modulate.a = 1.0
+	# Short notes hug their text; long ones wrap at a readable width.
+	var w: float = minf(_note.get_theme_font("font").get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, _note.get_theme_font_size("font_size")).x + 4.0, 720.0)
+	_note.custom_minimum_size = Vector2(w, 0)
+	_place_note()
+	_note_box.modulate.a = 1.0
 	_note_t = 3.5 + text.length() * 0.03
 
+## The journal and the tide table: a sheet of paper Arthur holds up. Title
+## and tab chips on top, a ruled line, the handwritten page, key hints below.
 func _build_modal() -> void:
 	_modal = PanelContainer.new()
-	_modal.add_theme_stylebox_override("panel", _style(Color("e8dfc8"), Color("8a7448")))
-	_modal.set_anchors_preset(Control.PRESET_CENTER)
-	_modal.custom_minimum_size = Vector2(780, 440)
-	_modal.position = Vector2(-390, -240)
+	_modal.add_theme_stylebox_override("panel", UiTheme.paper())
+	_modal.anchor_left = 0.5
+	_modal.anchor_right = 0.5
+	_modal.anchor_top = 0.5
+	_modal.anchor_bottom = 0.5
+	_modal.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_modal.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_modal.offset_left = -430.0
+	_modal.offset_right = 430.0
+	_modal.offset_top = -255.0
+	_modal.offset_bottom = 255.0
 	_modal.visible = false
 	_modal.z_index = 4
 	add_child(_modal)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 10)
+	v.add_theme_constant_override("separation", 12)
 	_modal.add_child(v)
-	_modal_title = _label("", 24, Color("2b2418"), "display")
-	_modal_body = _label("", 17, Color("2b2418"))
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 10)
+	_modal_title = _label("", 32, UiTheme.PAPER_INK, "display")
+	_modal_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(_modal_title)
+	_modal_tabs = HBoxContainer.new()
+	_modal_tabs.add_theme_constant_override("separation", 6)
+	_modal_tabs.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	for t in ["Log", "Satchel", "Tapes"]:
+		var chip := PanelContainer.new()
+		chip.add_child(_label(t, 15, UiTheme.PAPER_INK, "ui_bold"))
+		_modal_tabs.add_child(chip)
+	head.add_child(_modal_tabs)
+	var rule := ColorRect.new()
+	rule.color = UiTheme.PAPER_EDGE
+	rule.custom_minimum_size = Vector2(0, 2)
+	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_modal_body = _label("", 17, UiTheme.PAPER_INK)
 	_modal_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_modal_body.custom_minimum_size = Vector2(740, 0)
 	_modal_scroll = ScrollContainer.new()
-	_modal_scroll.custom_minimum_size = Vector2(760, 350)
+	_modal_scroll.custom_minimum_size = Vector2(760, 330)
+	_modal_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_modal_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_modal_scroll.add_child(_modal_body)
-	v.add_child(_modal_title)
-	v.add_child(_modal_scroll)
-	v.add_child(_label("[E / Tab / Esc] close     [W / S or right stick] scroll", 12, Color("6a5a3a")))
+	_modal_hint = _label("", 14, Color(0.4, 0.33, 0.22))
+	for n in [head, rule, _modal_scroll, _modal_hint]:
+		v.add_child(n)
+
+## Highlights the current journal page's chip (ink fill), or hides the chips.
+func _set_tabs(page: int) -> void:
+	_modal_tabs.visible = page >= 0
+	for i in _modal_tabs.get_child_count():
+		var chip := _modal_tabs.get_child(i) as PanelContainer
+		var on := i == page
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = UiTheme.PAPER_INK if on else Color(0, 0, 0, 0)
+		sb.border_color = UiTheme.PAPER_INK if on else UiTheme.PAPER_EDGE
+		sb.set_border_width_all(1)
+		sb.set_corner_radius_all(999)
+		sb.content_margin_left = 14
+		sb.content_margin_right = 14
+		sb.content_margin_top = 3
+		sb.content_margin_bottom = 4
+		chip.add_theme_stylebox_override("panel", sb)
+		(chip.get_child(0) as Label).add_theme_color_override("font_color", UiTheme.PAPER if on else Color(UiTheme.PAPER_INK, 0.7))
 
 func _open_modal(title: String, body: String) -> void:
 	_modal_title.text = title
+	_set_tabs(_journal_page)
+	var keys := "Close   E · Tab · Esc        Scroll   W / S"
+	_modal_hint.text = keys + ("        Turn page   A / D" if _journal_page >= 0 else "")
 	_modal_body.text = body
 	_modal_body.tab_stops = PackedFloat32Array()
 	UiFonts.style(_modal_body, "paper", 26)       # journal entries and the tide table are handwritten
@@ -615,16 +743,23 @@ func _build_ending_card() -> void:
 	v.add_theme_constant_override("separation", 14)
 	v.custom_minimum_size = Vector2(760, 0)
 	c.add_child(v)
-	_ending_title = _label("Low Tide", 20, Color("9aa7b0"))
+	_ending_title = _label("Low Tide", 16, UiTheme.MUTED, "ui_bold")
 	_ending_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_ending_name = _label("", 44, Color.WHITE, "display")
 	_ending_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_ending_body = _label("", 17, Color("d8dde2"))
+	_ending_body = _label("", 19, Color("dde1e4"))
+	_ending_body.add_theme_constant_override("line_spacing", 4)
 	_ending_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_ending_body.custom_minimum_size = Vector2(760, 0)
-	_ending_hint = _label("[E]  return to title", 13, AMBER)
+	_ending_hint = _label("E   Return to title", 15, UiTheme.CREAM, "ui_bold")
 	_ending_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	for n in [_ending_title, _ending_name, _ending_body, _ending_hint]:
+	var hint_pill := PanelContainer.new()
+	hint_pill.add_theme_stylebox_override("panel", UiTheme.pill(Color(1, 1, 1, 0.08)))
+	hint_pill.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	hint_pill.add_child(_ending_hint)
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 12)
+	for n in [_ending_title, _ending_name, _ending_body, gap, hint_pill]:
 		v.add_child(n)
 
 func show_ending(letter: String, ending_name: String, body: String) -> void:
@@ -637,19 +772,25 @@ func show_ending(letter: String, ending_name: String, body: String) -> void:
 	_ending_opened_at = Time.get_ticks_msec() / 1000.0
 
 func _build_tape_panel() -> void:
-	_tape_panel = PanelContainer.new()
-	_tape_panel.add_theme_stylebox_override("panel", _style(Color(0.1, 0.08, 0.06, 0.9), Color(0.7, 0.55, 0.3, 0.5)))
-	_tape_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_tape_panel.custom_minimum_size = Vector2(720, 0)
-	_tape_panel.position = Vector2(-360, 24)
+	# Tape subtitles: frosted glass at the top, a different voice from the radio.
+	var kit := UiTheme.glass_panel(Vector2(28, 18), UiTheme.RADIUS, Color(0.07, 0.055, 0.04, 0.66))
+	_tape_panel = kit[0]
+	_tape_panel.anchor_left = 0.5
+	_tape_panel.anchor_right = 0.5
+	_tape_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_tape_panel.offset_left = -390.0
+	_tape_panel.offset_right = 390.0
+	_tape_panel.offset_top = 26.0
 	_tape_panel.visible = false
 	add_child(_tape_panel)
 	var v := VBoxContainer.new()
-	_tape_panel.add_child(v)
-	_tape_title = _label("", 12, Color("d9b26a"))
-	_tape_text = _label("", 20, Color("f1e6cf"), "tape")
+	v.add_theme_constant_override("separation", 8)
+	(kit[1] as Control).add_child(v)
+	_tape_title = _label("", TAPE_TITLE_SIZE, Color("e2bd78"), "ui_bold")
+	_tape_text = _label("", TAPE_TEXT_SIZE, Color("f4ead6"), "tape")
 	_tape_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_tape_text.custom_minimum_size = Vector2(690, 0)
+	_tape_text.custom_minimum_size = Vector2(724, 0)
+	_tape_text.add_theme_constant_override("line_spacing", 4)
 	v.add_child(_tape_title)
 	v.add_child(_tape_text)
 
@@ -663,10 +804,6 @@ func toggle_logbook() -> void:
 	_render_journal()
 
 func _render_journal() -> void:
-	var tabs := ["Log", "Satchel", "Tapes"]
-	var head: Array = []
-	for i in tabs.size():
-		head.append("[ %s ]" % tabs[i] if i == _journal_page else tabs[i])
 	var body: Array = []
 	match _journal_page:
 		0:
@@ -693,7 +830,7 @@ func _render_journal() -> void:
 					body.append("")
 			if body.is_empty():
 				body.append("No tapes yet.")
-	_open_modal("Keeper's journal     " + "   ".join(head) + "     (A / D to turn)", "\n".join(body))
+	_open_modal("Keeper's journal", "\n".join(body))
 
 ## Day cards: a bold band across the screen with big display type.
 func _build_card() -> void:
@@ -710,11 +847,22 @@ func _build_card() -> void:
 	_card_band.offset_bottom = -70.0
 	_card_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_card.add_child(_card_band)
+	# Hairline brass edges, like the rule on a printed poster.
+	for edge in [0.0, 1.0]:
+		var line := ColorRect.new()
+		line.color = Color(POSTER_BRASS.r, POSTER_BRASS.g, POSTER_BRASS.b, 0.7)
+		line.anchor_right = 1.0
+		line.anchor_top = edge
+		line.anchor_bottom = edge
+		line.offset_top = -1.0 if edge > 0.5 else 0.0
+		line.offset_bottom = 0.0 if edge > 0.5 else 1.0
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_card_band.add_child(line)
 	var c := CenterContainer.new()
 	_full(c)
 	_card_band.add_child(c)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 4)
+	v.add_theme_constant_override("separation", 6)
 	c.add_child(v)
 	var rule := ColorRect.new()
 	rule.color = POSTER_BRASS
@@ -723,7 +871,7 @@ func _build_card() -> void:
 	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_card_title = _label("", 84, CREAM, "display")
 	_card_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_card_sub = _label("", 18, AMBER)
+	_card_sub = _label("", 24, Color(1, 0.86, 0.6), "display")
 	_card_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	for n in [rule, _card_title, _card_sub]:
 		v.add_child(n)
@@ -787,7 +935,7 @@ func _process(delta: float) -> void:
 	if _note_t > 0.0:
 		_note_t -= delta
 		if _note_t < 0.8:
-			_note.modulate.a = maxf(0.0, _note_t / 0.8)
+			_note_box.modulate.a = maxf(0.0, _note_t / 0.8)
 	if Input.is_action_just_pressed("radio_1"): RadioSystem.choose(0)
 	if Input.is_action_just_pressed("radio_2"): RadioSystem.choose(1)
 	if Input.is_action_just_pressed("radio_dismiss"): RadioSystem.dismiss()
@@ -798,9 +946,10 @@ func _process(delta: float) -> void:
 	if player.binoculars:
 		_bino_range.text = "Distance: %d m" % player.bino_dist if player.bino_dist >= 0 else "Distance: --- m"
 		_bino_label.text = player.bino_label if player.bino_label != "" else "Scanning the horizon..."
-	_prompt.visible = player.nearby != null and not player.binoculars
+	_prompt_box.visible = player.nearby != null and not player.binoculars
 	if player.nearby:
-		_prompt.text = ("[hold E]  " if player.nearby.hold_time > 0.0 else "[E]  ") + player.nearby.get_title()
+		_prompt_key.text = "A" if _pad_input else "E"
+		_prompt.text = ("Hold   " if player.nearby.hold_time > 0.0 else "") + player.nearby.get_title()
 	_stamina.value = player.stamina
 	_stamina.modulate.a = lerpf(_stamina.modulate.a, 0.0 if player.stamina > 98.0 else 0.8, minf(1.0, delta * 6.0))
 
@@ -825,23 +974,29 @@ func _refresh_log() -> void:
 	_assist_log.text = "\n".join(lines)
 
 ## Toasts sit just above the radio panel when it is up, so they never overlap it.
+## Sized from its minimum size every frame (never from its current size,
+## which would never shrink back), centred, and kept above the radio panel.
 func _place_note() -> void:
+	var want := _note_box.get_combined_minimum_size()
 	var vh: float = get_viewport().get_visible_rect().size.y
-	var y: float = vh - 120.0
+	var y: float = vh - 120.0 - want.y * 0.5
 	if _radio.visible:
-		y = minf(y, _radio.global_position.y - _note.size.y - 12.0)
-	_note.position.y = y
+		y = minf(y, _radio.global_position.y - want.y - 14.0)
+	_note_box.offset_left = -want.x * 0.5
+	_note_box.offset_right = want.x * 0.5
+	_note_box.offset_top = y
+	_note_box.offset_bottom = y + want.y
 
 ## Radio, tape and toast text follow the "subtitle size" accessibility setting.
 func apply_text_scale() -> void:
 	var k: float = float(Settings.v("subtitle_scale"))
-	_radio_speaker.add_theme_font_size_override("font_size", int(12 * k))
-	_radio_text.add_theme_font_size_override("font_size", int(17 * k))
+	_radio_speaker.add_theme_font_size_override("font_size", int(RADIO_SPEAKER_SIZE * k))
+	_radio_text.add_theme_font_size_override("font_size", int(RADIO_TEXT_SIZE * k))
 	for b in _opt_buttons:
-		b.add_theme_font_size_override("font_size", int(14 * k))
-	_tape_title.add_theme_font_size_override("font_size", int(12 * k))
-	_tape_text.add_theme_font_size_override("font_size", int(20 * k))
-	_note.add_theme_font_size_override("font_size", int(17 * k))
+		b.add_theme_font_size_override("font_size", int(RADIO_OPT_SIZE * k))
+	_tape_title.add_theme_font_size_override("font_size", int(TAPE_TITLE_SIZE * k))
+	_tape_text.add_theme_font_size_override("font_size", int(TAPE_TEXT_SIZE * k))
+	_note.add_theme_font_size_override("font_size", int(NOTE_SIZE * k))
 	_layout_radio()
 
 func _on_line(speaker: String, text: String, options: Array) -> void:
