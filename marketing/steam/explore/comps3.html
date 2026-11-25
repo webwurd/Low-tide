@@ -1,0 +1,17 @@
+<!doctype html><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Big+Shoulders+Stencil+Display:wght@600;700;800&family=Stardos+Stencil:wght@400;700&family=Allerta+Stencil&family=Sirin+Stencil&family=Saira+Stencil+One&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>body{margin:0;background:#0b1118;display:grid;grid-template-columns:1fr 1fr;gap:2px;font-family:monospace;color:#d9e1e0}
+.c{position:relative;height:300px;background:radial-gradient(ellipse at 50% 70%,#1d2c39 0%,#0f1822 58%,#0a1016 100%);display:grid;place-items:center;overflow:hidden}
+.c b{position:absolute;left:14px;top:10px;font:500 11px monospace;color:#7ea99b}
+.t{white-space:nowrap}</style><body><script>
+const L='#ffb84d';
+const cells=[
+ ['C1 Big Shoulders Stencil 800',`<div class=t style="font:800 150px 'Big Shoulders Stencil Display';letter-spacing:.14em">LOW TIDE</div><div style="height:2px;background:${L};width:100%;margin:6px 0 10px"></div><div class=t style="font:400 17px 'IBM Plex Mono';letter-spacing:.5em;color:#9db0b3;text-align:center">GANNET ROCK · 1998</div>`],
+ ['C2 Stardos Stencil 700',`<div class=t style="font:700 116px 'Stardos Stencil';letter-spacing:.12em">LOW TIDE</div><div style="height:2px;background:${L};width:100%;margin:6px 0 10px"></div><div class=t style="font:400 17px 'IBM Plex Mono';letter-spacing:.5em;color:#9db0b3;text-align:center">GANNET ROCK · 1998</div>`],
+ ['C3 Allerta Stencil',`<div class=t style="font:400 112px 'Allerta Stencil';letter-spacing:.14em">LOW TIDE</div><div style="height:2px;background:${L};width:100%;margin:6px 0 10px"></div><div class=t style="font:400 17px 'IBM Plex Mono';letter-spacing:.5em;color:#9db0b3;text-align:center">GANNET ROCK · 1998</div>`],
+ ['C4 Sirin Stencil',`<div class=t style="font:400 112px 'Sirin Stencil';letter-spacing:.14em">LOW TIDE</div><div style="height:2px;background:${L};width:100%;margin:6px 0 10px"></div><div class=t style="font:400 17px 'IBM Plex Mono';letter-spacing:.5em;color:#9db0b3;text-align:center">GANNET ROCK · 1998</div>`],
+ ['B 600 at 230px and 64px',`<div style="text-align:center"><div class=t style="font:600 190px/1 'Cormorant Garamond';letter-spacing:.05em">low tıde</div></div>`],
+ ['B small: 70px / 36px / 22px',`<div style="display:grid;gap:10px;justify-items:start"><div class=t style="font:600 70px/1 'Cormorant Garamond';letter-spacing:.05em">low tıde</div><div class=t style="font:600 36px/1 'Cormorant Garamond';letter-spacing:.06em">low tıde</div><div class=t style="font:600 22px/1 'Cormorant Garamond';letter-spacing:.07em">low tıde</div></div>`],
+];
+document.body.innerHTML=cells.map(([n,h])=>`<div class="c"><b>${n}</b><div>${h}</div></div>`).join('');
+</script>
