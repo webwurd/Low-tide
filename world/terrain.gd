@@ -211,6 +211,45 @@ static func build_mesh(size := 210.0, seg := 300) -> ArrayMesh:   # 0.7 m cells 
 	st.generate_normals()
 	return st.commit()
 
+## Render mesh for M6.5: an indexed grid with smooth normals taken from the
+## height field itself (central differences), so slopes read as soft forms.
+## The art layers come from art/terrain.gdshader; gameplay collision keeps
+## using build_mesh() (the coarse grid the tests were tuned against).
+static func build_smooth_mesh(size := 220.0, seg := 256) -> ArrayMesh:
+	var step := size / seg
+	var half := size / 2.0
+	var n := seg + 1
+	var verts := PackedVector3Array(); verts.resize(n * n)
+	var norms := PackedVector3Array(); norms.resize(n * n)
+	var hs := PackedFloat32Array(); hs.resize((n + 2) * (n + 2))
+	for iz in n + 2:
+		for ix in n + 2:
+			hs[iz * (n + 2) + ix] = height(-half + (ix - 1) * step, -half + (iz - 1) * step)
+	for iz in n:
+		for ix in n:
+			var c := (iz + 1) * (n + 2) + (ix + 1)
+			var dx := hs[c + 1] - hs[c - 1]
+			var dz := hs[c + n + 2] - hs[c - n - 2]
+			verts[iz * n + ix] = Vector3(-half + ix * step, hs[c], -half + iz * step)
+			norms[iz * n + ix] = Vector3(-dx, 2.0 * step, -dz).normalized()
+	var idx := PackedInt32Array()
+	idx.resize(seg * seg * 6)
+	var k := 0
+	for iz in seg:
+		for ix in seg:
+			var a := iz * n + ix
+			idx[k] = a; idx[k + 1] = a + 1; idx[k + 2] = a + n
+			idx[k + 3] = a + 1; idx[k + 4] = a + n + 1; idx[k + 5] = a + n
+			k += 6
+	var arr := []
+	arr.resize(Mesh.ARRAY_MAX)
+	arr[Mesh.ARRAY_VERTEX] = verts
+	arr[Mesh.ARRAY_NORMAL] = norms
+	arr[Mesh.ARRAY_INDEX] = idx
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+	return mesh
+
 static func _tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3) -> void:
 	var col := color_for((a.y + b.y + c.y) / 3.0, (a.x + b.x + c.x) / 3.0, (a.z + b.z + c.z) / 3.0)
 	for p in [a, b, c]:

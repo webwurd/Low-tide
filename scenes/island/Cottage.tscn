@@ -1,0 +1,108 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/cottage.res" id="1_xhctc"]
+[ext_resource type="ArrayMesh" path="res://assets/models/cottage_door.res" id="2_m4qok"]
+[ext_resource type="Script" path="res://world/interactable.gd" id="3_obi2x"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_8gge1"]
+size = Vector3(6.5, 3.6, 5)
+
+[sub_resource type="Gradient" id="Gradient_0wgsh"]
+offsets = PackedFloat32Array(0, 0.15, 1)
+colors = PackedColorArray(0.75, 0.75, 0.76, 0, 0.72, 0.72, 0.74, 0.32, 0.8, 0.8, 0.82, 0)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_6nt8m"]
+gradient = SubResource("Gradient_0wgsh")
+
+[sub_resource type="Curve" id="Curve_cska0"]
+_data = [Vector2(0, 0.35), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_f7peh"]
+curve = SubResource("Curve_cska0")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_xulck"]
+angle_min = -180.0
+angle_max = 180.0
+direction = Vector3(0, 1, 0)
+spread = 8.0
+initial_velocity_min = 0.5
+initial_velocity_max = 0.9
+gravity = Vector3(0.35, 0.12, 0.15)
+damping_min = 0.05
+damping_max = 0.1
+scale_min = 0.6
+scale_curve = SubResource("CurveTexture_f7peh")
+color_ramp = SubResource("GradientTexture1D_6nt8m")
+
+[sub_resource type="Gradient" id="Gradient_wmrb4"]
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_0ymh2"]
+gradient = SubResource("Gradient_wmrb4")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2anbr"]
+transparency = 1
+vertex_color_use_as_albedo = true
+albedo_texture = SubResource("GradientTexture2D_0ymh2")
+disable_receive_shadows = true
+billboard_mode = 3
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false
+
+[sub_resource type="QuadMesh" id="QuadMesh_r5qhk"]
+material = SubResource("StandardMaterial3D_2anbr")
+size = Vector2(1.2, 1.2)
+
+[node name="Cottage" type="Node3D"]
+transform = Transform3D(0.900447, 0, 0.434966, 0, 1, 0, -0.434966, 0, 0.900447, -8.5, 8, 1.5)
+
+[node name="Model" type="MeshInstance3D" parent="."]
+mesh = ExtResource("1_xhctc")
+metadata/prop = "cottage"
+
+[node name="DoorPanel" type="MeshInstance3D" parent="."]
+mesh = ExtResource("2_m4qok")
+metadata/prop = "cottage_door"
+
+[node name="Body" type="StaticBody3D" parent="."]
+
+[node name="Shape0" type="CollisionShape3D" parent="Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
+shape = SubResource("BoxShape3D_8gge1")
+
+[node name="PorchLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 2.3, 3.1)
+light_color = Color(1, 0.666667, 0.231373, 1)
+light_energy = 1.2
+shadow_enabled = true
+omni_range = 14.0
+
+[node name="WindowSpill" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 3.4)
+light_color = Color(1, 0.690196, 0.4, 1)
+light_energy = 0.6
+omni_range = 7.0
+
+[node name="ChimneySmoke" type="GPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8, 6.3, -0.8)
+cast_shadow = 0
+amount = 28
+lifetime = 9.0
+preprocess = 9.0
+visibility_aabb = AABB(-8, -1, -8, 16, 14, 16)
+process_material = SubResource("ParticleProcessMaterial_xulck")
+draw_pass_1 = SubResource("QuadMesh_r5qhk")
+
+[node name="Door" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 3.8)
+script = ExtResource("3_obi2x")
+id = "cottage"
+title = "Enter the cottage"
+radius = 2.6
+conversation = "cottage"
+highlight_paths = Array[NodePath]([NodePath("../DoorPanel")])

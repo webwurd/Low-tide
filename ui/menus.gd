@@ -45,14 +45,17 @@ func _build_pause() -> void:
 	_pause.theme = _pause_theme
 	_pause.visible = false
 	var v := VBoxContainer.new()
-	v.custom_minimum_size = Vector2(340, 0)
+	v.custom_minimum_size = Vector2(380, 0)
 	v.add_theme_constant_override("separation", 10)
 	_pause.add_child(v)
 	var t := Label.new()
 	t.text = "Paused"
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UiFonts.style(t, "display", 30)
+	UiFonts.style(t, "display", 36)
 	v.add_child(t)
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 4)
+	v.add_child(gap)
 	_resume_btn = _btn(v, "Resume", resume)
 	_btn(v, "Settings", func(): _show_only("settings"))
 	_btn(v, "Controls", func(): _open_controls())
@@ -65,7 +68,7 @@ func _build_pause() -> void:
 func _btn(parent: Control, text: String, cb: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.custom_minimum_size = Vector2(0, 38)
+	b.custom_minimum_size = Vector2(0, 46)
 	b.pressed.connect(cb)
 	parent.add_child(b)
 	return b

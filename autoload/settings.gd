@@ -23,7 +23,7 @@ const DEFAULTS := {
 	"vol_master": 1.0, "vol_ambience": 1.0, "vol_sfx": 1.0, "vol_radio": 1.0, "vol_music": 1.0,
 	"radio_static": 1.0,
 	# lighting
-	"brightness": 1.0, "exposure": 1.0, "night_assist": 0.0, "fog_scale": 1.0, "glow": false, "beam_scale": 1.0,
+	"brightness": 1.0, "exposure": 1.0, "night_assist": 0.0, "fog_scale": 1.0, "glow": true, "beam_scale": 1.0,
 	# controls
 	"mouse_sens": 1.0, "bino_sens": 1.0, "pad_sens": 1.0, "invert_y": false, "deadzone": 0.2,
 	"toggle_binoculars": false, "toggle_watch": false, "toggle_hold": false,
@@ -267,7 +267,8 @@ func _register_default_bindings() -> void:
 	_key("radio_dismiss", KEY_X); _btn("radio_dismiss", JOY_BUTTON_B)
 	_key("toggle_assist", KEY_F1); _btn("toggle_assist", JOY_BUTTON_Y)
 	_key("logbook", KEY_TAB); _btn("logbook", JOY_BUTTON_BACK)
-	_key("debug_skip", KEY_T)
+	if OS.is_debug_build():
+		_key("debug_skip", KEY_T)   # dev-only time skip; never bound in release builds
 	_key("pause", KEY_ESCAPE); _btn("pause", JOY_BUTTON_START)
 
 func _add(action: String, ev: InputEvent) -> void:

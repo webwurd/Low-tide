@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/horizon.res" id="1_p4kvr"]
+
+[node name="Horizon" type="Node3D"]
+
+[node name="Ridges" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+extra_cull_margin = 50.0
+mesh = ExtResource("1_p4kvr")
+metadata/prop = "horizon"

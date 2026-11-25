@@ -1,0 +1,429 @@
+[gd_scene load_steps=40 format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/cottage_room.res" id="1_gsmnr"]
+[ext_resource type="ArrayMesh" path="res://assets/models/stove.res" id="2_8solh"]
+[ext_resource type="ArrayMesh" path="res://assets/models/tide_table.res" id="3_dphp7"]
+[ext_resource type="ArrayMesh" path="res://assets/models/barometer.res" id="4_iyltw"]
+[ext_resource type="ArrayMesh" path="res://assets/models/desk.res" id="5_mt1rb"]
+[ext_resource type="ArrayMesh" path="res://assets/models/radio.res" id="6_esfxn"]
+[ext_resource type="ArrayMesh" path="res://assets/models/logbook.res" id="7_or2qb"]
+[ext_resource type="ArrayMesh" path="res://assets/models/armchair.res" id="8_7jmcf"]
+[ext_resource type="ArrayMesh" path="res://assets/models/bed.res" id="9_ld5g3"]
+[ext_resource type="ArrayMesh" path="res://assets/models/door.res" id="10_bb30m"]
+[ext_resource type="ArrayMesh" path="res://assets/models/rug.res" id="11_y82ru"]
+[ext_resource type="ArrayMesh" path="res://assets/models/table.res" id="12_x7ch4"]
+[ext_resource type="ArrayMesh" path="res://assets/models/chair.res" id="13_sxm2u"]
+[ext_resource type="ArrayMesh" path="res://assets/models/mug.res" id="14_mmubf"]
+[ext_resource type="ArrayMesh" path="res://assets/models/hand_lantern.res" id="15_tdayc"]
+[ext_resource type="ArrayMesh" path="res://assets/models/shelf_books.res" id="16_t63ku"]
+[ext_resource type="ArrayMesh" path="res://assets/models/oilskin.res" id="17_hkpy3"]
+[ext_resource type="ArrayMesh" path="res://assets/models/crate.res" id="18_kakxa"]
+[ext_resource type="ArrayMesh" path="res://assets/models/curtain.res" id="19_hqrld"]
+[ext_resource type="ArrayMesh" path="res://assets/models/bookcase.res" id="20_yxl2u"]
+[ext_resource type="ArrayMesh" path="res://assets/models/uni_logbooks.res" id="21_f3u0y"]
+[ext_resource type="ArrayMesh" path="res://assets/models/side_table.res" id="22_7ro1l"]
+[ext_resource type="ArrayMesh" path="res://assets/models/cassette_player.res" id="23_asa18"]
+[ext_resource type="ArrayMesh" path="res://assets/models/loose_board.res" id="24_8w3o5"]
+[ext_resource type="Script" path="res://world/interactable.gd" id="25_uhpkd"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_fi2wg"]
+size = Vector3(8.4, 0.2, 6.4)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_2lk1m"]
+size = Vector3(8.4, 0.2, 6.4)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_cid0h"]
+size = Vector3(8.4, 3, 0.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_iufqo"]
+size = Vector3(8.4, 3, 0.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_x5rca"]
+size = Vector3(0.2, 3, 6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_p832j"]
+size = Vector3(0.2, 3, 6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_t8psl"]
+size = Vector3(0.9, 1, 0.8)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_t05tw"]
+size = Vector3(1.6, 0.8, 0.8)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_8gu7x"]
+size = Vector3(0.8, 0.8, 1.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_2ridw"]
+size = Vector3(0.9, 0.6, 0.9)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_4up0l"]
+size = Vector3(1.8, 0.6, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_loq0v"]
+size = Vector3(1.1, 0.78, 0.75)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_b50qk"]
+size = Vector3(0.4, 1.8, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_804u5"]
+size = Vector3(0.8, 0.8, 0.6)
+
+[node name="CottageInterior" type="Node3D"]
+
+[node name="Room" type="MeshInstance3D" parent="."]
+mesh = ExtResource("1_gsmnr")
+metadata/prop = "cottage_room"
+
+[node name="Walls" type="StaticBody3D" parent="."]
+
+[node name="Shape0" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+shape = SubResource("BoxShape3D_fi2wg")
+
+[node name="Shape1" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.1, 0)
+shape = SubResource("BoxShape3D_2lk1m")
+
+[node name="Shape2" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -3.1)
+shape = SubResource("BoxShape3D_cid0h")
+
+[node name="Shape3" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 3.1)
+shape = SubResource("BoxShape3D_iufqo")
+
+[node name="Shape4" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.1, 1.5, 0)
+shape = SubResource("BoxShape3D_x5rca")
+
+[node name="Shape5" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.1, 1.5, 0)
+shape = SubResource("BoxShape3D_p832j")
+
+[node name="Spawn_cottage" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.4, 0.05, 1.8)
+
+[node name="Spawn_bed" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9, 0.05, 0.9)
+
+[node name="Stove" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.3, 0, -2.35)
+mesh = ExtResource("2_8solh")
+metadata/prop = "stove"
+
+[node name="TideTable" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2, 1.6, -2.96)
+mesh = ExtResource("3_dphp7")
+metadata/prop = "tide_table"
+
+[node name="Barometer" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7, 1.6, -2.96)
+mesh = ExtResource("4_iyltw")
+metadata/prop = "barometer"
+
+[node name="RadioDesk" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.7, 0, -2.58)
+mesh = ExtResource("5_mt1rb")
+metadata/prop = "desk"
+
+[node name="Radio" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.55, 0.785, -2.68)
+mesh = ExtResource("6_esfxn")
+metadata/prop = "radio"
+
+[node name="LogDesk" type="MeshInstance3D" parent="."]
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 3.58, 0, 0.4)
+mesh = ExtResource("5_mt1rb")
+metadata/prop = "desk"
+
+[node name="Logbook" type="MeshInstance3D" parent="."]
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 3.5, 0.785, 0.4)
+mesh = ExtResource("7_or2qb")
+metadata/prop = "logbook"
+
+[node name="Armchair" type="MeshInstance3D" parent="."]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -2.4, 0, 1.6)
+mesh = ExtResource("8_7jmcf")
+metadata/prop = "armchair"
+
+[node name="Bed" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0, 0)
+mesh = ExtResource("9_ld5g3")
+metadata/prop = "bed"
+
+[node name="Door" type="MeshInstance3D" parent="."]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 2.4, 0, 2.97)
+mesh = ExtResource("10_bb30m")
+metadata/prop = "door"
+
+[node name="Rug" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.995004, 0, 0.0998334, 0, 1, 0, -0.0998334, 0, 0.995004, 0.3, 0, 0.6)
+mesh = ExtResource("11_y82ru")
+metadata/prop = "rug"
+
+[node name="Table" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.99875, 0, 0.0499792, 0, 1, 0, -0.0499792, 0, 0.99875, 0.4, 0, 0.5)
+mesh = ExtResource("12_x7ch4")
+metadata/prop = "table"
+
+[node name="ChairA" type="MeshInstance3D" parent="."]
+transform = Transform3D(-0.988771, 0, -0.149438, 0, 1, 0, 0.149438, 0, -0.988771, 0.4, 0, 1.2)
+mesh = ExtResource("13_sxm2u")
+metadata/prop = "chair"
+
+[node name="ChairB" type="MeshInstance3D" parent="."]
+transform = Transform3D(-0.29552, 0, 0.955337, 0, 1, 0, -0.955337, 0, -0.29552, -0.45, 0, 0.35)
+mesh = ExtResource("13_sxm2u")
+metadata/prop = "chair"
+
+[node name="Mug" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.764842, 0, 0.644218, 0, 1, 0, -0.644218, 0, 0.764842, 0.55, 0.765, 0.4)
+mesh = ExtResource("14_mmubf")
+metadata/prop = "mug"
+
+[node name="HandLantern" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15, 0.765, 0.65)
+mesh = ExtResource("15_tdayc")
+metadata/prop = "hand_lantern"
+
+[node name="Shelf" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2, 1.75, -2.98)
+mesh = ExtResource("16_t63ku")
+metadata/prop = "shelf_books"
+
+[node name="ShelfSide" type="MeshInstance3D" parent="."]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -3.97, 1.95, 1.3)
+mesh = ExtResource("16_t63ku")
+metadata/prop = "shelf_books"
+
+[node name="Oilskin" type="MeshInstance3D" parent="."]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 1.4, 1.8, 2.98)
+mesh = ExtResource("17_hkpy3")
+metadata/prop = "oilskin"
+
+[node name="Woodbox" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.980067, 0, 0.198669, 0, 1, 0, -0.198669, 0, 0.980067, -3.55, 0, -1.45)
+mesh = ExtResource("18_kakxa")
+metadata/prop = "crate"
+
+[node name="CurtainL" type="MeshInstance3D" parent="."]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -2.15, 2.35, 2.9)
+mesh = ExtResource("19_hqrld")
+metadata/prop = "curtain"
+
+[node name="CurtainR" type="MeshInstance3D" parent="."]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -1.05, 2.35, 2.9)
+mesh = ExtResource("19_hqrld")
+metadata/prop = "curtain"
+
+[node name="ShelfMug" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.955337, 0, 0.29552, 0, 1, 0, -0.29552, 0, 0.955337, -0.55, 1.79, -2.88)
+mesh = ExtResource("14_mmubf")
+metadata/prop = "mug"
+
+[node name="Bookcase" type="MeshInstance3D" parent="."]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -3.78, 0, 2.4)
+mesh = ExtResource("20_yxl2u")
+metadata/prop = "bookcase"
+
+[node name="UniLogbooks" type="MeshInstance3D" parent="."]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, -3.78, 0, 2.4)
+mesh = ExtResource("21_f3u0y")
+metadata/prop = "uni_logbooks"
+
+[node name="SideTable" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 0, 2.3)
+mesh = ExtResource("22_7ro1l")
+metadata/prop = "side_table"
+
+[node name="CassettePlayer" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.988771, 0, 0.149438, 0, 1, 0, -0.149438, 0, 0.988771, -0.85, 0.8, 2.28)
+mesh = ExtResource("23_asa18")
+metadata/prop = "cassette_player"
+
+[node name="LooseBoard" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1)
+mesh = ExtResource("24_8w3o5")
+metadata/prop = "loose_board"
+
+[node name="Furniture" type="StaticBody3D" parent="."]
+
+[node name="Shape0" type="CollisionShape3D" parent="Furniture"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.3, 0.5, -2.3)
+shape = SubResource("BoxShape3D_t8psl")
+
+[node name="Shape1" type="CollisionShape3D" parent="Furniture"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.7, 0.4, -2.4)
+shape = SubResource("BoxShape3D_t05tw")
+
+[node name="Shape2" type="CollisionShape3D" parent="Furniture"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, 0.4, 0.4)
+shape = SubResource("BoxShape3D_8gu7x")
+
+[node name="Shape3" type="CollisionShape3D" parent="Furniture"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.4, 0.3, 1.6)
+shape = SubResource("BoxShape3D_2ridw")
+
+[node name="Shape4" type="CollisionShape3D" parent="Furniture"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.3, 0)
+shape = SubResource("BoxShape3D_4up0l")
+
+[node name="Shape5" type="CollisionShape3D" parent="Furniture"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4, 0.39, 0.5)
+shape = SubResource("BoxShape3D_loq0v")
+
+[node name="Shape6" type="CollisionShape3D" parent="Furniture"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.8, 0.9, 2.4)
+shape = SubResource("BoxShape3D_b50qk")
+
+[node name="Shape7" type="CollisionShape3D" parent="Furniture"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 0.4, 2.3)
+shape = SubResource("BoxShape3D_804u5")
+
+[node name="It_shelf_logs" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 1.3, 2.4)
+script = ExtResource("25_uhpkd")
+id = "shelf_logs"
+title = "Take the old university logbooks"
+radius = 1.8
+give_item = "uni_logs"
+highlight_paths = Array[NodePath]([NodePath("../UniLogbooks")])
+
+[node name="It_cassette_player" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8, 1.1, 1.8)
+script = ExtResource("25_uhpkd")
+id = "cassette_player"
+title = "Cassette player"
+radius = 1.8
+highlight_paths = Array[NodePath]([NodePath("../CassettePlayer")])
+
+[node name="It_floorboard" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -1)
+script = ExtResource("25_uhpkd")
+id = "floorboard"
+title = "Lift the loose floorboard"
+radius = 1.6
+give_item = "tape_3"
+highlight_paths = Array[NodePath]([NodePath("../LooseBoard")])
+
+[node name="It_stove" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7, 1, -1.7)
+script = ExtResource("25_uhpkd")
+id = "stove"
+title = "Brew coffee on the stove"
+radius = 2.2
+highlight_paths = Array[NodePath]([NodePath("../Stove")])
+
+[node name="It_tide_table" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2, 1.4, -2.2)
+script = ExtResource("25_uhpkd")
+id = "tide_table"
+title = "Read the tide table"
+radius = 2.2
+highlight_paths = Array[NodePath]([NodePath("../TideTable")])
+
+[node name="It_barometer" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7, 1.5, -2.2)
+script = ExtResource("25_uhpkd")
+id = "barometer"
+title = "Check the barometer"
+radius = 2.2
+highlight_paths = Array[NodePath]([NodePath("../Barometer")])
+
+[node name="It_radio_desk" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.7, 1.1, -1.8)
+script = ExtResource("25_uhpkd")
+id = "radio_desk"
+title = "Radio"
+radius = 2.4
+highlight_paths = Array[NodePath]([NodePath("../Radio")])
+
+[node name="It_log_desk" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9, 1.1, 0.4)
+script = ExtResource("25_uhpkd")
+id = "log_desk"
+title = "Write in the log"
+radius = 2.2
+highlight_paths = Array[NodePath]([NodePath("../Logbook")])
+
+[node name="It_chair_cottage" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 1, 1.6)
+script = ExtResource("25_uhpkd")
+id = "chair_cottage"
+title = "Sit and wait"
+radius = 2.2
+highlight_paths = Array[NodePath]([NodePath("../Armchair")])
+
+[node name="It_bed" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.2, 1, -0.6)
+script = ExtResource("25_uhpkd")
+id = "bed"
+title = "Go to bed"
+radius = 2.2
+highlight_paths = Array[NodePath]([NodePath("../Bed")])
+
+[node name="It_door_cottage_out" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.4, 1.1, 2.2)
+script = ExtResource("25_uhpkd")
+id = "door_cottage_out"
+title = "Step outside"
+radius = 2.2
+highlight_paths = Array[NodePath]([NodePath("../Door")])
+
+[node name="StoveGlow" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.65, -1.85)
+light_color = Color(1, 0.541176, 0.227451, 1)
+light_energy = 1.4
+light_volumetric_fog_energy = 0.6
+shadow_enabled = true
+shadow_blur = 1.5
+omni_range = 4.5
+omni_attenuation = 1.4
+
+[node name="Ceiling" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4, 2.45, 0.5)
+light_color = Color(1, 0.760784, 0.478431, 1)
+light_energy = 1.1
+light_volumetric_fog_energy = 0.6
+shadow_enabled = true
+shadow_blur = 1.5
+omni_range = 9.0
+omni_attenuation = 1.4
+
+[node name="DeskLamp" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.08, 1.1, 0.82)
+light_color = Color(1, 0.741176, 0.415686, 1)
+light_energy = 0.7
+light_volumetric_fog_energy = 0.6
+shadow_blur = 1.5
+omni_range = 3.5
+omni_attenuation = 1.4
+
+[node name="RadioDial" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.45, 1.05, -2.3)
+light_color = Color(1, 0.721569, 0.301961, 1)
+light_energy = 0.25
+light_volumetric_fog_energy = 0.6
+shadow_blur = 1.5
+omni_range = 1.6
+omni_attenuation = 1.4
+
+[node name="WindowFront" type="SpotLight3D" parent="." groups=["window_light"]]
+transform = Transform3D(0.957024, 0.165672, -0.238028, 0, 0.820764, 0.571267, 0.290007, -0.546716, 0.785492, -1.6, 2.4, 3.5)
+light_color = Color(0.72549, 0.803922, 0.878431, 1)
+light_energy = 2.0
+light_volumetric_fog_energy = 2.0
+shadow_enabled = true
+spot_range = 8.0
+spot_angle = 38.0
+spot_angle_attenuation = 1.3
+
+[node name="WindowWest" type="SpotLight3D" parent="." groups=["window_light"]]
+transform = Transform3D(-0.15799, 0.679324, -0.71663, 0, 0.725744, 0.687964, 0.987441, 0.108692, -0.114661, -4.5, 2.4, -1.2)
+light_color = Color(0.72549, 0.803922, 0.878431, 1)
+light_energy = 2.0
+light_volumetric_fog_energy = 2.0
+shadow_enabled = true
+spot_range = 8.0
+spot_angle = 38.0
+spot_angle_attenuation = 1.3

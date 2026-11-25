@@ -1,14 +1,19 @@
 # Third-party licences
 
-## Fonts (bundled in `ui/fonts/`)
-All three families are licensed under the **SIL Open Font License 1.1** (full text below). The copyright lines are read from
-each font file's own metadata.
+## Fonts (bundled in `ui/fonts/` and `assets/fonts/`)
+All five families are licensed under the **SIL Open Font License 1.1** (full text below). The copyright lines are read from
+each font file's own metadata, or from the OFL text shipped with it (`assets/fonts/*-OFL.txt`).
 
 | File | Family | Copyright |
 |---|---|---|
 | `Newsreader-SemiBold.woff`, `Newsreader-Italic.woff` | Newsreader | Copyright 2020 The Newsreader Project Authors (http://github.com/productiontype/Newsreader) |
 | `IBMPlexMono-Regular.woff` | IBM Plex Mono | Copyright 2017 IBM Corp. All rights reserved. (Reserved Font Name "Plex") |
 | `Caveat-Medium.woff` | Caveat | Copyright 2014 The Caveat Project Authors (https://github.com/googlefonts/caveat) |
+| `assets/fonts/CormorantGaramond.ttf` (variable) | Cormorant Garamond | Copyright 2015 the Cormorant Project Authors (github.com/CatharsisFonts/Cormorant) |
+| `assets/fonts/WorkSans.ttf` (variable) | Work Sans | Copyright 2019 The Work Sans Project Authors (https://github.com/weiweihuanghuang/Work-Sans) |
+
+Since M6.5 the game uses Cormorant Garamond (display, tape) and Work Sans (ui) with Caveat (paper); Newsreader and
+IBM Plex Mono stay in the repository but are no longer loaded (see `docs/typography.md`).
 
 The fonts are used unmodified, as obtained from Google Fonts.
 
