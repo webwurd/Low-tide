@@ -159,6 +159,7 @@ func _build_audio() -> void:
 	_slider(p, "vol_sfx", "Footsteps and effects")
 	_slider(p, "vol_radio", "Radio and tapes")
 	_slider(p, "vol_music", "Music")
+	_option(p, "music_score", "Score", ["Stings only", "Sparse", "Full (adaptive)"])
 	_slider(p, "radio_static", "Radio static intensity")
 
 func _build_lighting() -> void:

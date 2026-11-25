@@ -66,7 +66,7 @@ Every feature, line of dialogue, and environment asset in *Low Tide* must serve 
 * **Landmark Orientation:** Because coastal fog frequently reduces visibility, the lighthouse tower must remain the highest, unmistakable silhouette on the island, with its rotating volumetric light beam acting as a natural compass.
 
 ### Soundscape Principles
-* **No Constant Music:** Keep the score minimal—use sparse acoustic guitar, solo cello, or ambient piano only during major emotional turning points.
+* **No Constant Music:** Music comes in swells and recedes into the sea: short phrases of sparse acoustic guitar, solo cello, or ambient piano with long silences between, coloured per day (key, tempo, instruments). Stings mark the major emotional turning points. Players can choose "Stings only".
 * **Environmental Storytelling via Audio:**
   * Surface-specific footsteps (hollow wood on the dock, wet crunch on sandbars, sharp grit on granite).
   * Dynamic wind volume tied to elevation (stronger near the lantern gallery).
