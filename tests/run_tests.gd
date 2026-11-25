@@ -945,7 +945,7 @@ func _run() -> void:
 	cfg.set_v("toggle_watch", false)
 
 	cfg.set_v("subtitle_scale", 1.5)
-	ok(main.hud._radio_text.get_theme_font_size("font_size") == int(17 * 1.5) and main.hud._tape_text.get_theme_font_size("font_size") == int(20 * 1.5), "subtitle size scales the radio and tape text")
+	ok(main.hud._radio_text.get_theme_font_size("font_size") == int(main.hud.RADIO_TEXT_SIZE * 1.5) and main.hud._tape_text.get_theme_font_size("font_size") == int(main.hud.TAPE_TEXT_SIZE * 1.5), "subtitle size scales the radio and tape text")
 	cfg.set_v("subtitle_scale", 1.0)
 
 	cfg.set_v("brightness", 1.3); cfg.set_v("exposure", 1.0); cfg.set_v("glow", true)
@@ -1426,13 +1426,14 @@ func _run() -> void:
 		# Headless runs use a stand-in text height (about 3x real), so measure width
 		# exactly and estimate height from line counts. Screenshots check the real thing.
 		var r: Rect2 = main.hud._radio.get_global_rect()
-		var fs_text: float = 17.0 * sc
-		var fs_opt: float = 14.0 * sc
+		var fs_text: float = main.hud.RADIO_TEXT_SIZE * sc
+		var fs_opt: float = main.hud.RADIO_OPT_SIZE * sc
 		var opt_w: float = main.hud._opt_buttons[0].size.x
 		var opt_lines: float = 1.0
 		for o in long_opts:
-			opt_lines = maxf(opt_lines, ceilf((String(o["text"]).length() + 3) * fs_opt * 0.6 / maxf(opt_w - 20.0, 1.0)))
-		var est_h: float = 32.0 + fs_text * 1.0 + main.hud._radio_text.get_line_count() * fs_text * 1.45 + opt_lines * fs_opt * 1.6 + 30.0
+			opt_lines = maxf(opt_lines, ceilf((String(o["text"]).length() + 3) * fs_opt * 0.6 / maxf(opt_w - UiTheme.PAD_SMALL.x * 2.0 - 4.0, 1.0)))
+		var est_h: float = main.hud.RADIO_PAD.y * 2.0 + main.hud.RADIO_SPEAKER_SIZE * sc * 1.4 + main.hud.RADIO_GAP * 2.0 \
+			+ main.hud._radio_text.get_line_count() * fs_text * 1.45 + opt_lines * fs_opt * 1.6 + UiTheme.PAD_SMALL.y * 2.0
 		var cx: float = r.position.x + r.size.x * 0.5
 		var inside: bool = r.position.x >= 0.0 and r.end.x <= 1280.0 and absf(cx - 640.0) < 1.0 and est_h <= 720.0 - 60.0 - 40.0
 		if not inside:
@@ -1442,6 +1443,68 @@ func _run() -> void:
 	cfg.reset_defaults()
 	main.hud.apply_text_scale()
 	main.hud._radio.visible = false
+
+	print("== M7d: adaptive score")
+	var mus := root.get_node("MusicDirector")
+	var MD = load("res://autoload/music_director.gd")
+	ok(MD.choose_mood({"started": false}) == "title", "the title screen has its theme")
+	ok(MD.choose_mood({"started": true, "location": "cottage", "phase": 0, "minute": 400.0}) == "morning", "morning by the stove")
+	ok(MD.choose_mood({"started": true, "location": "outdoors", "phase": 1, "minute": 700.0}) == "day", "outdoors: the day's own music")
+	ok(MD.choose_mood({"started": true, "location": "outdoors", "phase": 1, "minute": 1000.0}) == "night", "after dusk: night music")
+	ok(MD.choose_mood({"started": true, "location": "cottage", "phase": 2, "minute": 1100.0}) == "night", "evening phase indoors is night too")
+	ok(MD.choose_mood({"started": true, "ending": "a", "location": "outdoors"}) == "silent", "endings belong to the stings")
+	ok(MD.choose_mood({"started": false, "level": 0}) == "silent", "'Stings only' silences the score")
+	ok(MD.danger_from(0.1, true) == 0.0 and MD.danger_from(0.95, true) == 1.0 and MD.danger_from(0.9, false) == 0.0, "undertow danger rises with depth, outdoors only")
+	var keys := {}
+	for d in range(1, 8):
+		var pal: Dictionary = ScoreSynth.palette(d)
+		keys["%s %s %s" % [pal["root"], pal["scale"], pal["bpm"]]] = true
+	ok(keys.size() == 7, "each of the seven days has its own key, mode and tempo")
+	var all_good := true
+	for cue in ["title", "d1_day_0", "d3_day_0", "d4_night_1", "d5_morning_0", "d6_swell_open", "d7_swell_close"]:
+		var ms := _audio_stats(mus.stream_now(cue))
+		if not (ms["peak"] < 0.9 and ms["rms"] > 0.03 and ms["seconds"] > 8.0 and ms["seconds"] < 45.0 and not ms["nan"]):
+			all_good = false
+			printerr("  FAIL: score cue %s %s" % [cue, ms])
+	ok(all_good, "score phrases render at a sane level and length")
+	for cue in ["d2_pad", "d4_undertow"]:
+		var st5 = mus.stream_now(cue)
+		var ls := _audio_stats(st5)
+		ok(st5.loop_mode == AudioStreamWAV.LOOP_FORWARD and ls["wrap_jump"] <= ls["mean_step"] * 6.0 + 0.002, "%s is a seamless loop" % cue)
+	ok(mus._phrase.bus == "Music" and mus._pads[0].bus == "Music" and mus._undertow.bus == "Music", "the score plays on the Music bus")
+	# Drive the director directly.
+	mus.stream_now("d1_day_0"); mus.stream_now("d1_day_1"); mus.stream_now("d1_day_2"); mus.stream_now("d1_pad")
+	mus.stream_now("d1_swell_open"); mus.stream_now("d1_undertow")
+	var ctx := {"started": true, "location": "outdoors", "day": 1, "phase": 1, "minute": 700.0, "level": 2, "swell": 0.5}
+	for i in 120:
+		mus.tick(ctx, 0.1)
+	ok(mus.mood == "day" and mus.playing_cue().begins_with("d1_day_"), "outdoors on day 1 a day-1 phrase plays (%s)" % mus.playing_cue())
+	ok(mus.pad_playing(), "the swell pad breathes under it")
+	var calm_db: float = mus._phrase.volume_db
+	ctx["radio"] = true
+	for i in 10:
+		mus.tick(ctx, 0.1)
+	ok(mus._phrase.volume_db < calm_db - 5.0, "music ducks under Clara's lines")
+	ctx["radio"] = false
+	ctx["sting"] = true
+	for i in 10:
+		mus.tick(ctx, 0.1)
+	ok(mus._phrase.volume_db < -50.0, "and falls silent under a sting")
+	ctx["sting"] = false
+	mus._on_tide_turn(true)
+	for i in 60:
+		mus.tick(ctx, 0.1)
+	ok(mus.playing_cue() == "d1_swell_open", "the bars opening brings a swell")
+	ctx["depth"] = 0.9
+	for i in 50:
+		mus.tick(ctx, 0.1)
+	ok(mus.danger > 0.8 and mus._undertow.playing and mus._undertow.volume_db > -15.0, "rising water brings the undertow (%.1f dB)" % mus._undertow.volume_db)
+	ctx["depth"] = 0.0
+	ctx["level"] = 0
+	for i in 100:
+		mus.tick(ctx, 0.1)
+	ok(mus.mood == "silent" and not mus._undertow.playing and not mus.pad_playing(), "'Stings only' fades everything out")
+	ok(cfg.DEFAULTS.has("music_score") and int(cfg.v("music_score")) == 2, "the full score is on by default")
 
 	print("== living sea and wind")
 	var ad := root.get_node("AudioDirector")

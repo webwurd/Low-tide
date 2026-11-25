@@ -20,11 +20,11 @@ func _ready() -> void:
 	theme = UiTheme.build()
 	custom_minimum_size = Vector2(940, 580)
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 10)
+	root.add_theme_constant_override("separation", 14)
 	add_child(root)
 	var title := Label.new()
 	title.text = "Settings"
-	UiFonts.style(title, "display", 28)
+	UiFonts.style(title, "display", 34)
 	root.add_child(title)
 	tabs = TabContainer.new()
 	tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -161,6 +161,7 @@ func _build_audio() -> void:
 	_slider(p, "vol_sfx", "Footsteps and effects")
 	_slider(p, "vol_radio", "Radio and tapes")
 	_slider(p, "vol_music", "Music")
+	_option(p, "music_score", "Score", ["Stings only", "Sparse", "Full (adaptive)"])
 	_slider(p, "radio_static", "Radio static intensity")
 
 func _build_lighting() -> void:

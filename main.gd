@@ -477,6 +477,7 @@ func _update_prologue(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	_elapsed += delta
+	_update_music(delta)
 	if not started:
 		GameClock.paused = true
 		AudioDirector.raining = false          # the title screen is quiet
@@ -570,7 +571,16 @@ func _on_swept() -> void:
 
 # --- endings -----------------------------------------------------------------
 
-## Music is rare: only turning points get a sting (once each per run).
+## The adaptive score (autoload/music_director.gd) reads the moment from here.
+func _update_music(delta: float) -> void:
+	MusicDirector.tick({
+		"started": started, "ending": ending_kind, "location": location, "day": GameClock.day,
+		"phase": DayDirector.phase, "minute": GameClock.minute_of_day, "level": int(Settings.v("music_score")),
+		"depth": player.water_depth if player != null else 0.0, "swell": AudioDirector.swell,
+		"radio": RadioSystem.active, "tape": TapePlayer.playing, "sting": AudioDirector.sting_active(),
+	}, delta)
+
+## Stings mark the turning points (once each per run); the score sits under the rest.
 const CONVERSATION_STINGS := {"evening_d6": "sting_confront"}
 const TAPE_STINGS := {"tape_2": "sting_june", "tape_4": "sting_walt"}
 

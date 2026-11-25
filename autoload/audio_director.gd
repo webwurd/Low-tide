@@ -20,7 +20,7 @@ var _surf_foam: AudioStreamPlayer   # breaking fizz (Sea bus)
 var _wind: AudioStreamPlayer        # wind body (Wind bus)
 var _wind_whistle: AudioStreamPlayer  # gust whistle (Wind bus)
 var sea := SeaWind.new()
-var swell := 0.5                    # 0..1, how big the sea is right now
+var swell := 0.5                    # 0..1, how big the sea is right now (the score's pad breathes with it)
 var _altitude := 0.0
 var _tide := 1.0
 var _weather_key := ""
@@ -362,6 +362,9 @@ func play_sting(sting: String, volume_db := -4.0) -> void:
 	_sting_player.stream = st
 	_sting_player.volume_db = volume_db
 	_sting_player.play()
+
+func sting_active() -> bool:
+	return _sting_player.playing
 
 func sting_playing() -> String:
 	if _sting_player.playing:
