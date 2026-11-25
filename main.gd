@@ -152,6 +152,7 @@ func travel(loc: String, pos: Vector3, yaw := 0.0) -> void:
 		return
 	_busy = true
 	player.locked = true
+	AudioDirector.play_transition(location, loc)
 	hud.fade_out(0.35)
 	await get_tree().create_timer(0.45).timeout
 	_place(loc, pos, yaw)
@@ -204,14 +205,18 @@ func _on_cottage_exit() -> void:
 	travel("outdoors", island.cottage_exit(), Terrain.COTTAGE_YAW + PI)
 
 func _on_stove() -> void:
+	if not DayDirector.rituals.has("stove"):
+		AudioDirector.play_sfx("stove", -5.0)
 	DayDirector.complete_ritual("stove")
 	GameState.note("Coffee. Black, strong, a little burnt.")
 
 func _on_barometer() -> void:
+	AudioDirector.play_sfx("tap", -8.0)
 	DayDirector.complete_ritual("barometer")
 	GameState.note(DayDirector.data().barometer)
 
 func _on_tide_table() -> void:
+	AudioDirector.play_sfx("page", -6.0)
 	DayDirector.complete_ritual("tide_table")
 	hud.show_tide_table(GameClock.day, TideSystem.extremes_for_day(GameClock.day))
 
@@ -219,6 +224,7 @@ func _on_weights() -> void:
 	if DayDirector.weights_wound:
 		GameState.note("The weights are already wound for today.")
 		return
+	AudioDirector.play_sfx("winding", -5.0)
 	DayDirector.complete_ritual("weights")
 	_apply_island_lamp()
 	GameState.note("Weights wound. The lens will turn all night.")
@@ -282,6 +288,7 @@ func _on_log_desk() -> void:
 	elif DayDirector.log_written:
 		GameState.note("Log's written. Open it any time with Tab.")
 	else:
+		AudioDirector.play_sfx("pen", -6.0)
 		DayDirector.write_log()
 		hud.refresh_log()
 		GameState.note("Wrote up the day's entry.")
@@ -293,6 +300,7 @@ func _on_lamp() -> void:
 	elif not D.lamp_ready():
 		GameState.note("Too early to light the lamp.")
 	else:
+		AudioDirector.play_sfx("lamp", -5.0)
 		D.light_lamp()
 		_apply_island_lamp()
 		interiors.set_lamp(true)
@@ -306,6 +314,7 @@ func _wait_hour() -> void:
 		return
 	_busy = true
 	player.locked = true
+	AudioDirector.play_sfx("chair", -6.0)
 	hud.fade_out(0.4)
 	await get_tree().create_timer(0.55).timeout
 	GameClock.advance(60.0)
@@ -325,6 +334,7 @@ func _on_bed() -> void:
 		return
 	_busy = true
 	player.locked = true
+	AudioDirector.play_sfx("bed", -6.0)
 	hud.fade_out(1.0)
 	await get_tree().create_timer(1.3).timeout
 	if DayDirector.sleep():
@@ -466,6 +476,9 @@ func _process(delta: float) -> void:
 	_elapsed += delta
 	if not started:
 		GameClock.paused = true
+		AudioDirector.raining = false          # the title screen is quiet
+		AudioDirector.stove_lit = false
+		AudioDirector.set_radio_static(false)
 		if title_cam.current:
 			if hud.prologue.visible:
 				_update_prologue(delta)
@@ -481,6 +494,10 @@ func _process(delta: float) -> void:
 	var dd := DayDirector.data()
 	ocean.set_wave_height(dd.wave_height)
 	AudioDirector.weather_db = dd.wind_db
+	AudioDirector.raining = dd.rain
+	AudioDirector.stove_lit = DayDirector.rituals.has("stove")
+	AudioDirector.in_cottage = location == "cottage"
+	AudioDirector.set_radio_static(RadioSystem.active)
 	AudioDirector.update_ambient(_elapsed, player.global_position.y if location == "outdoors" else 0.0, TideSystem.current_height)
 	if OS.is_debug_build() and Input.is_action_just_pressed("debug_skip"):
 		GameClock.advance(60.0)
