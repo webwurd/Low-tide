@@ -1277,6 +1277,95 @@ func _run() -> void:
 	save.delete_save()
 	state.reset()
 
+	print("== gamepad guard and title lock")
+	# Nothing may turn or move Arthur before the game starts.
+	var m3: Node3D = load("res://main.tscn").instantiate()
+	root.add_child(m3)
+	await _frames(5)
+	ok(m3.player.locked and not m3.started, "the player is locked on the title screen")
+	cfg.set_v("gamepad_input", 1)                 # any device, so the injected stick below reaches the actions
+	var yaw0: float = m3.player.yaw
+	var pos0: Vector3 = m3.player.global_position
+	_pad_drive(7, true)
+	_send_action("move_back", true)
+	await create_timer(0.5).timeout
+	var drifting: Vector2 = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	var drift_look: Vector2 = Input.get_vector("look_left", "look_right", "look_up", "look_down")
+	ok(drifting.y > 0.9 and drift_look.x < -0.9, "(the injected drifting stick really is held: backwards %.1f, look %.1f)" % [drifting.y, drift_look.x])
+	ok(absf(m3.player.yaw - yaw0) < 0.0001 and m3.player.global_position.distance_to(pos0) < 0.001, "a drifting stick and held keys do not turn or move the player on the title screen")
+	_pad_drive(7, false)
+	_send_action("move_back", false)
+
+	# The guard: only the chosen device drives the actions.
+	cfg.set_v("gamepad_input", 0)
+	cfg._pin_pads(3)
+	await _frames(2)
+	var other: Array = await _pad_probe(7)
+	ok(other[0] == 0.0 and other[1] == 0.0, "a joystick that is not the chosen controller cannot look or move")
+	await _frames(2)
+	var chosen: Array = await _pad_probe(3)
+	ok(chosen[0] > 0.9 and chosen[1] > 0.9, "the chosen controller still drives look and move")
+	await _frames(2)
+	cfg._pin_pads(Settings.ANY_PAD)
+	var any_dev: Array = await _pad_probe(7)
+	ok(any_dev[0] > 0.9, "'Any device' accepts every joystick")
+	await _frames(2)
+	cfg.set_v("gamepad_input", 2)
+	var off: Array = await _pad_probe(3)
+	ok(off[0] == 0.0 and off[1] == 0.0, "'Off' ignores every joystick")
+	await _frames(2)
+	cfg.set_v("gamepad_input", 0)
+	var auto_pin: int = cfg._pad_active
+	ok(auto_pin == Settings.NO_PAD, "with no recognised controller connected, nothing is pinned to a real device (%d)" % auto_pin)
+	ok(cfg.pad_status().is_empty(), "no controllers are listed when none are connected")
+
+	# Pinning survives rebinding and a reset.
+	cfg._pin_pads(3)
+	var yb := InputEventJoypadButton.new()
+	yb.button_index = JOY_BUTTON_X
+	cfg.rebind("watch", yb)
+	var all_pinned := true
+	for act in InputMap.get_actions():
+		for ev in InputMap.action_get_events(act):
+			if (ev is InputEventJoypadButton or ev is InputEventJoypadMotion) and ev.device != 3:
+				all_pinned = false
+	ok(all_pinned, "every joypad binding, including a new one, stays pinned to the chosen controller")
+	cfg.reset_bindings()
+	all_pinned = true
+	for act in InputMap.get_actions():
+		for ev in InputMap.action_get_events(act):
+			if (ev is InputEventJoypadButton or ev is InputEventJoypadMotion) and ev.device != 3:
+				all_pinned = false
+	ok(all_pinned, "...and after resetting bindings")
+
+	# The setting is saved, and the game starts unlocked.
+	cfg.set_v("gamepad_input", 1)
+	cfg.save_settings()
+	cfg.set_v("gamepad_input", 0)
+	cfg.load_settings()
+	ok(cfg.v("gamepad_input") == 1, "the gamepad setting survives a save/load round trip")
+	cfg.reset_defaults(["gamepad_input"])
+	cfg.refresh_pads()
+	m3.new_game()
+	await _frames(3)
+	ok(not m3.player.locked and m3.started, "starting the game unlocks the player")
+	cfg.set_v("gamepad_input", 1)
+	var yaw1: float = m3.player.yaw
+	_pad_drive(7, true)
+	await create_timer(0.5).timeout
+	ok(absf(m3.player.yaw - yaw1) > 0.2, "(control) with the guard open a drifting stick does spin the player: %.2f rad" % (m3.player.yaw - yaw1))
+	_pad_drive(7, false)
+	cfg._pin_pads(3)
+	var yaw2: float = m3.player.yaw
+	_pad_drive(7, true)
+	await create_timer(0.5).timeout
+	ok(absf(m3.player.yaw - yaw2) < 0.0001, "with the guard on, the same drifting stick cannot spin the player")
+	_pad_drive(7, false)
+	cfg.reset_defaults(["gamepad_input"])
+	cfg.refresh_pads()
+	m3.queue_free()
+	await _frames(2)
+
 	print("-- typography: standard capitalisation")
 	var shouty: Array = []
 	var seen := [0]    # lambdas capture ints by value, so count in an array
@@ -1752,6 +1841,29 @@ func _use(main: Node3D, id: String, hold := 0.0) -> void:
 		await _frames(2)
 		_send_action("interact", false)
 	await _frames(3)
+
+## Drives a drifting stick on `dev`, waits for the input to be processed, and returns
+## [look_left strength, move_back strength] before releasing it.
+func _pad_probe(dev: int) -> Array:
+	_pad_drive(dev, true)
+	await _frames(3)
+	var r := [Input.get_action_strength("look_left"), Input.get_action_strength("move_back")]
+	_pad_drive(dev, false)
+	await _frames(3)
+	return r
+
+## A drifting joystick on `dev`: right stick held left, left stick held down (or released).
+func _pad_drive(dev: int, held: bool) -> void:
+	var a := InputEventJoypadMotion.new()
+	a.device = dev
+	a.axis = JOY_AXIS_RIGHT_X
+	a.axis_value = -1.0 if held else 0.0
+	Input.parse_input_event(a)
+	var b := InputEventJoypadMotion.new()
+	b.device = dev
+	b.axis = JOY_AXIS_LEFT_Y
+	b.axis_value = 1.0 if held else 0.0
+	Input.parse_input_event(b)
 
 func _send_action(action: String, pressed: bool) -> void:
 	var e := InputEventAction.new()
