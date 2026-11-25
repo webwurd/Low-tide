@@ -1,0 +1,254 @@
+[gd_scene load_steps=31 format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/lantern_room.res" id="1_g5gq8"]
+[ext_resource type="ArrayMesh" path="res://assets/models/lantern_lens.res" id="2_w20by"]
+[ext_resource type="ArrayMesh" path="res://assets/models/lantern_burner.res" id="3_o187n"]
+[ext_resource type="ArrayMesh" path="res://assets/models/bench.res" id="4_0wn4w"]
+[ext_resource type="ArrayMesh" path="res://assets/models/floor_hatch.res" id="5_kh35a"]
+[ext_resource type="ArrayMesh" path="res://assets/models/oil_can.res" id="6_rhuuv"]
+[ext_resource type="ArrayMesh" path="res://assets/models/locker.res" id="7_1n0i3"]
+[ext_resource type="ArrayMesh" path="res://assets/models/hand_lantern.res" id="8_1abl0"]
+[ext_resource type="Script" path="res://world/interactable.gd" id="9_ksjh2"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_o2vmr"]
+size = Vector3(5.6, 0.2, 5.6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_dehjq"]
+size = Vector3(5.6, 0.2, 5.6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_4dejw"]
+size = Vector3(0.3, 2.6, 1.035)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_oof2o"]
+size = Vector3(0.3, 2.6, 1.035)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_5q6wd"]
+size = Vector3(0.3, 2.6, 1.035)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_10tce"]
+size = Vector3(0.3, 2.6, 1.035)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_b1fij"]
+size = Vector3(0.3, 2.6, 1.035)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_e248a"]
+size = Vector3(0.3, 2.6, 1.035)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_4087h"]
+size = Vector3(0.3, 2.6, 1.035)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_0noqb"]
+size = Vector3(0.3, 2.6, 1.035)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ovdx2"]
+size = Vector3(0.3, 2.6, 1.035)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_nsfi1"]
+size = Vector3(0.3, 2.6, 1.035)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_47q2s"]
+size = Vector3(0.3, 2.6, 1.035)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hvxok"]
+size = Vector3(0.3, 2.6, 1.035)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_7jgjh"]
+size = Vector3(0.3, 2.6, 1.035)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_f1o26"]
+size = Vector3(0.3, 2.6, 1.035)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_teb1r"]
+size = Vector3(0.3, 2.6, 1.035)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wvpxo"]
+size = Vector3(0.3, 2.6, 1.035)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_k5qh4"]
+size = Vector3(0.9, 1.7, 0.9)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_5rvqk"]
+size = Vector3(0.42, 0.5, 1.3)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_0o61h"]
+size = Vector3(0.88, 1.4, 0.36)
+
+[node name="LanternRoom" type="Node3D"]
+
+[node name="Room" type="MeshInstance3D" parent="."]
+mesh = ExtResource("1_g5gq8")
+metadata/prop = "lantern_room"
+
+[node name="Walls" type="StaticBody3D" parent="."]
+
+[node name="Shape0" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+shape = SubResource("BoxShape3D_o2vmr")
+
+[node name="Shape1" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, 0)
+shape = SubResource("BoxShape3D_dehjq")
+
+[node name="Shape2" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.42, 1.3, 0)
+shape = SubResource("BoxShape3D_4dejw")
+
+[node name="Shape3" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(0.92388, 0, -0.382683, 0, 1, 0, 0.382683, 0, 0.92388, 2.23579, 1.3, 0.926094)
+shape = SubResource("BoxShape3D_oof2o")
+
+[node name="Shape4" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, 0.707107, 1.7112, 1.3, 1.7112)
+shape = SubResource("BoxShape3D_5q6wd")
+
+[node name="Shape5" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(0.382683, 0, -0.92388, 0, 1, 0, 0.92388, 0, 0.382683, 0.926094, 1.3, 2.23579)
+shape = SubResource("BoxShape3D_10tce")
+
+[node name="Shape6" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 1.48182e-16, 1.3, 2.42)
+shape = SubResource("BoxShape3D_b1fij")
+
+[node name="Shape7" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(-0.382683, 0, -0.92388, 0, 1, 0, 0.92388, 0, -0.382683, -0.926094, 1.3, 2.23579)
+shape = SubResource("BoxShape3D_e248a")
+
+[node name="Shape8" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(-0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, -0.707107, -1.7112, 1.3, 1.7112)
+shape = SubResource("BoxShape3D_4087h")
+
+[node name="Shape9" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(-0.92388, 0, -0.382683, 0, 1, 0, 0.382683, 0, -0.92388, -2.23579, 1.3, 0.926094)
+shape = SubResource("BoxShape3D_0noqb")
+
+[node name="Shape10" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(-1, 0, 8.74228e-08, 0, 1, 0, -8.74228e-08, 0, -1, -2.42, 1.3, 2.96365e-16)
+shape = SubResource("BoxShape3D_ovdx2")
+
+[node name="Shape11" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(-0.92388, 0, 0.382683, 0, 1, 0, -0.382683, 0, -0.92388, -2.23579, 1.3, -0.926094)
+shape = SubResource("BoxShape3D_nsfi1")
+
+[node name="Shape12" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(-0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, -0.707107, -1.7112, 1.3, -1.7112)
+shape = SubResource("BoxShape3D_47q2s")
+
+[node name="Shape13" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(-0.382684, 0, 0.92388, 0, 1, 0, -0.92388, 0, -0.382684, -0.926094, 1.3, -2.23579)
+shape = SubResource("BoxShape3D_hvxok")
+
+[node name="Shape14" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(1.19249e-08, 0, 1, 0, 1, 0, -1, 0, 1.19249e-08, -4.44547e-16, 1.3, -2.42)
+shape = SubResource("BoxShape3D_7jgjh")
+
+[node name="Shape15" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(0.382684, 0, 0.923879, 0, 1, 0, -0.923879, 0, 0.382684, 0.926094, 1.3, -2.23579)
+shape = SubResource("BoxShape3D_f1o26")
+
+[node name="Shape16" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107, 1.7112, 1.3, -1.7112)
+shape = SubResource("BoxShape3D_teb1r")
+
+[node name="Shape17" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(0.92388, 0, 0.382683, 0, 1, 0, -0.382683, 0, 0.92388, 2.23579, 1.3, -0.926094)
+shape = SubResource("BoxShape3D_wvpxo")
+
+[node name="Spawn_tower_top" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 0.05, 1.2)
+
+[node name="Lens" type="MeshInstance3D" parent="."]
+mesh = ExtResource("2_w20by")
+metadata/prop = "lantern_lens"
+
+[node name="Burner" type="MeshInstance3D" parent="."]
+mesh = ExtResource("3_o187n")
+metadata/prop = "lantern_burner"
+
+[node name="Bench" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.825336, 0, -0.564642, 0, 1, 0, 0.564642, 0, 0.825336, -1.45, 0, 1)
+mesh = ExtResource("4_0wn4w")
+metadata/prop = "bench"
+
+[node name="Hatch" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.921061, 0, 0.389418, 0, 1, 0, -0.389418, 0, 0.921061, 1.25, 0, 1.35)
+mesh = ExtResource("5_kh35a")
+metadata/prop = "floor_hatch"
+
+[node name="OilCan" type="MeshInstance3D" parent="."]
+transform = Transform3D(-0.416147, 0, 0.909297, 0, 1, 0, -0.909297, 0, -0.416147, 0.9, 0, -1.5)
+mesh = ExtResource("6_rhuuv")
+metadata/prop = "oil_can"
+
+[node name="Locker" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.754082, 0, 0.656781, 0, 1, 0, -0.656781, 0, 0.754082, -1.35, 0, -1.55)
+mesh = ExtResource("7_1n0i3")
+metadata/prop = "locker"
+
+[node name="HandLantern" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.980067, 0, 0.198669, 0, 1, 0, -0.198669, 0, 0.980067, -1.5, 0.49, 0.75)
+mesh = ExtResource("8_1abl0")
+metadata/prop = "hand_lantern"
+
+[node name="Furniture" type="StaticBody3D" parent="."]
+
+[node name="Shape0" type="CollisionShape3D" parent="Furniture"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+shape = SubResource("BoxShape3D_k5qh4")
+
+[node name="Shape1" type="CollisionShape3D" parent="Furniture"]
+transform = Transform3D(0.825336, 0, -0.564642, 0, 1, 0, 0.564642, 0, 0.825336, -1.45, 0.25, 1)
+shape = SubResource("BoxShape3D_5rvqk")
+
+[node name="Shape2" type="CollisionShape3D" parent="Furniture"]
+transform = Transform3D(0.754082, 0, 0.656781, 0, 1, 0, -0.656781, 0, 0.754082, -1.35, 0.7, -1.55)
+shape = SubResource("BoxShape3D_0o61h")
+
+[node name="It_locker" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 1.1, -1.4)
+script = ExtResource("9_ksjh2")
+id = "locker"
+title = "Open the keeper's locker"
+radius = 1.8
+give_item = "tape_4"
+highlight_paths = Array[NodePath]([NodePath("../Locker")])
+
+[node name="It_lamp" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0.9)
+script = ExtResource("9_ksjh2")
+id = "lamp"
+title = "Light the lamp"
+radius = 2.2
+hold_time = 2.0
+highlight_paths = Array[NodePath]([NodePath("../Lens"), NodePath("../Burner")])
+
+[node name="It_bench" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.9, 1.2)
+script = ExtResource("9_ksjh2")
+id = "bench"
+title = "Sit and wait"
+radius = 2.2
+highlight_paths = Array[NodePath]([NodePath("../Bench")])
+
+[node name="It_stairs_down" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 1, 1.6)
+script = ExtResource("9_ksjh2")
+id = "stairs_down"
+title = "Go down the stairs"
+radius = 2.0
+highlight_paths = Array[NodePath]([NodePath("../Hatch")])
+
+[node name="LampGlow" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0)
+light_color = Color(1, 0.752941, 0.376471, 1)
+light_energy = 0.0
+light_volumetric_fog_energy = 0.6
+shadow_enabled = true
+shadow_blur = 1.5
+omni_range = 8.0
+omni_attenuation = 1.4
+
+[node name="Daylight" type="OmniLight3D" parent="." groups=["window_light"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+light_color = Color(0.72549, 0.803922, 0.878431, 1)
+light_energy = 0.8
+omni_range = 6.0

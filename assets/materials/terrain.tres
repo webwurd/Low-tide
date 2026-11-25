@@ -1,0 +1,44 @@
+[gd_resource type="ShaderMaterial" load_steps=10 format=3]
+
+[ext_resource type="Shader" path="res://art/terrain.gdshader" id="1_2njj2"]
+[ext_resource type="Texture2D" path="res://assets/textures/grass_normal.png" id="2_lqqj3"]
+[ext_resource type="Texture2D" path="res://assets/textures/grass_albedo.png" id="3_cmpb7"]
+[ext_resource type="Texture2D" path="res://assets/textures/macro_breakup.png" id="4_3eh23"]
+[ext_resource type="Texture2D" path="res://assets/textures/moss_albedo.png" id="5_5lb2e"]
+[ext_resource type="Texture2D" path="res://assets/textures/granite_normal.png" id="6_s7gn1"]
+[ext_resource type="Texture2D" path="res://assets/textures/granite_albedo.png" id="7_wldir"]
+[ext_resource type="Texture2D" path="res://assets/textures/sand_normal.png" id="8_l2h8e"]
+[ext_resource type="Texture2D" path="res://assets/textures/sand_albedo.png" id="9_4jpfn"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1_2njj2")
+shader_parameter/wrap = 0.45
+shader_parameter/shadow_fill = 0.55
+shader_parameter/rim_strength = 0.35
+shader_parameter/spec_strength = 0.5
+shader_parameter/sand_tex = ExtResource("9_4jpfn")
+shader_parameter/rock_tex = ExtResource("7_wldir")
+shader_parameter/grass_tex = ExtResource("3_cmpb7")
+shader_parameter/moss_tex = ExtResource("5_5lb2e")
+shader_parameter/macro_tex = ExtResource("4_3eh23")
+shader_parameter/sand_nrm = ExtResource("8_l2h8e")
+shader_parameter/rock_nrm = ExtResource("6_s7gn1")
+shader_parameter/grass_nrm = ExtResource("2_lqqj3")
+shader_parameter/sand_col = Color(0.72, 0.66, 0.54, 1)
+shader_parameter/wet_sand_col = Color(0.42, 0.38, 0.32, 1)
+shader_parameter/rock_col = Color(0.54, 0.52, 0.5, 1)
+shader_parameter/rock_low_col = Color(0.25, 0.27, 0.27, 1)
+shader_parameter/weed_col = Color(0.3, 0.29, 0.17, 1)
+shader_parameter/grass_col = Color(0.63, 0.54, 0.33, 1)
+shader_parameter/grass_dry_col = Color(0.45, 0.43, 0.26, 1)
+shader_parameter/moss_col = Color(0.36, 0.42, 0.3, 1)
+shader_parameter/path_col = Color(0.46, 0.4, 0.32, 1)
+shader_parameter/sand_scale = 0.35
+shader_parameter/rock_scale = 0.2
+shader_parameter/grass_scale = 0.28
+shader_parameter/normal_strength = 0.8
+shader_parameter/path_seg0 = Vector4(0, 12.6, -1.6, 7.4)
+shader_parameter/path_seg1 = Vector4(-1.6, 7.4, 0, -1)
+shader_parameter/path_seg2 = Vector4(-1.6, 7.4, -6.8, 4.9)
+shader_parameter/path_width = 0.9
