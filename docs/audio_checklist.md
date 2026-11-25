@@ -8,16 +8,34 @@ godot --headless -s tools/export_audio.gd -- /some/output/dir     # default: res
 ```
 
 Automated checks (in `tests/run_tests.gd`) confirm each sound is audible, un-clipped, finite, and that the
-four looping beds have no click at the loop point. **Nobody has judged tone by ear yet. That is what this list is for.**
+looping beds have no click at the loop point. **Nobody has judged tone by ear yet. That is what this list is for.**
 
 Legend: **Listen for** = what "right" should sound like. **Tune** = where to change it.
 
 ## A. Ambient beds (looping, always on)
 | ID | What it is | Hear it | Listen for | Tune |
 |---|---|---|---|---|
-| `surf_bed` | Low-passed brown noise (340 Hz): the sea | Anywhere outdoors; swells louder/softer every ~10 s; louder at high tide; muffled -14 dB indoors | Soft, breathing surf, not a hiss or hum. Swell should feel slow and natural | `update_ambient()`: swell rate `0.65`, base `-20 dB`, tide gain |
-| `wind_bed` | Band-passed noise (620 Hz, Q 2.2): wind | Louder up high (summit, lantern); much louder on Day 4 (storm) | Whistling, not whining; should rise as you climb | `update_ambient()`: altitude gain `0.45 dB/m`; `DayData.wind_db` |
-| `tape_hiss` | High band-passed noise: cassette hiss | Only while a tape plays (cottage cassette player) | Quiet, steady tape hiss under the subtitles, never tiring | player volume `-21.5 dB` in `_ready()` |
+| `surf_bed` | Wash: low-passed brown noise (340 Hz), 7.3 s loop | Outdoors; rises as each wave builds and washes back; louder at high tide; muffled indoors (-14 dB and a lower filter) | Soft surf moving up the shingle, not a hiss or hum | `SeaWind.mix()` "wash"; `_update_beds()` base `-15.5 dB` |
+| `surf_deep` | Ground swell: deep brown noise (160 Hz), 11.9 s loop | Under the wash; drifts on slow 61 s / 97 s cycles | Felt more than heard; weight, not rumble | "deep"; base `-22 dB` |
+| `surf_foam` | Breaking fizz: band-passed white noise (1.7 kHz), 13.1 s loop | Bursts as each wave breaks, then fades with the wash; the Sea bus filter opens on the break | Foam and pebbles, never static | "foam", `cut_lo`/`cut_hi` |
+| `wind_bed` | Band-passed noise (620 Hz, Q 2.2), 9.7 s loop | Always; slow lulls (47 s / 83 s cycles) plus random gusts; louder up high (0.45 dB/m) and on Day 4 | Wind that breathes; rises as you climb | "wind"; `DayData.wind_db` |
+| `wind_whistle` | Narrow band (1.15 kHz, Q 6), 14.3 s loop | Only in gusts (most on Day 4); the Wind bus band rises with each gust | A whistle round the lantern, not a whine | "whistle", "wind_cut" |
+| `tape_hiss` | High band-passed noise: cassette hiss (5.3 s loop) | Only while a tape plays (cottage cassette player) | Quiet, steady tape hiss under the subtitles, never tiring | player volume `-21.5 dB` in `_ready()` |
+
+**Why it never repeats (playtest 1: "the sea and wind theme needs to be varied"):** the five bed loops have different, coprime-ish
+lengths and start at a random point each session, and `audio/sea_wind.gd` mixes them live. Waves arrive at irregular intervals,
+with quick doubles and lulls; a set of 3-5 bigger waves with longer washes comes in every 1-3 minutes. Wind gusts arrive at random
+(Poisson) over slow lulls. Everything follows the day:
+
+| Day weather | Sea | Wind |
+|---|---|---|
+| Ordinary (Days 1, 2) | a wave every ~6-12 s, sets every ~2 min | a gust every ~25 s |
+| Dense fog (Day 3) | about 3 dB softer, muffled (lower filter), less foam | band slightly lower |
+| Storm (Day 4) | pounding: a wave every ~4-6 s, frequent sets, about 4 dB louder, bright foam | a gust every ~5 s, whistling; about 2 dB louder |
+| Clear (Days 5, 6) | sparser waves, brighter | as ordinary |
+| Still dawn (Day 7) | slow, small waves | barely a breath |
+
+The Sea and Wind buses send to **Ambience**, so the Ambience volume governs them. Tune in `SeaWind.profile_for()`.
 
 ## B. Footsteps (one-shots, 2-3 variants each, pitch-randomised)
 | ID | Surface | Hear it | Listen for |
@@ -37,7 +55,7 @@ Checks: do surfaces sound clearly different? Does brisk walking feel faster (not
 | `squelch_0` | VHF squelch beep + noise tail | Every radio call opens and every reply | Believable walkie-talkie "kssht"; not annoying after 100 repeats |
 | `clunk_0` | Cassette deck thunk | Tape starts and stops | Mechanical click, short and low |
 | `foghorn_0` | Two sawtooth tones (E2 + G#2) lowpassed | Random every 26-40 s outdoors, quieter inside | Distant, mournful, a little menacing; not cartoonish |
-| `bell_north_1` `bell_east_2` `bell_south_3` `bell_west_4` | Inharmonic bell at 440 / 523 / 349 / 392 Hz | Four buoys around the island; **1 / 2 / 3 / 4 strikes = N / E / S / W**; best judged on Day 3 (dense fog) | Buoys sound like bells, not synths; you can tell direction and count; pitches distinct but not clashing |
+| `bell_north_1` `bell_east_2` `bell_south_3` `bell_west_4` | Inharmonic bell at 440 / 523 / 349 / 392 Hz | Four buoys around the island; **1 / 2 / 3 / 4 strikes = N / E / S / W**; ~1 s between strikes, an irregular 4.5-9 s pause between groups, slight force and pitch variation per strike; best judged on Day 3 (dense fog) | Buoys sound like bells, not synths; you can tell direction and count; pitches distinct but not clashing |
 | `hydrophone_ping` | 1400 Hz sonar blip | *(new in M6)* West echo cave, every 14 s until the buoy is switched off | Cold, faint, eerie |
 | `boat_engine` | Low diesel thump + noise, seamless loop | *(new in M6)* Relief boat in the ending scene | Distant, approaching; never harsh |
 
@@ -55,6 +73,24 @@ Check: do they sound like instruments or like a synth? Too long, too loud over t
 to use real music, drop `sting_end_a.ogg` (or `.wav`/`.mp3`) etc. into `res://audio/stings/` and it is used instead, with no code change.
 Tune in `audio/sting_synth.gd` (`render()` phrases, note timings, levels).
 
+## C3. Foley (synthesised in `audio/foley_synth.gd`)
+Recorded files dropped into `res://audio/foley/<name>.(ogg|wav|mp3)` replace these with no code change.
+| ID | What it is | Hear it | Listen for |
+|---|---|---|---|
+| `door_open_0..1` / `door_close_0..1` | Latch click + hinge creak; wooden thud + latch | Any door between outdoors and the cottage/tower | Heavy old door, not a squeaky cartoon hinge |
+| `stairs_0..1` | Four creaky wooden treads | Tower stairs up/down | Weight on old wood |
+| `stove_0` | Iron door clank, match, fire catching | Lighting the stove (once a day) | Cast iron; the whoomph of kindling |
+| `stove_crackle` (loop) | Low fire roar + ember pops | Cottage, once the stove is lit, all day | Cosy, never like rain or static |
+| `winding_0` | Ratchet pawl clicks over a groaning drum | Winding the weights | Heavy clockwork, a pause each turn of the crank |
+| `lamp_0` | Match, mantle catching, pressure hiss | Lighting the lamp | Soft and satisfying |
+| `chair_0..1` / `bed_0` | Wood creak + cushion/blanket rustle | Armchair or bench (wait an hour); going to bed | Comfortable, not horror-movie |
+| `page_0..2` / `pen_0` | Paper swish with crinkle; pen strokes | Tide table, logbook open and page turns; writing the log | Paper, not wind |
+| `tap_0` | Two knuckle taps on glass | Reading the barometer | The classic "tap the glass" |
+| `watch_tick` (loop) | Five beats per second, tick-tock | Holding up the pocket watch (not when Assist pins it) | Tiny, precise, not a clock on the wall |
+| `radio_static` (loop) | Band-limited hiss + crackle | Under every radio line while the panel is up; scales with "Radio static intensity" | Should frame Clara's lines, not tire the ear |
+| `click_0` | Soft UI tick | Every button (title, pause, settings, radio replies); works while paused | Quiet, unobtrusive |
+| `rain_bed` (loop) / `thunder_0..1` | Hiss + low wash + droplets; distant rolling thunder every 35-85 s | Day 4 (storm); muffled -12 dB indoors | Heavy coastal rain; thunder distant, not a jump-scare |
+
 ## D. Mixing questions
 - Is the bed (surf + wind) too loud under the radio voice-line text, or too quiet to feel alone?
 - Do indoors feel properly sheltered (-14 dB surf and wind)? Does the stove need its own crackle (see below)?
@@ -62,6 +98,5 @@ Tune in `audio/sting_synth.gd` (`render()` phrases, note timings, levels).
 - Does `squelch_0` drown subtle moments (tape playback)?
 
 ## E. Missing audio (known gaps; not bugs)
-Rain on the storm day (Day 4), door open/close, stove crackle, clockwork weights winding, lamp lighting, armchair/bench,
-page/journal turn, pocket-watch tick, radio static *between* lines, Clara's voice (text-only), menu click sounds.
-Stings now exist (see C2) but are placeholders. Plan: foley in M7.
+Clara's voice (text-only), wind gusts/shutters on Day 4, gulls, the lens mechanism turning at night.
+Stings (C2) and foley (C3) exist but are synthesised placeholders.
