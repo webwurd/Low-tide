@@ -48,7 +48,7 @@ func _run() -> void:
 	pro._finish()
 	await _wait(60)
 	await _snap("01_tutorial_controls")
-	main.hud._tut_go(3)
+	main.hud._tut_go(4)      # past the last tutorial page (0 = device choice, 1-3 = pages): starts the game
 	await _wait(10)
 	main.hud.visible = false
 
