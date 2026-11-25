@@ -42,6 +42,6 @@ VK_ICD_FILENAMES=/opt/lavapipe/lvp_icd.json xvfb-run -a -s "-screen 0 1920x1080x
   godot --path . --rendering-driver vulkan -s tests/screenshot.gd -- /some/output/dir 31_d5_golden
 ```
 
-Two things to know about `tests/screenshot.gd` as it stands: it calls `main.hud._tut_go(3)`, which now only shows the last tutorial page. Use `_tut_go(4)` to actually start the game, otherwise every outdoor frame keeps the title screen's camera. It also keeps the HUD hidden, so UI frames need `main.hud.visible = true` (or use `tests/ui_shots.gd`).
+Note about `tests/screenshot.gd`: it keeps the HUD hidden for the whole run, so UI frames need `main.hud.visible = true` (or use `tests/ui_shots.gd`). The tutorial call that used to leave the game on the title screen is fixed (`_tut_go(4)` starts the game).
 
 The captures here were taken from `main` after the art pass (PR #4), the UI box overhaul (#10) and the audio work. The adaptive score (#7) does not change how the game looks. Retake them if the look changes again.
