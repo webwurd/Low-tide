@@ -32,6 +32,9 @@ The submerged title (letters cut by a rising waterline, rippled reflection benea
 - **Ending card:** over the final shot of a quiet ending, let the tide rise through the title and hold.
 - **Godot:** render the title to a texture; draw it in a ColorRect with a shader that discards pixels below a `waterline` uniform; draw the same texture flipped under the line in slices with a sine UV offset; tween the uniform up while the surf bed swells.
 
+## Poster style
+A second, flat house style for posters, the store hero and social (`assets/<direction>/poster.png`, `poster_wide.png`; `LT.drawPoster()` in `marketing/steam/scene.js`). Soft dusk gradient, stepped low sun, layered flat sea bands, a pale exposed sandbar leading to the lighthouse silhouette, and one pale ink (`#F6E2C8`) for every word, the lamp and the rule. No glow or blur; print grain only. The painted, moodier style stays for in-game and capsule art. Choose per use.
+
 ## Tagline
 - **What the tide leaves.** (primary)
 - One keeper. One radio. Seven tides.
@@ -51,7 +54,9 @@ The submerged title (letters cut by a rising waterline, rippled reflection benea
 Amber is for people. About 5 percent of a frame, never above 10.
 
 ## Type
-Cormorant Garamond (display, taglines, direction B and H), Big Shoulders Stencil Display (direction C title only), IBM Plex Sans (text), IBM Plex Mono (anything the island measures), Reenie Beanie (Arthur's logbook only). All SIL OFL, from Google Fonts.
+Cormorant Garamond (display, taglines, direction B and H), Big Shoulders Stencil Display (direction C title only), IBM Plex Sans (text), IBM Plex Mono (anything the island measures), Caveat (Arthur's logbook only). All SIL OFL, from Google Fonts.
+
+In-game UI type is set separately (`docs/typography.md`: Newsreader, IBM Plex Mono, Caveat, bundled in `ui/fonts/`). Marketing uses Cormorant Garamond for the logo and display, and shares IBM Plex Mono and Caveat with the game.
 
 ## Voice
 Plain, dry, exact. Write like a keeper's log: the number, the time, the thing seen. Never breathless, never jokey.

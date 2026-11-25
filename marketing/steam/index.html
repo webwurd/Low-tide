@@ -2,7 +2,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Reenie+Beanie&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Caveat:wght@500&display=swap">
 <style>
 /* Layout concept: a harbourmaster's board. A dark slate field, fog-white type, and amber used only for the lamp and the one action on the page. */
 :root {
@@ -20,7 +20,7 @@
   --display: 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
   --body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
-  --hand: 'Reenie Beanie', 'Bradley Hand', cursive;
+  --hand: 'Caveat', 'Bradley Hand', cursive;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -179,12 +179,12 @@ body.steam-on { background: #1b2838; }
 .st-rbot { grid-area: rbot; min-width: 0; padding-top: 14px; }
 /* media */
 .st-media { background: rgba(0, 0, 0, .25); padding: 0 0 4px; }
-.st-media canvas { display: block; width: 100%; height: auto; aspect-ratio: 616 / 353; background: #000; }
-.st-strip { display: flex; gap: 4px; padding: 4px 4px 0; }
+.st-media canvas, .st-media img { display: block; width: 100%; height: auto; aspect-ratio: 616 / 353; background: #000; object-fit: cover; }
+.st-strip { display: flex; gap: 4px; padding: 4px 4px 6px; overflow-x: auto; scrollbar-width: thin; scrollbar-color: #4b6a82 transparent; }
 .st-strip button { appearance: none; padding: 0; border: 0; background: #000; cursor: pointer; width: 116px; flex: 0 0 auto; opacity: .55; }
 .st-strip button:hover { opacity: .85; }
 .st-strip button[aria-pressed="true"] { opacity: 1; box-shadow: 0 0 0 1px #8aa4ba; }
-.st-strip canvas { aspect-ratio: 116 / 65; }
+.st-strip canvas, .st-strip img { aspect-ratio: 116 / 65; }
 /* coming soon + buttons */
 .st-soon { margin-top: 20px; background: linear-gradient(-60deg, rgba(226, 244, 255, .3) 5%, rgba(84, 107, 115, .2) 95%); padding: 16px 16px 18px; }
 .st-soon h2 { margin: 0 0 6px; font-size: 21px; line-height: 1.2; font-weight: 400; color: #fff; }
@@ -245,7 +245,7 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
 .st-foot small { color: #6a737c; font-size: 11px; }
 @media (max-width: 960px) {
   .st-page { grid-template-columns: minmax(0, 1fr); grid-template-areas: "rtop" "left" "rbot"; }
-  .st-media canvas { aspect-ratio: 616 / 353; }
+  .st-media canvas, .st-media img { aspect-ratio: 616 / 353; }
   .st-strip { overflow-x: auto; }
   .st-cap { max-width: 460px; }
 }
@@ -278,7 +278,7 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
   </nav>
   <div class="vsw" role="group" aria-label="Logo direction"><button type="button" data-v="b" aria-pressed="true">B Lowercase</button><button type="button" data-v="c" aria-pressed="false">C Stencil</button><button type="button" data-v="h" aria-pressed="false">H Capitals</button></div>
 </div></div>
-<div class="draft"><div class="wrap"><b>DRAFT</b> &nbsp;The Store page tab follows the standard Steam store page layout, without Valve's logo or marks. Key art stands in for screenshots and the trailer until the build can be captured.</div></div>
+<div class="draft"><div class="wrap"><b>DRAFT</b> &nbsp;The Store page tab follows the standard Steam store page layout, without Valve's logo or marks. The screenshots are real captures from the game; the trailer is still to come.</div></div>
 
 <!-- ================= STORE ================= -->
 <section class="view steam" id="view-store">
@@ -299,7 +299,7 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
     <div class="st-page">
       <div class="st-left">
         <div class="st-media">
-          <canvas id="viewCanvas" width="1232" height="706" aria-label="Key art viewer"></canvas>
+          <img id="viewImg" width="1920" height="1080" alt="">
           <div class="st-strip" id="thumbs"></div>
         </div>
 
@@ -330,9 +330,9 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
             <p>Clara's voice comes over VHF Channel 16 and the game never stops for it. Answer with 1 or 2 while you climb, look through the binoculars, or turn over a piece of driftwood. She notices where you are standing, what time it is, and which finds you choose to report or keep to yourself.</p>
             <div class="st-figs">
               <div class="panel radio" aria-label="Sample radio exchange">
-                <div class="hd"><span>VHF &middot; Ch 16</span><span>Station Rockland</span></div>
+                <div class="hd"><span>VHF &middot; Ch 16</span><span>Station Penobscot</span></div>
                 <div class="who">CLARA</div>
-                <div class="line">&ldquo;Gannet Rock, this is Station Rockland. Radio check. Tide's dropping fast; if you want the outer stacks before noon, now's your window.&rdquo;</div>
+                <div class="line">&ldquo;Gannet Rock, this is Station Penobscot. Radio check. Tide's dropping fast; if you want the outer stacks before noon, now's your window.&rdquo;</div>
                 <div class="opt"><i>1</i><span>Copy, Clara. Lamp's steady, weights are wound. Heading out.</span></div>
                 <div class="opt"><i>2</i><span>Copy. I'll look around and radio if I find anything worth your time.</span></div>
               </div>
@@ -447,6 +447,18 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
     </div>
 
     <div class="sec">
+      <div class="hd"><span class="eyebrow">Poster style</span><h2>Soft colour, one ink.</h2><p>A second house style for posters, the store hero and social. Flat layered shapes, a dusk gradient, a low sun, and every word in one pale tone. It is calmer than the game itself, and it says the game in one picture: the tide is out, and a path leads to the light. It follows whichever logo direction is selected.</p></div>
+      <div class="grid2" style="grid-template-columns:minmax(0,5fr) minmax(0,7fr);align-items:start">
+        <div class="card" style="padding:10px"><canvas id="posterV" style="width:100%;height:auto;display:block" aria-label="Flat poster art, vertical"></canvas></div>
+        <div style="display:grid;gap:20px">
+          <div class="card" style="padding:10px"><canvas id="posterW" style="width:100%;height:auto;display:block" aria-label="Flat poster art, wide"></canvas></div>
+          <div class="card"><h3>Rules</h3>
+            <p class="muted" style="margin-top:10px">One ink, <span class="mono">#F6E2C8</span>, for every word, the lamp and the rule, so the type reads as part of the picture. Flat shapes only: no glow, no blur, no gradients except the sky and the sand. Grain is the only texture. The sandbar is always the palest shape below the horizon, and the lamp is a single pane of the same ink.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
       <div class="hd"><span class="eyebrow">Reference</span><h2>What we looked at, and what we took.</h2></div>
       <div class="grid2">
         <div class="card"><h3>Dark Souls</h3><p class="muted" style="margin-top:8px">A weathered serif in near-black with a single flame of colour. Took: one warm accent against cold type. Left: the grit and ornament.</p></div>
@@ -470,7 +482,7 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
         <div class="card spec"><span class="eyebrow">Display &middot; Cormorant Garamond</span><div class="big">What the tide leaves.</div><p class="muted">Title (direction B and H), headings and taglines, in semibold. Direction C uses Big Shoulders Stencil Display for the title only.</p></div>
         <div class="card spec"><span class="eyebrow">Text &middot; IBM Plex Sans</span><p style="font-size:1.25rem;line-height:1.4">The east bar closes at a quarter past twelve. Take the glass with you.</p><p class="muted">Store copy, interface text, captions. Regular and medium only.</p></div>
         <div class="card spec"><span class="eyebrow">Data &middot; IBM Plex Mono</span><p class="mono" style="font-size:1.1rem;line-height:1.5;letter-spacing:.04em">LOW 07:30 &nbsp;0.2 m<br>HIGH 13:42 &nbsp;4.2 m<br>BARS CLOSE &gt; 2.1 m</p><p class="muted">Anything the island measures: tide table, radio header, eyebrows. Tabular figures.</p></div>
-        <div class="card spec"><span class="eyebrow">Hand &middot; Reenie Beanie</span><p style="font:400 2rem/1.1 var(--hand);color:var(--fog)">Glass 30.1 and steady. Fog, then.</p><p class="muted">Arthur's logbook only. Never for marketing headlines.</p></div>
+        <div class="card spec"><span class="eyebrow">Hand &middot; Caveat</span><p style="font:400 2rem/1.1 var(--hand);color:var(--fog)">Glass 30.1 and steady. Fog, then.</p><p class="muted">Arthur's logbook only. Never for marketing headlines.</p></div>
       </div>
     </div>
 
@@ -598,21 +610,25 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
     canvas.width = w; canvas.height = h;
     LT.drawScene(canvas.getContext('2d'), w, h, opts);
   }
-  const views16 = [
-    { name: 'Key art', cap: 'Key art. Gannet Rock at low water, lamp lit.', opts: { lx: 0.66, hz: 0.52, base: 0.74, lh: 0.58, barX: 0.4, pilX: 0.04, pilH: 0.6, figT: 0.4 } },
-    { name: 'The lamp', cap: 'Key art. The lantern gallery, 1998.', opts: { seed: 23, lx: 0.5, hz: 0.6, base: 1.0, lh: 0.9, barX: 0.3, pilX: 0.92, pilH: 0.45, fig: false } },
-    { name: 'Wool', cap: '', opts: { seed: 41, lx: 0.6, hz: 0.5, base: 0.7, lh: 0.5, barX: 0.34, pilX: 0.9, pilH: 0.5, figT: 0.34, fogLow: 2.6, dim: 0.12 } },
-    { name: 'The cottage', cap: '', opts: { seed: 8, lx: 0.3, hz: 0.5, base: 0.8, lh: 0.62, barX: 0.66, pilX: 0.94, pilH: 0.55, figT: 0.3 } },
-    { name: 'The bar', cap: 'Key art. Crossing the east bar before the water makes.', opts: { seed: 5, lx: 0.74, hz: 0.38, base: 0.56, lh: 0.3, barX: 0.36, pilX: 0.04, pilH: 0.5, figT: 0.16, fogLow: 1.4 } },
+  // Real captures from the Godot build (main, Charm pass), 1920 x 1080. See marketing/steam/README.md to retake them.
+  const shots = [
+    ['01_night_beam', 'The lamp is lit and the beam sweeps the cottage and the rocks.'],
+    ['02_storm_day', 'Day 4. A storm: the bars stay shut and the pier is slick.'],
+    ['03_south_reef_spring_low', 'Day 5. The spring low uncovers the south reef.'],
+    ['04_causeway_lane', 'The causeway between the poles, open for a short window.'],
+    ['05_causeway_sign', 'Causeway. Spring low water only. Keep between the poles.'],
+    ['06_north_cove', 'The north cove, where the cable runs into the sea.'],
+    ['07_keepers_journal', "The keeper's journal: log, satchel and tapes."],
+    ['08_tide_table', 'The paper tide table for Day 5.'],
   ];
-  const vc = $('#viewCanvas'), thumbs = $('#thumbs');
+  const vimg = $('#viewImg'), thumbs = $('#thumbs');
   function show(i) {
-    paint(vc, 1232, 706, views16[i].opts);
+    vimg.src = `assets/game/${shots[i][0]}.jpg`; vimg.alt = shots[i][1];
     thumbs.querySelectorAll('button').forEach((b, j) => b.setAttribute('aria-pressed', String(i === j)));
   }
-  views16.forEach((v, i) => {
-    const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', v.name);
-    const c = document.createElement('canvas'); paint(c, 232, 130, v.opts); b.appendChild(c);
+  shots.forEach(([f, alt], i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', alt);
+    const im = document.createElement('img'); im.src = `assets/game/${f}.jpg`; im.alt = ''; im.loading = 'lazy'; b.appendChild(im);
     b.addEventListener('click', () => show(i)); thumbs.appendChild(b);
   });
   show(0);
@@ -674,7 +690,7 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
     [1, 'Capsule art at all Steam sizes', 'Header, small, main, vertical, library capsule, library hero, page background, logo, icon.'],
     [1, 'Short description under 300 characters', sd.length + ' characters.'],
     [1, 'About text and tags', 'Drafted on the Store page tab.'],
-    [0, 'Five or more real screenshots, 1920 x 1080', 'Capture from the Godot build: tests/screenshot.gd, or in-game.'],
+    [1, 'Five or more real screenshots, 1920 x 1080', '8 captures in assets/game, taken from main. May be refreshed after the art overhaul lands.'],
     [0, 'Trailer', 'Open on the lamp, end on the tagline and logo.'],
     [0, 'Developer and publisher names', 'Placeholders on the page until confirmed.'],
     [0, 'Release date and price', 'Not decided. Page says To be announced.'],
@@ -692,6 +708,8 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
     ['logo_transparent', 'Library logo', '1280 x 720, transparent', 'Steam overlays this on the library hero. Fog-white on transparent.'],
     ['page_background', 'Page background', '1438 x 810', 'Seen only at the edges of the store page. No text. Fades to the store page blue (#1b2838).'],
     ['key_art', 'Key art', '1920 x 1080', 'Press, social, and Steam screenshot slot 1 until captures exist. No text.'],
+    ['poster', 'Poster', '1600 x 2400', 'Press, social and merch. Flat poster style, one ink for all type.'],
+    ['poster_wide', 'Poster, wide', '1920 x 1080', 'Store hero and social. Same style, laid out wide.'],
     ['library_hero', 'Library hero', '3840 x 1240', 'Top of the Library page. No text: Steam places the logo over it at lower left.', true],
   ];
   const grid = $('#assetGrid');
@@ -707,6 +725,8 @@ table.st-lang td { padding: 5px 4px; text-align: center; border-top: 1px solid r
     const t = ++renderToken;
     try { await Promise.all([document.fonts.load('600 40px "Cormorant Garamond"'), document.fonts.load('500 20px "IBM Plex Mono"')]); } catch (e) {}
     await LT.renderAsset($('#stCap'), 'header_capsule', 0.5, variant);
+    await LT.renderAsset($('#posterV'), 'poster', 0.45, variant);
+    await LT.renderAsset($('#posterW'), 'poster_wide', 0.55, variant);
     for (const d of grid.children) {
       if (t !== renderToken) return;
       d.querySelector('[data-path]').textContent = LT.ASSETS[d._k].shared ? `assets/${d._k}.png` : `assets/${variant}/${d._k}.png`;

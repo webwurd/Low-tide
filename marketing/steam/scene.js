@@ -58,16 +58,17 @@
   };
   LT.variant = 'b';
 
-  function lampSVG(id, cx, cy, r, haloR, onLight) {
-    const amber = onLight ? '#c46a14' : PAL.lantern, warm = onLight ? '#c46a14' : '#ffd98a', core = onLight ? '#e08a2a' : '#fff0c8';
+  function lampSVG(id, cx, cy, r, haloR, onLight, tone) {
+    const amber = tone || (onLight ? '#c46a14' : PAL.lantern), warm = tone || (onLight ? '#c46a14' : '#ffd98a'), core = tone || (onLight ? '#e08a2a' : '#fff0c8');
+    if (tone) onLight = true;  // monotone: no glow
     return {
       defs: `<radialGradient id="${id}-h"><stop offset="0" stop-color="${warm}" stop-opacity="${onLight ? 0 : 0.55}"/><stop offset=".3" stop-color="${amber}" stop-opacity="${onLight ? 0 : 0.2}"/><stop offset="1" stop-color="${amber}" stop-opacity="0"/></radialGradient>` +
             `<radialGradient id="${id}-c"><stop offset="0" stop-color="${core}"/><stop offset=".7" stop-color="${amber}"/><stop offset="1" stop-color="${amber}"/></radialGradient>`,
       body: `<circle cx="${cx}" cy="${cy}" r="${haloR}" fill="url(#${id}-h)"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${id}-c)"/>`,
     };
   }
-  function beamSVG(id, cx, cy, x0, x1, onLight) {
-    const amber = onLight ? '#c46a14' : PAL.lantern, warm = onLight ? '#c46a14' : '#ffd98a';
+  function beamSVG(id, cx, cy, x0, x1, onLight, tone) {
+    const amber = tone || (onLight ? '#c46a14' : PAL.lantern), warm = tone || (onLight ? '#c46a14' : '#ffd98a');
     return {
       defs: `<linearGradient id="${id}-bl" x1="1" x2="0"><stop offset="0" stop-color="${warm}" stop-opacity=".34"/><stop offset=".55" stop-color="${amber}" stop-opacity=".08"/><stop offset="1" stop-color="${amber}" stop-opacity="0"/></linearGradient>` +
             `<linearGradient id="${id}-br" x1="0" x2="1"><stop offset="0" stop-color="${warm}" stop-opacity=".34"/><stop offset=".55" stop-color="${amber}" stop-opacity=".08"/><stop offset="1" stop-color="${amber}" stop-opacity="0"/></linearGradient>`,
@@ -79,18 +80,20 @@
   LT.logoSVG = function (opts) {
     const o = Object.assign({ variant: LT.variant, layout: 'line', fill: PAL.fog, id: 'lt', bg: null, onLight: false, line: true }, opts);
     const v = o.variant, WM = LT.WORDMARKS[v], id = o.id, mark = o.layout === 'mark';
-    const amber = o.onLight ? '#c46a14' : PAL.lantern, muted = o.onLight ? '#52606a' : '#9db0b3';
+    const tone = o.tone || null;  // monotone: every mark, lamp and rule in one colour (poster art)
+    if (tone) o.fill = tone;
+    const amber = tone || (o.onLight ? '#c46a14' : PAL.lantern), muted = tone || (o.onLight ? '#52606a' : '#9db0b3');
     let defs = '', body = '', bx0, bx1, by0, by1;
     const hair = (x0, x1, y) => (o.line ? `<path d="M${x0} ${y} H${x1}" stroke="${o.fill}" stroke-opacity="${o.onLight ? 0.5 : 0.32}" stroke-width="6" fill="none"/>` : '');
 
     if (v === 'b' && !mark) {
-      const W = WM.w, L = WM.lamp, lamp = lampSVG(id, L.cx, L.cy, L.r * 1.05, L.r * 6.5, o.onLight);
-      const beam = o.beam ? beamSVG(id, L.cx, L.cy, -0.04 * W, W * 1.05, o.onLight) : { defs: '', body: '' };
+      const W = WM.w, L = WM.lamp, lamp = lampSVG(id, L.cx, L.cy, L.r * 1.05, L.r * 6.5, o.onLight, tone);
+      const beam = o.beam ? beamSVG(id, L.cx, L.cy, -0.04 * W, W * 1.05, o.onLight, tone) : { defs: '', body: '' };
       defs = lamp.defs + beam.defs;
       body = beam.body + `<path d="${WM.d}" fill="${o.fill}"/>` + hair(-0.07 * W, W * 1.07, 120) + lamp.body;
       bx0 = -0.1 * W; bx1 = W * 1.1; by0 = L.cy - L.r * 6.5 - 10; by1 = 190;
     } else if (v === 'b' && mark) {
-      const M = WM.mark, L = M.lamp, lamp = lampSVG(id, 0, L.cy, L.r * 1.05, L.r * 7, o.onLight);
+      const M = WM.mark, L = M.lamp, lamp = lampSVG(id, 0, L.cy, L.r * 1.05, L.r * 7, o.onLight, tone);
       defs = lamp.defs;
       body = `<path d="${M.d}" transform="translate(${-M.cx} 0)" fill="${o.fill}"/>` + hair(-420, 420, 120) + lamp.body;
       bx0 = -430; bx1 = 430; by0 = L.cy - L.r * 7 - 10; by1 = 190;
@@ -104,14 +107,14 @@
       body = `<path d="${M.d}" transform="translate(${-M.w / 2} 0)" fill="${o.fill}"/><rect x="${-M.w / 2}" y="200" width="${M.w}" height="12" fill="${amber}"/>`;
       bx0 = -M.w / 2 - 120; bx1 = M.w / 2 + 120; by0 = -M.top - 100; by1 = 330;
     } else if (v === 'h' && !mark) {
-      const W = WM.w, L = WM.lamp, lamp = lampSVG(id, L.cx, L.cy, L.r, 330, o.onLight);
-      const beam = o.beam === false || o.onLight ? { defs: '', body: '' } : beamSVG(id, L.cx, L.cy, -0.05 * W, W * 1.06, o.onLight);
+      const W = WM.w, L = WM.lamp, lamp = lampSVG(id, L.cx, L.cy, L.r, 330, o.onLight, tone);
+      const beam = o.beam === false || o.onLight ? { defs: '', body: '' } : beamSVG(id, L.cx, L.cy, -0.05 * W, W * 1.06, o.onLight, tone);
       defs = lamp.defs + beam.defs;
       body = beam.body + `<path d="${WM.d}" fill="${o.fill}"/>` + hair(-0.03 * W, W * 1.03, 0) + lamp.body;
       bx0 = -0.075 * W; bx1 = W * 1.075; by0 = L.cy - 340; by1 = 70;
     } else { // h mark: a drawn tower
-      const cap = 654, W = 1500, cx = 750, cy = -(cap + 110), lamp = lampSVG(id, cx, cy, 38, 330, o.onLight);
-      const beam = o.beam === false || o.onLight ? { defs: '', body: '' } : beamSVG(id, cx, cy, -60, W + 60, o.onLight);
+      const cap = 654, W = 1500, cx = 750, cy = -(cap + 110), lamp = lampSVG(id, cx, cy, 38, 330, o.onLight, tone);
+      const beam = o.beam === false || o.onLight ? { defs: '', body: '' } : beamSVG(id, cx, cy, -60, W + 60, o.onLight, tone);
       defs = lamp.defs + beam.defs;
       const tower = `M${cx - 74} 0 L${cx - 46} ${-cap} L${cx + 46} ${-cap} L${cx + 74} 0Z M${cx - 82} ${-cap - 4} H${cx + 82} V${-cap - 32} H${cx - 82}Z`;
       body = beam.body + `<path d="${tower}" fill="${o.fill}"/>` + hair(0, W, 0) + lamp.body;
@@ -541,6 +544,130 @@
     }
   };
 
+  /* ---------- flat poster art ---------- */
+  // A second house style: flat, layered, soft colour, one pale ink for all type. No glow, no texture but print grain.
+  // The low-tide idea is the star: a pale exposed sandbar leads across the flats to the light.
+  LT.POSTER = { ink: '#f6e2c8', deep: '#171d36' };
+  LT.drawPoster = function (ctx, W, H, opts) {
+    const o = Object.assign({ seed: 5, lx: 0.64, hz: 0.57, base: 0.665, lh: 0.3, sunx: 0.5, barX: 0.34, barW: 0.15, figT: 0.42, grain: 0.14, cloudY0: 0.27, cloudX0: 0 }, opts);
+    const R = rng(o.seed), u = H / 1000;
+    const hz = o.hz * H, lx = o.lx * W, baseY = o.base * H, th = o.lh * H, sx = o.sunx * W;
+    const D = LT.POSTER.deep;
+    const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+    const poly = (pts, fill) => { ctx.fillStyle = fill; ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.closePath(); ctx.fill(); };
+
+    // sky
+    let g = ctx.createLinearGradient(0, 0, 0, hz);
+    g.addColorStop(0, '#34405c'); g.addColorStop(0.34, '#5b6384'); g.addColorStop(0.62, '#9a88a2'); g.addColorStop(0.84, '#dca698'); g.addColorStop(1, '#f4cfa6');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, hz + 2);
+    // stepped halo and sun (flat discs, no blur)
+    const sunY = hz - 0.085 * H, sr = Math.min(W * 0.15, H * 0.1);
+    [[2.6, 0.07], [1.9, 0.09], [1.4, 0.12]].forEach(([k, a]) => { ctx.fillStyle = `rgba(250,226,198,${a})`; ctx.beginPath(); ctx.arc(sx, sunY, sr * k, 0, Math.PI * 2); ctx.fill(); });
+    ctx.fillStyle = '#f9e7cd'; ctx.beginPath(); ctx.arc(sx, sunY, sr, 0, Math.PI * 2); ctx.fill();
+    // stratus: thin flat bars
+    for (let i = 0; i < 9; i++) {
+      const y = (o.cloudY0 + R() * (0.5 - o.cloudY0)) * H, w = (0.16 + R() * 0.3) * W, x = o.cloudX0 * W + R() * (W * (1 - o.cloudX0) - w), h = (0.004 + R() * 0.006) * H;
+      ctx.fillStyle = `rgba(252,226,206,${0.16 + R() * 0.2})`;
+      ctx.beginPath(); ctx.roundRect(x, y, w, h, h / 2); ctx.fill();
+    }
+    // distant headlands, low in the middle so the sun stays clear
+    const ridge = (amp, color, off, seed) => {
+      const rr = rng(seed), ph = [rr() * 6, rr() * 6, rr() * 6], pts = [[0, hz + 2]];
+      for (let i = 0; i <= 90; i++) {
+        const x = (i / 90) * W, m = smooth(0.12, 0.42, Math.abs(x - sx) / W);
+        const n = 0.55 + 0.3 * Math.sin(x / W * 5 + ph[0]) + 0.15 * Math.sin(x / W * 13 + ph[1]);
+        pts.push([x, hz - amp * H * n * m - off * H]);
+      }
+      pts.push([W, hz + 2]); poly(pts, color);
+    };
+    ridge(0.045, '#c4a0a4', 0, 11); ridge(0.034, '#a38fa8', 0, 23); ridge(0.02, '#7f7c9e', 0, 37);
+
+    // sea in flat bands, each edge a slow swell (not a ripple). Far bands go down first, near bands after the island.
+    const cols = ['#e9b99f', '#c9a1a3', '#a393a9', '#8484a6', '#666f98', '#4d5a82', '#39456a', '#2a3556'];
+    const n = cols.length;
+    const bandPh = cols.map(() => R() * 6);
+    const bands = (k0, k1) => {
+      for (let k = k0; k < k1; k++) {
+        const y0 = hz + (H - hz) * Math.pow(k / n, 1.45), amp = (1 + k * 0.5) * u * 1.6, f = 1.4 + k * 0.2;
+        const pts = [[0, H + 2]];
+        for (let i = 0; i <= 60; i++) { const x = (i / 60) * W; pts.push([x, y0 + Math.sin((x / W) * f * Math.PI * 2 + bandPh[k]) * amp]); }
+        pts.push([W, H + 2]); poly(pts, cols[k]);
+      }
+    };
+    bands(0, 4);
+    // island, tower, cottage: one dark flat silhouette
+    const rw = th * 1.15, top = baseY - th * 0.2, bot = baseY + th * 0.3;
+    const mound = [];
+    for (let i = 0; i <= 40; i++) {
+      const t = i / 40, p = Math.pow(clamp(1 - Math.pow(Math.abs(2 * t - 1), 1.9), 0, 1), 0.8);
+      mound.push([lx - rw + rw * 2 * t, bot - (bot - top) * p - (R() - 0.5) * 3 * u * (p > 0.9 ? 0.3 : 1)]);
+    }
+    mound.push([lx + rw, bot + 6 * u], [lx - rw, bot + 6 * u]);
+    poly(mound, D);
+    const tb = top + 3 * u, bw0 = th * 0.062, bw1 = th * 0.04;
+    poly([[lx - bw0, tb], [lx - bw1, tb - th * 0.72], [lx + bw1, tb - th * 0.72], [lx + bw0, tb]], D);
+    ctx.fillStyle = D;
+    ctx.fillRect(lx - bw1 * 1.7, tb - th * 0.72 - th * 0.03, bw1 * 3.4, th * 0.03);                 // gallery
+    ctx.fillRect(lx - bw1 * 0.95, tb - th * 0.72 - th * 0.13, bw1 * 1.9, th * 0.1);                 // lantern room
+    poly([[lx - bw1 * 1.25, tb - th * 0.85], [lx, tb - th * 0.95], [lx + bw1 * 1.25, tb - th * 0.85]], D);
+    ctx.fillRect(lx - u * 1.2, tb - th * 1.0, u * 2.4, th * 0.06);
+    ctx.fillStyle = LT.POSTER.ink;                                                                    // the lamp: one pale pane
+    ctx.fillRect(lx - bw1 * 0.5, tb - th * 0.72 - th * 0.115, bw1, th * 0.07);
+    const side = lx > W * 0.5 ? -1 : 1, cw = th * 0.28, ch = th * 0.12, cx = lx + side * th * 0.4, cy = bot - (bot - top) * Math.pow(clamp(1 - Math.pow(Math.abs(2 * (0.5 + (side * th * 0.4) / (2 * rw)) - 1), 1.9), 0, 1), 0.8) + 3 * u;
+    ctx.fillStyle = D; ctx.fillRect(cx - cw / 2, cy - ch, cw, ch);
+    poly([[cx - cw * 0.6, cy - ch], [cx, cy - ch - th * 0.07], [cx + cw * 0.6, cy - ch]], D);
+    ctx.fillStyle = LT.POSTER.ink; ctx.fillRect(cx - cw * 0.12, cy - ch * 0.7, cw * 0.18, ch * 0.4);
+
+    bands(4, n);
+
+    // the sandbar: pale, wet, low tide, from the foreground to the rock
+    const bx0 = o.barX * W, bx1 = lx - th * 0.1, yTop = bot - 2 * u, yBot = H * 1.03;
+    const barPt = (t) => {
+      const e = 1 - t, y = yTop + (yBot - yTop) * Math.pow(e, 1.8);
+      return [lerp(bx0, bx1, Math.pow(t, 1.1)) + Math.sin(t * 3 + 0.5) * 0.06 * W * (1 - t), y, lerp(o.barW * W, th * 0.045, Math.pow(t, 0.65))];
+    };
+    const Lp = [], Rp = [];
+    for (let i = 0; i <= 50; i++) { const [x, y, w] = barPt(i / 50); Lp.push([x - w, y]); Rp.push([x + w, y]); }
+    g = ctx.createLinearGradient(0, yTop, 0, H);
+    g.addColorStop(0, '#f0cdb0'); g.addColorStop(0.5, '#d6aaa2'); g.addColorStop(1, '#a98ea0');
+    poly(Lp.concat(Rp.reverse()), g);
+
+    // figure on the bar, from behind
+    const [fx, fy] = barPt(o.figT), fh = lerp(0.04, 0.12, 1 - o.figT) * H;
+    ctx.fillStyle = D;
+    ctx.beginPath(); ctx.moveTo(fx - fh * 0.075, fy - fh * 0.74); ctx.lineTo(fx + fh * 0.075, fy - fh * 0.74); ctx.lineTo(fx + fh * 0.1, fy - fh * 0.32); ctx.lineTo(fx - fh * 0.1, fy - fh * 0.32); ctx.closePath(); ctx.fill();
+    ctx.fillRect(fx - fh * 0.07, fy - fh * 0.34, fh * 0.06, fh * 0.34); ctx.fillRect(fx + fh * 0.01, fy - fh * 0.34, fh * 0.06, fh * 0.34);
+    ctx.beginPath(); ctx.arc(fx, fy - fh * 0.84, fh * 0.065, 0, Math.PI * 2); ctx.fill();
+
+    // foreground rocks and the tide post
+    const rock = (x0, x1, topY, k) => {
+      const pts = [[x0, H + 4]];
+      for (let i = 0; i <= 14; i++) { const t = i / 14; pts.push([lerp(x0, x1, t), H - (H - topY) * Math.pow(Math.sin(t * Math.PI), 0.7) + (R() - 0.5) * k * H]); }
+      pts.push([x1, H + 4]); poly(pts, '#141a30');
+    };
+    rock(-0.06 * W, 0.26 * W, H * 0.86, 0.02); rock(0.9 * W, 1.08 * W, H * 0.9, 0.02);
+    const px = 0.07 * W, pw = 0.022 * H, ptop = H * 0.7;
+    poly([[px - pw / 2, H + 4], [px - pw * 0.45, ptop], [px + pw * 0.5, ptop - pw * 0.2], [px + pw / 2, H + 4]], '#141a30');
+    for (let i = 0; i < 12; i++) { const y = H - 0.04 * H - i * ((H - 0.05 * H - ptop) / 12); ctx.fillStyle = 'rgba(246,226,200,.8)'; ctx.fillRect(px - pw * (i % 5 === 0 ? 0.5 : 0.34), y, pw * (i % 5 === 0 ? 1 : 0.68), (i % 5 === 0 ? 4 : 2.5) * u); }
+    // birds
+    ctx.strokeStyle = 'rgba(23,29,54,.7)'; ctx.lineWidth = Math.max(1.5, 2.2 * u); ctx.lineCap = 'round';
+    for (let i = 0; i < 4; i++) { const bx = (o.cloudX0 + 0.1 + R() * 0.3) * W, by = (0.5 + R() * 0.12) * hz, s = (12 + R() * 16) * u; ctx.beginPath(); ctx.moveTo(bx - s, by + s * 0.2); ctx.quadraticCurveTo(bx - s * 0.5, by - s * 0.4, bx, by); ctx.quadraticCurveTo(bx + s * 0.5, by - s * 0.4, bx + s, by + s * 0.2); ctx.stroke(); }
+
+    // print grain and a faint vignette
+    g = ctx.createRadialGradient(W / 2, H / 2, H * 0.4, W / 2, H / 2, Math.max(W, H) * 0.8);
+    g.addColorStop(0, 'rgba(15,20,40,0)'); g.addColorStop(1, 'rgba(15,20,40,.28)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    if (o.grain) {
+      const t = document.createElement('canvas'); t.width = t.height = 256;
+      const tc = t.getContext('2d'), id = tc.createImageData(256, 256), rr = rng(o.seed + 7);
+      for (let i = 0; i < id.data.length; i += 4) { const v = 100 + rr() * 60; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 255; }
+      tc.putImageData(id, 0, 0);
+      const k = Math.max(1, u * 1.4);
+      ctx.save(); ctx.globalCompositeOperation = 'soft-light'; ctx.globalAlpha = o.grain * 2.2;
+      ctx.scale(k, k); ctx.fillStyle = ctx.createPattern(t, 'repeat'); ctx.fillRect(0, 0, W / k, H / k); ctx.restore();
+    }
+  };
+
   /* ---------- Steam assets ---------- */
   // logo: {x, cy, w, align}; x is the left edge (or the centre when align is 'center'), cy the vertical centre, both as fractions.
   // Eyebrow and tagline are placed relative to the logo, so every direction lays out the same way.
@@ -557,6 +684,9 @@
     library_capsule:  { w: 600,  h: 900,  scene: PORTRAIT, scrim: 'bottom', logo: { x: 0.5, cy: 0.8, w: 0.74, align: 'center' }, eyebrow: true, tagline: true },
     logo_transparent: { w: 1280, h: 720,  transparent: true, beam: true, logo: { x: 0.5, cy: 0.5, w: 0.8, align: 'center' } },
     community_icon:   { w: 184,  h: 184,  icon: true },
+    // flat poster style: soft colour, one pale ink for all type
+    poster:           { w: 1600, h: 2400, flat: true, scene: { lx: 0.64, hz: 0.57, base: 0.665, lh: 0.3, sunx: 0.5, barX: 0.36, barW: 0.17, figT: 0.42 }, logo: { x: 0.5, cy: 0.135, w: 0.66, align: 'center' }, eyebrow: true, tagline: true },
+    poster_wide:      { w: 1920, h: 1080, flat: true, scene: { lx: 0.72, hz: 0.57, base: 0.7, lh: 0.4, sunx: 0.6, barX: 0.4, barW: 0.1, figT: 0.4, seed: 9, cloudX0: 0.5, cloudY0: 0.08 }, logo: { x: 0.07, cy: 0.4, w: 0.36 }, eyebrow: true, tagline: true },
   };
 
   function loadSVG(svg, w) {
@@ -582,7 +712,9 @@
       ctx.drawImage(img, 0, 0, A.w, A.h);
       return canvas;
     }
-    if (!A.transparent) LT.drawScene(ctx, A.w, A.h, A.scene);
+    if (A.flat) LT.drawPoster(ctx, A.w, A.h, A.scene);
+    else if (!A.transparent) LT.drawScene(ctx, A.w, A.h, A.scene);
+    const ink = A.flat ? LT.POSTER.ink : null;
     if (A.scrim) {
       let g;
       if (A.scrim === 'left') { g = ctx.createLinearGradient(0, 0, A.w * 0.75, 0); g.addColorStop(0, 'rgba(8,13,18,.82)'); g.addColorStop(1, 'rgba(8,13,18,0)'); }
@@ -597,7 +729,7 @@
     let lx = 0, ly = 0, lw = 0, lh = 0;
     if (A.logo) {
       lw = A.logo.w * A.w;
-      const img = await loadSVG(LT.logoSVG({ variant: V.key, id: 'a', beam: !!A.beam && V.key === 'h' }), lw);
+      const img = await loadSVG(LT.logoSVG({ variant: V.key, id: 'a', beam: !!A.beam && V.key === 'h' && !A.flat, tone: ink }), lw);
       lh = lw * (img.naturalHeight / img.naturalWidth);
       lx = A.logo.align === 'center' ? A.logo.x * A.w - lw / 2 : A.logo.x * A.w;
       ly = A.logo.cy * A.h - lh / 2;
@@ -607,17 +739,17 @@
       ctx.save();
       ctx.font = font; ctx.fillStyle = color; ctx.letterSpacing = track;
       ctx.textAlign = center ? 'center' : 'left'; ctx.textBaseline = 'alphabetic';
-      ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 8 * u;
+      if (!A.flat) { ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 8 * u; }
       ctx.fillText(text, x, y);
       ctx.restore();
     };
     const center = A.logo && A.logo.align === 'center';
     const tx = center ? lx + lw / 2 : lx;
-    if (A.eyebrow && V.eyebrow) type('WINTER 1998 · GANNET ROCK', tx, ly - 16 * u * 1.6, `500 ${Math.round(Math.max(11, 17 * u * 1.5))}px "IBM Plex Mono", monospace`, PAL.sea, `${Math.round(3 * u * 1.6)}px`, center);
+    if (A.eyebrow && V.eyebrow) type('WINTER 1998 · GANNET ROCK', tx, ly - 16 * u * 1.6, `500 ${Math.round(Math.max(11, 17 * u * 1.5))}px "IBM Plex Mono", monospace`, ink || PAL.sea, `${Math.round(3 * u * 1.6)}px`, center);
     if (A.tagline && !(V.tagCase && A.w / A.h > 1.6 && A.w < 1000)) {
       const px = Math.round(Math.max(22, 40 * u * (A.w / A.h > 1.6 ? 1.0 : 1.35)));
       const text = V.tagCase ? 'WHAT THE TIDE LEAVES.' : 'What the tide leaves.';
-      type(text, tx, ly + lh + px * 1.15, V.tagFont(px), PAL.fog, `${(V.tagTrack * px * (V.tagCase ? 0.5 : 0.1)).toFixed(1)}px`, center);
+      type(text, tx, ly + lh + px * 1.15, V.tagFont(px), ink || PAL.fog, `${(V.tagTrack * px * (V.tagCase ? 0.5 : 0.1)).toFixed(1)}px`, center);
     }
     return canvas;
   };
