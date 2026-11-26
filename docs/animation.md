@@ -1,6 +1,6 @@
 # Animation pass
 
-Status: **Phase 0 (proof of concept) done; waiting for the project owner's go on Phase 1.**
+Status: **Phase 0 (proof of concept) done, now with the articulated hands from PR #15; waiting for the project owner's go on Phase 1.**
 
 ## Goal
 Make interactions feel physical (pocket watch, radio, doors, and later tools, rituals, body and world motion) without touching game logic. Animations are a cosmetic layer driven by existing signals. The only wait is doors: open, then fade and teleport.
@@ -24,7 +24,9 @@ Make interactions feel physical (pocket watch, radio, doors, and later tools, ri
 ## Phase 0 prototype
 `docs/animation/phase0_prototype.mp4` (11 s, 1280x720, 30 fps): a hinge-pivoted cottage door pulled open by a hand on the latch while Arthur steps back, then a pocket watch raised in the left hand, lid popped, hands ticking, lid closed, lowered.
 
-Prototype quality: blocky hands built from boxes, no audio, fake daylight quad behind the door because the real wall is solid, hands drawn 1.5x so they read on screen. Files: `anim/hand_rig.gd`, `anim/door_rig.gd`, `anim/watch_prop.gd`, and the renderer `tests/anim_clip.gd`.
+Prototype quality: no audio, a fake daylight quad behind the door because the real wall is solid, hands drawn 1.5x so they read on screen. The clip now uses the articulated factory-built hands (see "Hands" below); the first version used box hands. The door and watch pieces are still prototypes. Files: `anim/hand_rig.gd`, `anim/door_rig.gd`, `anim/watch_prop.gd`, and the renderer `tests/anim_clip.gd`.
+
+The clip tool takes optional arguments: `-- <outdir> <fps> gloved <t>` renders the fingerless wool gloves (`gloved`) and, with a time `t` in seconds, a single frame instead of the whole clip. Integration notes: the right hand blends `relaxed` to `grip_handle` (keyed via `blend`), the left hand holds the `cup` pose with a little `curl`, and the camera stands 0.65 m from the latch so the hand reads on screen.
 
 Re-render (needs xvfb and ffmpeg):
 ```bash

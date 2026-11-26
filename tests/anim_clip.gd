@@ -2,6 +2,8 @@ extends SceneTree
 ## Dev tool: renders the animation prototype clip to PNG frames (needs xvfb).
 ##   xvfb-run -a godot --rendering-method gl_compatibility -s tests/anim_clip.gd -- <outdir> [fps]
 ## Then: ffmpeg -framerate 30 -i <outdir>/f%04d.png -c:v libx264 -pix_fmt yuv420p clip.mp4
+## Optional args: [2] "gloved" for the fingerless wool gloves, [3] a single time in seconds
+## to render one frame (f0000.png) instead of the whole clip.
 ## Frames are deterministic: the AnimationPlayer is seeked to t = frame / fps.
 ## PROTOTYPE quality: a door swing and a pocket-watch raise, to judge the approach.
 
@@ -31,6 +33,8 @@ func _run() -> void:
 		out = args[0]
 	if args.size() > 1:
 		fps = int(args[1])
+	var gloved: bool = args.size() > 2 and args[2] == "gloved"
+	var only_t := float(args[3]) if args.size() > 3 else -1.0
 	root.size = Vector2i(1280, 720)
 	main = load("res://main.tscn").instantiate()
 	main.autostart = true
@@ -42,7 +46,17 @@ func _run() -> void:
 	cam = main.player.cam
 	root.get_node("GameClock").paused = true
 	_stage()
+	rhand.gloved = gloved
+	lhand.gloved = gloved
 	_build_anim()
+	if only_t >= 0.0:
+		ap.seek(only_t, true)
+		_post(only_t)
+		await process_frame
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("%s/f0000.png" % out)
+		quit(0)
+		return
 	for f in int(LENGTH * fps):
 		var t := float(f) / fps
 		ap.seek(t, true)
@@ -87,7 +101,10 @@ func _stage() -> void:
 	vm.name = "Viewmodel"
 	cam.add_child(vm)
 	rhand = HandRig.new(1.0)
+	rhand.pose_a = &"relaxed"
+	rhand.pose_b = &"grip_handle"
 	lhand = HandRig.new(-1.0)
+	lhand.pose_a = &"cup"
 	vm.add_child(rhand)
 	vm.add_child(lhand)
 	watch = WatchProp.new()
@@ -142,7 +159,7 @@ func _build_anim() -> void:
 	var eye := 1.72
 	# camera: walk to the door, cut, then stand at the window side for the watch
 	var a_pos := Vector3(spawn.x, 0.05, 0.3)
-	var b_pos := Vector3(spawn.x, 0.05, 2.2)       # arm's length from the latch
+	var b_pos := Vector3(spawn.x, 0.05, 2.25)      # arm's length from the latch
 	var c_pos := Vector3(spawn.x, 0.05, 1.45)      # steps back as the door swings in
 	var w_pos := Vector3(spawn.x - 1.0, 0.05, 0.4)
 	_keys(p, "position", [
@@ -177,8 +194,7 @@ func _build_anim() -> void:
 		[3.4, l_rel], [4.3, hidden_r, -2.0]])
 	_keys(rhand, "rotation", [[0.0, Vector3(0.4, -0.1, 0.0)], [1.7, Vector3(0.4, -0.1, 0.0)], [2.3, Vector3(-0.55, 0.15, -0.15), -2.0],
 		[3.4, Vector3(-0.5, 0.3, -0.1)], [4.3, Vector3(0.4, -0.1, 0.0), -2.0]])
-	_keys(rhand, "curl", [[0.0, 0.15], [2.2, 0.1], [2.5, 0.75, 0.5], [3.45, 0.75], [3.8, 0.2]])
-	_keys(rhand, "thumb", [[0.0, 0.0], [2.3, 0.0], [2.45, 0.9, 0.5], [2.7, 0.9], [3.0, 0.5]])
+	_keys(rhand, "blend", [[0.0, 0.0], [2.0, 0.2], [2.5, 1.0, 0.5], [3.45, 1.0], [3.9, 0.0]])
 	gripper = Grip.new()
 	main.add_child(gripper)
 	_keys(gripper, "grip", [[0.0, 0.0], [2.3, 0.0], [2.42, 1.0, 0.5], [3.4, 1.0], [3.62, 0.0, -2.0]])
@@ -190,8 +206,7 @@ func _build_anim() -> void:
 		[7.5, hold_l + Vector3(0.0, -0.003, 0.004)], [8.5, hold_l + Vector3(0.0, 0.004, 0.0)], [9.2, hold_l], [10.0, hidden_l, -2.0]])
 	_keys(lhand, "rotation", [[0.0, Vector3(0.9, 0.3, 0.2)], [5.2, Vector3(0.9, 0.3, 0.2)], [5.9, Vector3(1.0, 0.12, 0.1), -2.0],
 		[9.2, Vector3(1.0, 0.12, 0.1)], [10.0, Vector3(0.9, 0.3, 0.2), -2.0]])
-	_keys(lhand, "curl", [[0.0, 0.3], [9.0, 0.3], [9.4, 0.45]])
-	_keys(lhand, "thumb", [[0.0, 0.0], [6.1, 0.0], [6.28, 0.7, 0.5], [6.7, 0.7], [7.0, 0.1]])
+	_keys(lhand, "curl", [[0.0, 0.0], [9.0, 0.0], [9.4, 0.3]])
 	_keys(watch, "lid_open", [[0.0, 0.0], [6.3, 0.0], [6.46, 1.06, 0.5], [6.58, 1.0], [9.0, 1.0], [9.12, 0.0, 2.0]])
 	_keys(watch, "clock_minutes", [[0.0, 418.0], [6.4, 418.0], [9.2, 423.0]])
 
