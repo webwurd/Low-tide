@@ -33,3 +33,11 @@ I can check fit, wrapping and capitalisation in screenshots. Whether the typogra
 The art pass unified the type on the M6.5 set: Cormorant Garamond (display, tape) and Work Sans (ui), both variable
 fonts used through `UiFonts.weighted(role, weight)`, with Caveat kept for text written on paper. Work Sans is
 narrower than IBM Plex Mono, so the widened panels above still fit with room to spare.
+
+## UI overhaul: one design system
+`ui/ui_theme.gd` is the single source for UI styling (brief: `docs/ui_overhaul_brief.md`).
+- **One colour family:** `ACCENT` (amber), `CREAM`, `MUTED`. `AMBER` and `TEXT` remain as aliases. The teal and brass of the day card and radio banner are `POSTER_TEAL` and `POSTER_BRASS`.
+- **Type floor:** `UiTheme.label()` and `UiTheme.text_size()` clamp to `MIN_TEXT` (14 px), including when the subtitle scale is at 0.8. A test scans the HUD, prologue, title, pause and settings.
+- **Menu items:** `UiTheme.style_menu_item()` is shared by the title and pause menus: no box, and a thin amber left rule on the focused or hovered entry. Amber is spent on focus.
+- **Components:** `label`, `keycap`, `rule`, `style_button`, `glass_panel`, `paper`, `pill`.
+- **Motion:** `UiTheme.fade_to()` and `UiTheme.appear()` jump straight to the end state under Reduce motion. The setting now covers fades and slides as well as head-bob.

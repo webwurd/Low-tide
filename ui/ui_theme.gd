@@ -1,10 +1,31 @@
 class_name UiTheme
-## One Theme for all menus (pause, settings). HUD elements keep their own styling.
+## The single source of truth for UI styling: tokens (colour, type, spacing,
+## radius, motion), one builder per component (panel, paper, pill, button kinds,
+## menu item, key-cap, rule, label), and one Theme for menus. HUD, title,
+## prologue, pause and settings all draw from here (docs/ui_overhaul_brief.md).
 
+# --- Colour: one family -------------------------------------------------------
+const ACCENT := Color("e9ab4f")          ## amber: focus, the live radio, the lamp. ~5% of a frame
+const CREAM := Color("f1e8d2")           ## body text on dark
+const MUTED := Color("b9b2a2")           ## secondary text on dark (4.5:1 on GLASS)
+const AMBER := ACCENT                    ## legacy name, same colour
+const TEXT := CREAM                      ## legacy name, same colour
+const POSTER_TEAL := Color("1f4b52")     ## day card band and radio banner only (brand poster style)
+const POSTER_BRASS := Color("d9a441")    ## thin rules on those cards, nowhere else
 const BG := Color(0.05, 0.08, 0.11, 0.96)
 const BORDER := Color(0.85, 0.7, 0.42, 0.3)
-const AMBER := Color("ffb84d")
-const TEXT := Color("efe4c8")
+
+# --- Type scale (px at the 1280x720 base; nothing below MIN_TEXT) ------------
+const T_CAPTION := 14
+const T_BODY := 17
+const T_LEAD := 21
+const T_HEAD := 30
+const T_DISPLAY := 96
+
+# --- Motion (seconds). Every helper is a no-op under Reduce motion -----------
+const MOTION_FAST := 0.14
+const MOTION_MED := 0.28
+const MOTION_SLOW := 0.7
 
 static func box(bg: Color, border := BORDER, radius := 3, margin := 10) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
@@ -147,9 +168,6 @@ const RADIUS := 12                       ## panels
 const RADIUS_SMALL := 8                  ## buttons, chips
 const PAD := Vector2(30, 22)             ## panel padding (x, y)
 const PAD_SMALL := Vector2(18, 12)       ## chip / button padding
-const CREAM := Color("f1e8d2")           ## body text on dark
-const MUTED := Color("b9b2a2")           ## secondary text on dark
-const ACCENT := Color("e9ab4f")          ## amber, a touch softer than AMBER for fills
 const PAPER := Color("ece2c9")
 const PAPER_EDGE := Color("c9b88f")
 const PAPER_INK := Color("2b2418")
@@ -267,3 +285,95 @@ static func style_button(b: Button, kind := "secondary", size := 18) -> void:
 			if kind != "primary":
 				sb.border_width_left = 3
 		b.add_theme_stylebox_override(st, sb)
+
+# --- Components (UI overhaul) -------------------------------------------------
+
+## True when the player asked for reduced motion.
+static func reduced_motion() -> bool:
+	# Looked up at run time: UiTheme is compiled before the autoloads exist
+	# (the headless test runner loads it first), so it cannot name Settings.
+	var loop := Engine.get_main_loop()
+	var st: Node = (loop as SceneTree).root.get_node_or_null("Settings") if loop is SceneTree else null
+	return st != null and bool(st.v("reduce_motion"))
+
+## A size clamped to the floor, so nothing is ever set below MIN_TEXT.
+static func text_size(size: int) -> int:
+	return maxi(size, MIN_TEXT)
+
+## The one way to make a Label: face by role, size (never below MIN_TEXT), colour.
+## Roles: ui, ui_bold, display, paper, tape.
+static func label(text: String, size := T_BODY, color := CREAM, role := "ui") -> Label:
+	var l := Label.new()
+	l.text = text
+	UiFonts.style(l, role, text_size(size))
+	l.add_theme_color_override("font_color", color)
+	return l
+
+## A key cap (E, 1, LB): returns [cap, label] so the caller can change the glyph.
+static func keycap(glyph: String, size := 15) -> Array:
+	var cap := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(1, 0.96, 0.88, 0.92)
+	sb.set_corner_radius_all(5)
+	sb.content_margin_left = 8
+	sb.content_margin_right = 8
+	sb.content_margin_top = 1
+	sb.content_margin_bottom = 1
+	cap.add_theme_stylebox_override("panel", sb)
+	cap.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	cap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var l := label(glyph, size, Color("1c140a"), "ui_bold")
+	cap.add_child(l)
+	return [cap, l]
+
+## A one-pixel divider. `ink` for dark glass, or pass a paper-ink colour.
+static func rule(color := Color(1, 0.94, 0.82, 0.14), width := 1) -> ColorRect:
+	var r := ColorRect.new()
+	r.color = color
+	r.custom_minimum_size = Vector2(0, width)
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return r
+
+## A quiet menu entry (title, pause): no box. Cream text; the focused or hovered
+## entry brightens and gains a thin amber rule on its left. Amber is spent only on focus.
+static func style_menu_item(b: Button, size := 28, role := "display") -> void:
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	UiFonts.style(b, role, text_size(size))
+	b.add_theme_color_override("font_color", Color(CREAM, 0.86))
+	for c in ["font_hover_color", "font_focus_color", "font_pressed_color"]:
+		b.add_theme_color_override(c, Color.WHITE)
+	var idle := StyleBoxFlat.new()
+	idle.bg_color = Color(0, 0, 0, 0)
+	idle.border_width_left = 3
+	idle.border_color = Color(0, 0, 0, 0)
+	idle.content_margin_left = 16
+	idle.content_margin_right = 16
+	idle.content_margin_top = 4
+	idle.content_margin_bottom = 4
+	var on := idle.duplicate() as StyleBoxFlat
+	on.border_color = ACCENT
+	on.bg_color = Color(1, 0.8, 0.5, 0.07)
+	b.add_theme_stylebox_override("normal", idle)
+	b.add_theme_stylebox_override("hover", on)
+	b.add_theme_stylebox_override("focus", on)
+	b.add_theme_stylebox_override("pressed", on)
+	b.add_theme_stylebox_override("disabled", idle)
+
+## Fades `node` to alpha `a` over `dur`. Under Reduce motion (or off-tree) it jumps
+## there at once and returns null; otherwise returns the Tween.
+static func fade_to(node: CanvasItem, a: float, dur := MOTION_MED) -> Tween:
+	if dur <= 0.0 or reduced_motion() or not node.is_inside_tree():
+		node.modulate.a = a
+		return null
+	var tw := node.create_tween()
+	tw.tween_property(node, "modulate:a", a, dur).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	return tw
+
+## Appear: fade up from transparent (and slide up `rise` px when motion is allowed).
+static func appear(node: Control, dur := MOTION_MED, rise := 0.0) -> void:
+	node.modulate.a = 0.0
+	var tw := fade_to(node, 1.0, dur)
+	if tw != null and rise > 0.0:
+		var y := node.position.y
+		node.position.y = y + rise
+		tw.parallel().tween_property(node, "position:y", y, dur).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)

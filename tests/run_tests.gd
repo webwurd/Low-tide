@@ -1406,6 +1406,57 @@ func _run() -> void:
 	ok(shouty.is_empty(), "no all-caps UI text outside key names and acronyms: %s" % [shouty])
 	ok(_shouty("LOW TIDE") and _shouty("NEW WATCH") and _shouty("Tape 1 - WALT JANUARY") and not _shouty("Low tide") and not _shouty("MSAA") and not _shouty("W A S D") and not _shouty("Hold LB / LT"), "the capitalisation guard flags shouting but allows key names")
 
+	print("-- UI overhaul: one design system")
+	ok(UiTheme.AMBER == UiTheme.ACCENT and UiTheme.TEXT == UiTheme.CREAM, "legacy amber/text names alias the one colour family")
+	ok(UiTheme.text_size(9) == UiTheme.MIN_TEXT and UiTheme.text_size(30) == 30, "text_size() never goes below the 14 px floor")
+	var small: Array = []
+	var small_n := [0]
+	var small_scan := func() -> void:
+		var st: Array = [main.hud, main.menus]
+		while not st.is_empty():
+			var sn: Node = st.pop_back()
+			st.append_array(sn.get_children())
+			if sn is Label or sn is Button or sn is CheckBox or sn is OptionButton:
+				small_n[0] += 1
+				var fsz: int = sn.get_theme_font_size("font_size")
+				if fsz < UiTheme.MIN_TEXT:
+					small.append("%s.%s %dpx" % [sn.get_class(), sn.name, fsz])
+	for sc_min in [1.0, 0.8]:
+		cfg.set_v("subtitle_scale", sc_min)
+		main.hud.apply_text_scale()
+		small_scan.call()
+	cfg.set_v("subtitle_scale", 1.0)
+	main.hud.apply_text_scale()
+	ok(small_n[0] > 150, "min-size scan covers the whole UI (%d controls)" % small_n[0])
+	ok(small.is_empty(), "no UI text under %d px, even at the smallest subtitle size: %s" % [UiTheme.MIN_TEXT, small])
+	var unfocusable: Array = []
+	var menu_btns: Array = [main.hud.title_screen]
+	while not menu_btns.is_empty():
+		var mb: Node = menu_btns.pop_back()
+		menu_btns.append_array(mb.get_children())
+		if mb is Button and mb.focus_mode == Control.FOCUS_NONE and mb.get_parent() != main.hud._radio_opts:
+			unfocusable.append(mb.name)
+	ok(unfocusable.is_empty(), "every title-screen button can take keyboard / gamepad focus: %s" % [unfocusable])
+	var title_btn: Button = main.hud.title_screen._new_btn
+	var focus_sb: StyleBoxFlat = title_btn.get_theme_stylebox("focus")
+	ok(focus_sb.border_color == UiTheme.ACCENT and focus_sb.border_width_left == 3, "focused title entry gets the amber left rule (amber is spent on focus)")
+	var rm_node := ColorRect.new()
+	main.hud.add_child(rm_node)
+	cfg.set_v("reduce_motion", true)
+	var rm_tween = UiTheme.fade_to(rm_node, 0.4, 1.0)
+	ok(rm_tween == null and is_equal_approx(rm_node.modulate.a, 0.4), "Reduce motion: fade_to jumps to the end value with no tween")
+	cfg.set_v("reduce_motion", false)
+	rm_node.modulate.a = 1.0
+	rm_tween = UiTheme.fade_to(rm_node, 0.4, 1.0)
+	ok(rm_tween != null, "with motion allowed fade_to returns a tween")
+	rm_tween.kill()
+	rm_node.queue_free()
+	var rm_box = main.menus.settings_menu().controls["reduce_motion"]
+	rm_box.button_pressed = true
+	ok(rm_box.text == "On", "settings check boxes read On when set")
+	rm_box.button_pressed = false
+	ok(rm_box.text == "Off", "settings check boxes read Off when cleared")
+
 	print("-- radio panel layout")
 	var all_ok := true
 	var worst := ""

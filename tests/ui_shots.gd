@@ -104,6 +104,13 @@ func _surfaces() -> void:
 	await _snap("55_tide_table")
 	hud.close_modal()
 
+	# Title screen (fades in over 1.2 s).
+	main._set_title_mode(true)
+	hud._title.visible = true
+	await create_timer(1.6).timeout
+	await _wait(4)
+	await _snap("58_title")
+
 	# Setup tutorial pages (over the title backdrop).
 	main._set_title_mode(true)
 	hud._open_tutorial()

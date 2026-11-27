@@ -176,7 +176,7 @@ func _next() -> void:
 		_radio_line.text = '"' + b["line"] + '"'
 		_radio.visible = true
 		_radio.modulate.a = 0.0
-		create_tween().tween_property(_radio, "modulate:a", 1.0, 0.4)
+		UiTheme.fade_to(_radio, 1.0, 0.4)
 		_shot_left = 3.0 + String(b["line"]).length() * 0.05
 	else:
 		_show_text(b)
@@ -201,7 +201,7 @@ func _show_text(b: Dictionary) -> void:
 		c.queue_free()
 	_choices.visible = false
 	_waiting_choice = false
-	create_tween().tween_property(_card, "modulate:a", 1.0, 0.8)
+	UiTheme.fade_to(_card, 1.0, 0.8)
 	var n := _lines.get_total_character_count()
 	_typing = create_tween()
 	_typing.tween_interval(0.6)
@@ -228,7 +228,7 @@ func _show_choices(b: Dictionary) -> void:
 			first = btn
 	_choices.visible = true
 	_choices.modulate.a = 0.0
-	create_tween().tween_property(_choices, "modulate:a", 1.0, 0.5)
+	UiTheme.fade_to(_choices, 1.0, 0.5)
 	_waiting_choice = first != null
 	if first:
 		first.grab_focus.call_deferred()
@@ -244,7 +244,7 @@ func _choose(ch: Dictionary) -> void:
 	get_tree().create_timer(0.7).timeout.connect(_next)
 
 func _hide_card() -> void:
-	create_tween().tween_property(_card, "modulate:a", 0.0, 0.6)
+	UiTheme.fade_to(_card, 0.0, 0.6)
 
 func _finish() -> void:
 	if _done:
