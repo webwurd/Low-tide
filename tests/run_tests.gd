@@ -230,6 +230,10 @@ func _run() -> void:
 
 	main._place("outdoors", Vector3(0, 10.25, -0.9), 0.0)
 	await _frames(15)
+	for it in get_nodes_in_group("interactable"):
+		if it.id == "lighthouse":
+			player.face_point(it.focus_point())
+	await _frames(4)
 	ok(player.nearby != null and player.nearby.id == "lighthouse", "lighthouse door in range")
 	await _use(main, "lighthouse")
 	await create_timer(1.6).timeout
@@ -1504,6 +1508,73 @@ func _run() -> void:
 	cfg.reset_defaults(["gamepad_input"])
 	cfg.refresh_pads()
 
+	print("== interaction focus: the prompt and the glow follow where Arthur looks")
+	var fits: Dictionary = main.interiors.its
+	var baro: Node3D = fits["barometer"]
+	var tide_it: Node3D = fits["tide_table"]
+	cfg.reset_defaults(["highlight_mode"])
+	main._place("cottage", main.interiors.spawn["cottage"], 0.0)
+	player.locked = false
+	player.ui_lock = false
+	var spot := Vector3((baro.global_position.x + tide_it.global_position.x) * 0.5, 0.05, baro.global_position.z + 1.4)
+	player.teleport(spot, 0.0)
+	player.face_point(baro.focus_point())
+	await _frames(4)
+	ok(player.nearby == baro, "looking at the barometer targets it")
+	ok(main.hud._prompt_box.visible and main.hud._prompt.text.contains("barometer"), "...and the prompt names it")
+	ok(baro._glow_target == 1.0 and tide_it._glow_target == player.DIM_GLOW, "the focused item glows fully and the other nearby item dimly")
+	player.face_point(player.cam.global_position + Vector3(0, 6, 0.2))
+	await _frames(4)
+	ok(player.nearby == null and not main.hud._prompt_box.visible, "looking at the ceiling targets nothing and shows no prompt")
+	ok(baro._glow_target == player.DIM_GLOW and tide_it._glow_target == player.DIM_GLOW, "...and nothing is fully lit")
+	player.face_point(tide_it.focus_point())
+	await _frames(4)
+	ok(player.nearby == tide_it and tide_it._glow_target == 1.0 and baro._glow_target == player.DIM_GLOW, "turning to the tide table moves the target and the glow")
+	cfg.set_v("highlight_mode", 1)
+	await _frames(3)
+	ok(tide_it._glow_target == 1.0 and baro._glow_target == 0.0, "'Focused item only' lights just the target")
+	cfg.set_v("highlight_mode", 2)
+	await _frames(3)
+	ok(tide_it._glow_target == 0.0 and baro._glow_target == 0.0 and player.nearby == tide_it, "'Off' removes every glow but the prompt still follows the look")
+	cfg.reset_defaults(["highlight_mode"])
+	var far_it: Node3D = fits["weights"]
+	ok(far_it._glow_target == 0.0, "items out of reach are not lit")
+
+	# two items close together: the one nearest the crosshair wins, with no flicker at the edge
+	var ia = load("res://world/interactable.gd").new()
+	ia.id = "t_a"; ia.title = "A"; ia.radius = 3.0
+	var ib = load("res://world/interactable.gd").new()
+	ib.id = "t_b"; ib.title = "B"; ib.radius = 3.0
+	main.add_child(ia)
+	main.add_child(ib)
+	var org := Vector3(spot.x, 1.5, spot.z - 0.4)
+	ia.global_position = org + Vector3(-0.25, 0, 0)
+	ib.global_position = org + Vector3(0.25, 0, 0)
+	player.teleport(Vector3(spot.x, 0.05, spot.z + 1.1), 0.0)
+	var aim := func(x: float):
+		player.face_point(Vector3(org.x + x, org.y, org.z))
+	aim.call(-0.25)
+	await _frames(4)
+	ok(player.nearby == ia, "of two close items, the one under the crosshair is the target (A)")
+	aim.call(0.25)
+	await _frames(4)
+	ok(player.nearby == ib, "...and the other when you look at it (B)")
+	aim.call(-0.1)
+	await _frames(4)
+	ok(player.nearby == ib or player.nearby == ia, "(settling)")
+	aim.call(-0.25)
+	await _frames(4)
+	aim.call(0.02)
+	await _frames(4)
+	ok(player.nearby == ia, "a slightly nearer rival does not steal the target (no flicker)")
+	aim.call(0.25)
+	await _frames(4)
+	ok(player.nearby == ib, "...but a clearly better one does")
+	ia.free()
+	ib.free()
+	cfg.reset_defaults(["highlight_mode"])
+	ok(cfg.v("highlight_mode") == 0, "the highlight setting defaults to nearby dimly, focused brightly")
+
 	print("-- typography: standard capitalisation")
 	var shouty: Array = []
 	var seen := [0]    # lambdas capture ints by value, so count in an array
@@ -1813,12 +1884,12 @@ func _run() -> void:
 	# Bell buoys: the count stays readable but the rhythm wanders.
 	var bb = get_nodes_in_group("bell_buoy")[3]
 	var pauses := {}
-	for i in 4:
+	for i in 10:       # ten random pauses: five or more distinct values is all but certain
 		bb._rung = bb.strikes
 		bb._clock = 100.0
 		bb._process(0.0)
 		pauses[snappedf(bb._group_pause, 0.1)] = true
-	ok(pauses.size() >= 3 and bb._group_pause >= 4.5, "bell buoys ring irregularly between groups (never faster than the count can be read)")
+	ok(pauses.size() >= 5 and bb._group_pause >= 4.5, "bell buoys ring irregularly between groups (never faster than the count can be read)")
 
 	print("== playtest 1: binoculars are unlocked by Clara's first check-in")
 	var bino_day: int = clock.day
@@ -2108,6 +2179,7 @@ func _use(main: Node3D, id: String, hold := 0.0) -> void:
 	var p = main.player
 	var base: Vector3 = target.global_position - Vector3(0, 1.1, 0)
 	p.teleport(base + Vector3(0, 0.05, 0), p.yaw)
+	p.face_point(target.focus_point())       # prompts follow where Arthur is looking
 	await _frames(4)
 	if hold > 0.0:
 		Input.action_press("interact")

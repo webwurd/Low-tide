@@ -81,5 +81,5 @@ void fragment() {
 	SPECULAR = mix(specular, 0.6, wet);
 	float ndv = clamp(dot(NORMAL, VIEW), 0.0, 1.0);
 	EMISSION = emission_color.rgb * emission_energy
-		+ highlight * (vec3(1.0, 0.72, 0.38) * pow(1.0 - ndv, 2.0) * 0.9 + col * 0.12);
+		+ highlight * (vec3(1.0, 0.72, 0.38) * (pow(1.0 - ndv, 1.6) * 1.1 + 0.16) + col * 0.28);   // warm rim plus a lift, so flat faces read too
 }

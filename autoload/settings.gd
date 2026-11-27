@@ -32,6 +32,7 @@ const DEFAULTS := {
 	"gamepad_input": 0,        # 0 recognised controllers only, 1 any device, 2 off
 	# accessibility
 	"assist_mode": false, "reduce_motion": false, "ui_scale": 1.0, "subtitle_scale": 1.0,
+	"highlight_mode": 0,       # interactables: 0 nearby dimly + focused brightly, 1 focused only, 2 off
 }
 
 ## key -> [min, max] for numeric settings (values are clamped).
@@ -42,7 +43,7 @@ const RANGES := {
 	"vol_music": [0.0, 1.0], "radio_static": [0.0, 1.0], "music_score": [0, 2],
 	"brightness": [0.6, 1.6], "exposure": [0.6, 1.6], "night_assist": [0.0, 1.0], "fog_scale": [0.3, 1.5], "beam_scale": [0.4, 2.0],
 	"mouse_sens": [0.3, 3.0], "bino_sens": [0.3, 3.0], "pad_sens": [0.3, 3.0], "deadzone": [0.05, 0.5],
-	"gamepad_input": [0, 2],
+	"gamepad_input": [0, 2], "highlight_mode": [0, 2],
 	"ui_scale": [0.8, 1.5], "subtitle_scale": [0.8, 1.8],
 }
 

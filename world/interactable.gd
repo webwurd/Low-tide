@@ -44,10 +44,23 @@ func interact() -> void:
 	if first and conversation != "":
 		RadioSystem.play(Conversations.get_conv(conversation))
 
-## Called by the player when this becomes (or stops being) the focus.
-func set_highlight(on: bool) -> void:
-	_glow_target = 1.0 if on else 0.0
+## Called by the player: 1 (or true) = the thing Arthur is looking at, a small
+## value = in reach but not focused (dim), 0 (or false) = none.
+func set_highlight(level = true) -> void:
+	_glow_target = clampf(float(level), 0.0, 1.0)
 	set_process(true)
+
+## Where to aim at: the centre of the highlight meshes (a door's panel, the bed),
+## falling back to the node itself, so big objects are targeted by their middle.
+func focus_point() -> Vector3:
+	var sum := Vector3.ZERO
+	var n := 0
+	for p in highlight_paths:
+		var g := get_node_or_null(p) as GeometryInstance3D
+		if g:
+			sum += g.global_transform * g.get_aabb().get_center()
+			n += 1
+	return sum / float(n) if n > 0 else global_position
 
 func _process(delta: float) -> void:
 	_glow = move_toward(_glow, _glow_target, delta * 3.0)
@@ -55,6 +68,6 @@ func _process(delta: float) -> void:
 	for p in highlight_paths:
 		var g := get_node_or_null(p) as GeometryInstance3D
 		if g:
-			g.set_instance_shader_parameter("highlight", pulse * 0.55)
+			g.set_instance_shader_parameter("highlight", pulse)
 	if _glow == _glow_target and _glow == 0.0:
 		set_process(false)
