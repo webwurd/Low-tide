@@ -430,6 +430,9 @@ func _apply_lighting() -> void:
 func _set_title_mode(on: bool) -> void:
 	title_cam.current = on
 	player.cam.current = not on
+	# Nothing the player does before the game starts (keys, mouse, a stray controller)
+	# may turn or move Arthur behind the title, tutorial and prologue.
+	player.locked = on
 	tender.visible = false
 	if not on:
 		_apply_island_lamp()

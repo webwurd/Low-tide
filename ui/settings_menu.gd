@@ -10,6 +10,8 @@ var controls: Dictionary = {}          # setting key -> Control (tests drive the
 var bind_buttons: Dictionary = {}      # "action|device" -> Button
 var tabs: TabContainer
 var _hint: Label
+var _pad_label: Label
+var _pad_clock := 0.0
 var _capture_action := ""
 var _capture_dev := ""
 var _tab_keys: Array = []              # per tab: settings keys on it (for "reset this tab")
@@ -177,6 +179,15 @@ func _build_controls() -> void:
 	_slider(p, "bino_sens", "Binocular sensitivity")
 	_slider(p, "pad_sens", "Gamepad look speed")
 	_slider(p, "deadzone", "Stick dead zone")
+	_option(p, "gamepad_input", "Gamepad input", ["Recognised controllers only", "Any device", "Off"])
+	_pad_label = Label.new()
+	_pad_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_pad_label.custom_minimum_size = Vector2(820, 0)
+	_pad_label.add_theme_font_size_override("font_size", 13)
+	_pad_label.add_theme_color_override("font_color", Color("9aa7b0"))
+	p.add_child(_pad_label)
+	_refresh_pad_label()
+	Settings.controllers_changed.connect(_refresh_pad_label)
 	_check(p, "invert_y", "Invert look Y")
 	_check(p, "toggle_binoculars", "Binoculars: toggle, not hold")
 	_check(p, "toggle_watch", "Pocket watch: toggle, not hold")
@@ -223,6 +234,8 @@ func _build_access() -> void:
 # ---- behaviour --------------------------------------------------------------------
 
 func _on_setting_changed(key: String) -> void:
+	if key == "gamepad_input":
+		_refresh_pad_label()
 	var c: Control = controls.get(key)
 	if c == null:
 		return
@@ -259,6 +272,31 @@ func _begin_capture(action: String, dev: String, b: Button) -> void:
 	_capture_dev = dev
 	b.text = "Press a key or mouse button..." if dev == Settings.KB else "Press a button..."
 	_hint.text = "Esc cancels."
+
+## One line per connected joypad, with live stick values so a drifting device shows up by name.
+func _refresh_pad_label() -> void:
+	if _pad_label == null:
+		return
+	var pads: Array = Settings.pad_status()
+	if pads.is_empty():
+		_pad_label.text = "No controllers detected."
+		return
+	var lines: Array = []
+	for pd in pads:
+		var id: int = pd["id"]
+		var state := "in use" if pd["active"] else ("recognised, not used" if pd["known"] else "not a recognised controller, ignored")
+		lines.append("%s (%s)   left %.2f, %.2f   right %.2f, %.2f" % [pd["name"], state,
+			Input.get_joy_axis(id, JOY_AXIS_LEFT_X), Input.get_joy_axis(id, JOY_AXIS_LEFT_Y),
+			Input.get_joy_axis(id, JOY_AXIS_RIGHT_X), Input.get_joy_axis(id, JOY_AXIS_RIGHT_Y)])
+	_pad_label.text = "\n".join(lines)
+
+func _process(delta: float) -> void:
+	if not is_visible_in_tree() or _pad_label == null:
+		return
+	_pad_clock += delta
+	if _pad_clock >= 0.25:
+		_pad_clock = 0.0
+		_refresh_pad_label()
 
 func is_capturing() -> bool:
 	return _capture_action != ""

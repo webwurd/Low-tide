@@ -6,6 +6,7 @@ extends Node
 signal changed(key: String)
 signal assist_changed(on: bool)
 signal bindings_changed
+signal controllers_changed
 
 var path := "user://lowtide_settings.cfg"
 
@@ -28,6 +29,7 @@ const DEFAULTS := {
 	# controls
 	"mouse_sens": 1.0, "bino_sens": 1.0, "pad_sens": 1.0, "invert_y": false, "deadzone": 0.2,
 	"toggle_binoculars": false, "toggle_watch": false, "toggle_hold": false,
+	"gamepad_input": 0,        # 0 recognised controllers only, 1 any device, 2 off
 	# accessibility
 	"assist_mode": false, "reduce_motion": false, "ui_scale": 1.0, "subtitle_scale": 1.0,
 }
@@ -40,6 +42,7 @@ const RANGES := {
 	"vol_music": [0.0, 1.0], "radio_static": [0.0, 1.0], "music_score": [0, 2],
 	"brightness": [0.6, 1.6], "exposure": [0.6, 1.6], "night_assist": [0.0, 1.0], "fog_scale": [0.3, 1.5], "beam_scale": [0.4, 2.0],
 	"mouse_sens": [0.3, 3.0], "bino_sens": [0.3, 3.0], "pad_sens": [0.3, 3.0], "deadzone": [0.05, 0.5],
+	"gamepad_input": [0, 2],
 	"ui_scale": [0.8, 1.5], "subtitle_scale": [0.8, 1.8],
 }
 
@@ -159,6 +162,8 @@ func _apply_key(key: String) -> void:
 			_apply_graphics(key)
 		"deadzone":
 			_apply_deadzone()
+		"gamepad_input":
+			refresh_pads()
 		"ui_scale":
 			var w := get_window()
 			if w:
@@ -208,6 +213,102 @@ func _apply_graphics(key: String) -> void:
 func shadow_distance() -> float:
 	return [0.0, 90.0, 150.0, 220.0][int(v("shadow_quality"))]
 
+# ---- gamepad devices -------------------------------------------------------------
+# Events made in code default to device 0, so only joypad slot 0 would drive the game, and
+# an unrelated HID device that registers as a joystick (gaming mice, hubs, wheels, trackers)
+# with axes resting off-centre would spin the camera and walk Arthur backwards. Every joypad
+# binding is therefore pinned to one recognised controller (or to every device, or to none).
+
+const NO_PAD := 99999          # a device id that never exists: pinned events match nothing
+const ANY_PAD := -1
+var _pad_active := 0
+var _hinted: Dictionary = {}         # device id -> true once the "not recognised" hint was shown
+var _pads_fake: Variant = null       # tests: an Array of {id, name, known} instead of real devices
+
+## Connected joypads: [{id, name, known}]. Tests can substitute a fake list.
+func _pads() -> Array:
+	if _pads_fake != null:
+		return _pads_fake
+	var out: Array = []
+	for id in Input.get_connected_joypads():
+		out.append({"id": id, "name": Input.get_joy_name(id), "known": Input.is_joy_known(id)})
+	return out
+
+func _pad_target() -> int:
+	match int(v("gamepad_input")):
+		1:
+			return ANY_PAD
+		2:
+			return NO_PAD
+	for p in _pads():
+		if p["known"]:
+			return p["id"]
+	return NO_PAD
+
+## Re-chooses which joypad drives the game and pins every joypad binding to it.
+func refresh_pads() -> void:
+	_pin_pads(_pad_target())
+
+## Game actions follow `target`. Menu (ui_*) actions follow it too, except that with no
+## usable controller (none recognised, or the setting is Off) their buttons stay open to
+## every device, so the menus and the setting can always be reached, while their axes are
+## closed, so a drifting stick can never move menu focus.
+func _pin_pads(target: int) -> void:
+	_pad_active = target
+	var ui_buttons := ANY_PAD if target == NO_PAD else target
+	for action in InputMap.get_actions():
+		var is_ui := String(action).begins_with("ui_")
+		var pads: Array = []
+		for ev in InputMap.action_get_events(action):
+			if ev is InputEventJoypadButton or ev is InputEventJoypadMotion:
+				pads.append(ev)
+		var wanted: Array = []
+		for ev in pads:
+			wanted.append(ui_buttons if (is_ui and ev is InputEventJoypadButton) else target)
+		# Replace in order so each action's per-device event order is unchanged. Erasing an
+		# event also clears the action's held state in the engine, so a pad that is unplugged
+		# or retargeted mid-stride cannot leave Arthur walking (tests guard this).
+		for k in pads.size():
+			if pads[k].device != wanted[k]:
+				InputMap.action_erase_event(action, pads[k])
+		for k in pads.size():
+			if pads[k].device != wanted[k]:
+				pads[k].device = wanted[k]
+				InputMap.action_add_event(action, pads[k])
+
+func _on_joy_changed(device: int, connected: bool) -> void:
+	print("Joypad %d %s: '%s' (recognised: %s)" % [device, "connected" if connected else "removed", Input.get_joy_name(device), Input.is_joy_known(device)])
+	refresh_pads()
+	controllers_changed.emit()
+	_schedule_hint()
+
+func _schedule_hint() -> void:
+	if is_inside_tree():
+		get_tree().create_timer(3.0).timeout.connect(_unrecognised_hint)
+
+## In the default mode, a connected controller that Godot does not recognise is ignored.
+## Say so once per device (as one of Arthur's toasts), and where to change it.
+func _unrecognised_hint() -> void:
+	if int(v("gamepad_input")) != 0:
+		return
+	var pads := _pads()
+	for p in pads:
+		if p["known"]:
+			return
+	for p in pads:
+		if not _hinted.has(p["id"]):
+			_hinted[p["id"]] = true
+			# GameState loads after Settings, so look it up at run time rather than by name.
+			get_node("/root/GameState").note("A controller (%s) was detected but isn't recognised, so it's ignored. Turn on Any device in Settings > Controls if it's yours." % p["name"])
+
+## For the Controls tab: one entry per connected joypad.
+func pad_status() -> Array:
+	var out: Array = []
+	for p in _pads():
+		out.append({"id": p["id"], "name": p["name"], "known": p["known"],
+			"active": _pad_active == p["id"] or _pad_active == ANY_PAD})
+	return out
+
 func _apply_deadzone() -> void:
 	for a in ["move_forward", "move_back", "move_left", "move_right", "look_up", "look_down", "look_left", "look_right"]:
 		if InputMap.has_action(a):
@@ -239,6 +340,9 @@ func _ready() -> void:
 	_snapshot_defaults()
 	load_settings()
 	apply_all()
+	refresh_pads()
+	Input.joy_connection_changed.connect(_on_joy_changed)
+	_schedule_hint()
 
 func _exit_tree() -> void:
 	if _save_timer and not _save_timer.is_stopped():
@@ -418,6 +522,7 @@ func rebind(action: String, ev: InputEvent) -> Array:
 				cleared.append(a[1])
 	_clear_device(action, dev)
 	InputMap.action_add_event(action, ev)
+	_pin_pads(_pad_active)
 	bindings_changed.emit()
 	_queue_save()
 	return cleared
@@ -427,5 +532,6 @@ func reset_bindings() -> void:
 		for dev in [KB, PAD]:
 			_clear_device(a[0], dev)
 		_load_action(a[0], _defaults[a[0]])
+	_pin_pads(_pad_active)
 	bindings_changed.emit()
 	_queue_save()
