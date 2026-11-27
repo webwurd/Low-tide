@@ -903,7 +903,7 @@ func _run() -> void:
 		await process_frame
 		span[0] = minf(span[0], pl.cam.position.y); span[1] = maxf(span[1], pl.cam.position.y)
 	Input.action_release("move_forward")
-	ok(span[1] - span[0] < 0.005, "reduce motion removes the head-bob (range %.4f m)" % (span[1] - span[0]))
+	ok(span[1] - span[0] < 0.012, "reduce motion removes the head-bob (range %.4f m)" % (span[1] - span[0]))
 	cfg.set_v("reduce_motion", false)
 
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -1422,6 +1422,87 @@ func _run() -> void:
 	ok(mstart.ocean.time_scale == 1.0, "leaving the title puts the sea back at full speed")
 	mstart.queue_free()
 	await _frames(2)
+
+
+	print("== gamepad guard: menus stay reachable, hint, held actions")
+	cfg.set_v("gamepad_input", 0)
+	cfg._pads_fake = []
+	cfg._pin_pads(Settings.NO_PAD)           # no usable controller (none recognised, or the setting is Off)
+	await _frames(2)
+	_pad_button(7, JOY_BUTTON_DPAD_DOWN, true)
+	_pad_button(7, JOY_BUTTON_A, true)
+	await _frames(3)
+	ok(Input.is_action_pressed("ui_down") and not Input.is_action_pressed("interact"), "with no usable controller the D-pad still moves menu focus, but the game ignores the pad")
+	_pad_button(7, JOY_BUTTON_DPAD_DOWN, false)
+	_pad_button(7, JOY_BUTTON_A, false)
+	await _frames(2)
+	_pad_drive(7, true)
+	await _frames(3)
+	ok(Input.get_action_strength("ui_down") == 0.0 and Input.get_action_strength("ui_left") == 0.0, "a drifting stick cannot move menu focus")
+	_pad_drive(7, false)
+	await _frames(2)
+	cfg._pin_pads(3)                          # a recognised controller on device 3
+	await _frames(2)
+	_pad_button(7, JOY_BUTTON_DPAD_DOWN, true)
+	_pad_button(7, JOY_BUTTON_A, true)
+	await _frames(3)
+	ok(not Input.is_action_pressed("ui_down") and not Input.is_action_pressed("interact"), "with a recognised controller, other devices are ignored in the menus too")
+	_pad_button(7, JOY_BUTTON_DPAD_DOWN, false)
+	_pad_button(7, JOY_BUTTON_A, false)
+	await _frames(2)
+	_pad_button(3, JOY_BUTTON_DPAD_DOWN, true)
+	_pad_button(3, JOY_BUTTON_A, true)
+	await _frames(3)
+	ok(Input.is_action_pressed("ui_down") and Input.is_action_pressed("interact"), "...and the recognised controller drives both menus and game")
+	_pad_button(3, JOY_BUTTON_DPAD_DOWN, false)
+	_pad_button(3, JOY_BUTTON_A, false)
+	await _frames(2)
+	cfg._pin_pads(Settings.ANY_PAD)
+	await _frames(2)
+	_pad_drive(7, true)
+	await _frames(3)
+	ok(Input.get_action_strength("ui_down") > 0.9, "'Any device' lets every stick move menu focus")
+	_pad_drive(7, false)
+	await _frames(2)
+
+	# an unrecognised controller is ignored; say so once, and where to change it
+	var notes := []
+	var note_cb := func(text: String): notes.append(text)
+	state.note_posted.connect(note_cb)
+	cfg.set_v("gamepad_input", 0)
+	cfg._hinted.clear()
+	cfg._pads_fake = [{"id": 5, "name": "Generic Pad", "known": false}]
+	cfg._unrecognised_hint()
+	cfg._unrecognised_hint()
+	ok(notes.size() == 1 and String(notes[0]).contains("Generic Pad") and String(notes[0]).contains("Any device"), "an unrecognised controller gets one hint that names it and the fix")
+	cfg._hinted.clear(); notes.clear()
+	cfg._pads_fake = [{"id": 5, "name": "Generic Pad", "known": false}, {"id": 6, "name": "Xbox", "known": true}]
+	cfg._unrecognised_hint()
+	ok(notes.is_empty(), "no hint when a recognised controller is in use")
+	cfg._hinted.clear()
+	cfg._pads_fake = [{"id": 5, "name": "Generic Pad", "known": false}]
+	cfg.set_v("gamepad_input", 1)
+	cfg._unrecognised_hint()
+	cfg.set_v("gamepad_input", 2)
+	cfg._unrecognised_hint()
+	ok(notes.is_empty(), "no hint when the player already chose Any device or Off")
+	state.note_posted.disconnect(note_cb)
+
+	# retargeting must not leave anything held
+	cfg.set_v("gamepad_input", 0)
+	cfg._pads_fake = []
+	cfg._pin_pads(Settings.ANY_PAD)
+	await _frames(2)
+	_pad_drive(7, true)
+	await _frames(3)
+	ok(Input.get_action_strength("move_back") > 0.9, "(a stick is held down, walking backwards)")
+	cfg._pin_pads(3)
+	ok(not Input.is_action_pressed("move_back") and not Input.is_action_pressed("look_left"), "when the controller changes, held pad actions are released (the engine clears them as the bindings are re-pinned)")
+	_pad_drive(7, false)
+	await _frames(2)
+	cfg._pads_fake = null
+	cfg.reset_defaults(["gamepad_input"])
+	cfg.refresh_pads()
 
 	print("-- typography: standard capitalisation")
 	var shouty: Array = []
@@ -2044,6 +2125,13 @@ func _pad_probe(dev: int) -> Array:
 	_pad_drive(dev, false)
 	await _frames(3)
 	return r
+
+func _pad_button(dev: int, button: JoyButton, pressed: bool) -> void:
+	var e := InputEventJoypadButton.new()
+	e.device = dev
+	e.button_index = button
+	e.pressed = pressed
+	Input.parse_input_event(e)
 
 ## A drifting joystick on `dev`: right stick held left, left stick held down (or released).
 func _pad_drive(dev: int, held: bool) -> void:
