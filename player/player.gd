@@ -186,24 +186,77 @@ func _update_hold(delta: float) -> void:
 		hold_progress = 0.0
 		nearby.interact()
 
+# Targeting: the prompt and the glow belong to what Arthur is looking at, not just
+# whatever is nearest. An item must be in reach and inside a view cone (wide point
+# blank, narrower at the edge of reach); the best is the one nearest the crosshair.
+const AIM_CONE_NEAR := 0.96     # rad (about 55 degrees) at point-blank range
+const AIM_CONE_FAR := 0.35      # rad (about 20 degrees) at the edge of reach
+const AIM_STICKY := 0.65        # a rival must score under this fraction of the current target's
+const DIM_GLOW := 0.3
+var _lit: Dictionary = {}       # Interactable -> highlight level last applied
+
+## Smaller is better; INF when out of reach or outside the view cone.
+func _aim_score(it: Interactable, eye: Vector3, fwd: Vector3, sticky := false) -> float:
+	var d := eye.distance_to(it.global_position)
+	if d > it.radius * (1.08 if sticky else 1.0):
+		return INF
+	var to := it.focus_point() - eye
+	var dist := maxf(to.length(), 0.01)
+	var ang := fwd.angle_to(to / dist)
+	var cone := lerpf(AIM_CONE_NEAR, AIM_CONE_FAR, clampf(d / it.radius, 0.0, 1.0)) * (1.4 if sticky else 1.0)
+	if ang > cone:
+		return INF
+	return ang + dist * 0.02
+
 func _update_interaction() -> void:
-	var eye := global_position + Vector3(0, EYE, 0)
+	var eye := cam.global_position
+	var fwd := -cam.global_transform.basis.z
 	var best: Interactable = null
-	var best_d := INF
+	var best_s := INF
+	var in_reach: Array = []
 	for n in get_tree().get_nodes_in_group("interactable"):
 		var it := n as Interactable
 		if not it.is_available():
 			continue
-		var d := eye.distance_to(it.global_position)
-		if d <= it.radius and d < best_d:
+		if eye.distance_to(it.global_position) <= it.radius:
+			in_reach.append(it)
+		var s := _aim_score(it, eye, fwd)
+		if s < best_s:
 			best = it
-			best_d = d
-	if best != nearby:
-		if nearby and is_instance_valid(nearby):
-			nearby.set_highlight(false)
-		if best:
-			best.set_highlight(true)
+			best_s = s
+	# Keep the current target unless a rival is clearly better (no flicker at the edge).
+	if nearby != null and is_instance_valid(nearby) and nearby != best and nearby.is_available():
+		var cur := _aim_score(nearby, eye, fwd, true)
+		if cur < INF and best_s >= cur * AIM_STICKY:
+			best = nearby
 	nearby = best
+	_apply_highlights(best, in_reach)
+
+func _apply_highlights(focus: Interactable, in_reach: Array) -> void:
+	var mode := int(Settings.v("highlight_mode"))    # 0 nearby dimly, 1 focused only, 2 off
+	var want := {}
+	if mode != 2:
+		if focus:
+			want[focus] = 1.0
+		if mode == 0:
+			for it in in_reach:
+				if not want.has(it):
+					want[it] = DIM_GLOW
+	for it in _lit.keys():
+		if not want.has(it) and is_instance_valid(it):
+			it.set_highlight(0.0)
+	for it in want.keys():
+		if _lit.get(it, -1.0) != want[it]:
+			it.set_highlight(want[it])
+	_lit = want
+
+## Turn to look straight at `point` (used by the walk-in and the tests).
+func face_point(point: Vector3) -> void:
+	var to := point - cam.global_position
+	yaw = atan2(-to.x, -to.z)
+	pitch = clampf(asin(clampf(to.y / maxf(to.length(), 0.001), -1.0, 1.0)), -PI / 2.2, PI / 2.2)
+	rotation.y = yaw
+	cam.rotation.x = pitch
 
 func _update_binoculars() -> void:
 	bino_label = ""

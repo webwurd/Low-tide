@@ -234,6 +234,7 @@ func _build_access() -> void:
 	var p := _page("Accessibility")
 	_check(p, "assist_mode", "Assist readout always on")
 	_check(p, "reduce_motion", "Reduce motion (fades, slides, head-bob)")
+	_option(p, "highlight_mode", "Highlight interactables", ["Nearby dimly, focused brightly", "Focused item only", "Off"])
 	_slider(p, "ui_scale", "Interface size")
 	_slider(p, "subtitle_scale", "Subtitle / radio text size")
 
