@@ -1878,6 +1878,9 @@ func _run() -> void:
 	hud._tut.visible = false
 	hud._title.visible = false
 
+	print("== first-person hand (skeleton, poses, mirroring)")
+	HandTests.run(self)
+
 	print("\n%d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)
 

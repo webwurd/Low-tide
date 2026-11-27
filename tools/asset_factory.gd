@@ -12,6 +12,8 @@ static func build_all(tree: SceneTree) -> void:
 	IslandAssets.build_all()
 	print("vegetation")
 	VegetationAssets.build_all()
+	print("hands")
+	HandAssets.build_all()
 	print("interiors")
 	await InteriorAssets.build_all(tree)
 

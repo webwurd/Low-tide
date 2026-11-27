@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="HandPose" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://anim/hand_pose.gd" id="1_pose"]
+
+[resource]
+script = ExtResource("1_pose")
+joints = {
+"index_1": Vector3(2, 2, 0),
+"index_2": Vector3(4, 0, 0),
+"index_3": Vector3(2, 0, 0),
+"little_1": Vector3(92, 4, 0),
+"little_2": Vector3(102, 0, 0),
+"little_3": Vector3(58, 0, 0),
+"middle_1": Vector3(88, 0, 0),
+"middle_2": Vector3(102, 0, 0),
+"middle_3": Vector3(58, 0, 0),
+"palm_ulnar": Vector3(6, 0, 10),
+"ring_1": Vector3(90, 2, 0),
+"ring_2": Vector3(104, 0, 0),
+"ring_3": Vector3(60, 0, 0),
+"thumb_1": Vector3(36, -8, 30),
+"thumb_2": Vector3(30, 0, 0),
+"thumb_3": Vector3(24, 0, 0)
+}
+notes = "Index straight, others in a fist, thumb over the middle finger."
