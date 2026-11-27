@@ -222,6 +222,17 @@ func shadow_distance() -> float:
 const NO_PAD := 99999          # a device id that never exists: pinned events match nothing
 const ANY_PAD := -1
 var _pad_active := 0
+var _hinted: Dictionary = {}         # device id -> true once the "not recognised" hint was shown
+var _pads_fake: Variant = null       # tests: an Array of {id, name, known} instead of real devices
+
+## Connected joypads: [{id, name, known}]. Tests can substitute a fake list.
+func _pads() -> Array:
+	if _pads_fake != null:
+		return _pads_fake
+	var out: Array = []
+	for id in Input.get_connected_joypads():
+		out.append({"id": id, "name": Input.get_joy_name(id), "known": Input.is_joy_known(id)})
+	return out
 
 func _pad_target() -> int:
 	match int(v("gamepad_input")):
@@ -229,42 +240,73 @@ func _pad_target() -> int:
 			return ANY_PAD
 		2:
 			return NO_PAD
-	for id in Input.get_connected_joypads():
-		if Input.is_joy_known(id):
-			return id
+	for p in _pads():
+		if p["known"]:
+			return p["id"]
 	return NO_PAD
 
 ## Re-chooses which joypad drives the game and pins every joypad binding to it.
 func refresh_pads() -> void:
 	_pin_pads(_pad_target())
 
+## Game actions follow `target`. Menu (ui_*) actions follow it too, except that with no
+## usable controller (none recognised, or the setting is Off) their buttons stay open to
+## every device, so the menus and the setting can always be reached, while their axes are
+## closed, so a drifting stick can never move menu focus.
 func _pin_pads(target: int) -> void:
 	_pad_active = target
+	var ui_buttons := ANY_PAD if target == NO_PAD else target
 	for action in InputMap.get_actions():
+		var is_ui := String(action).begins_with("ui_")
 		var pads: Array = []
 		for ev in InputMap.action_get_events(action):
 			if ev is InputEventJoypadButton or ev is InputEventJoypadMotion:
 				pads.append(ev)
-		# Replace in order so each action's per-device event order is unchanged.
+		var wanted: Array = []
 		for ev in pads:
-			if ev.device != target:
-				InputMap.action_erase_event(action, ev)
-		for ev in pads:
-			if ev.device != target:
-				ev.device = target
-				InputMap.action_add_event(action, ev)
+			wanted.append(ui_buttons if (is_ui and ev is InputEventJoypadButton) else target)
+		# Replace in order so each action's per-device event order is unchanged. Erasing an
+		# event also clears the action's held state in the engine, so a pad that is unplugged
+		# or retargeted mid-stride cannot leave Arthur walking (tests guard this).
+		for k in pads.size():
+			if pads[k].device != wanted[k]:
+				InputMap.action_erase_event(action, pads[k])
+		for k in pads.size():
+			if pads[k].device != wanted[k]:
+				pads[k].device = wanted[k]
+				InputMap.action_add_event(action, pads[k])
 
 func _on_joy_changed(device: int, connected: bool) -> void:
 	print("Joypad %d %s: '%s' (recognised: %s)" % [device, "connected" if connected else "removed", Input.get_joy_name(device), Input.is_joy_known(device)])
 	refresh_pads()
 	controllers_changed.emit()
+	_schedule_hint()
+
+func _schedule_hint() -> void:
+	if is_inside_tree():
+		get_tree().create_timer(3.0).timeout.connect(_unrecognised_hint)
+
+## In the default mode, a connected controller that Godot does not recognise is ignored.
+## Say so once per device (as one of Arthur's toasts), and where to change it.
+func _unrecognised_hint() -> void:
+	if int(v("gamepad_input")) != 0:
+		return
+	var pads := _pads()
+	for p in pads:
+		if p["known"]:
+			return
+	for p in pads:
+		if not _hinted.has(p["id"]):
+			_hinted[p["id"]] = true
+			# GameState loads after Settings, so look it up at run time rather than by name.
+			get_node("/root/GameState").note("A controller (%s) was detected but isn't recognised, so it's ignored. Turn on Any device in Settings > Controls if it's yours." % p["name"])
 
 ## For the Controls tab: one entry per connected joypad.
 func pad_status() -> Array:
 	var out: Array = []
-	for id in Input.get_connected_joypads():
-		out.append({"id": id, "name": Input.get_joy_name(id), "known": Input.is_joy_known(id),
-			"active": _pad_active == id or _pad_active == ANY_PAD})
+	for p in _pads():
+		out.append({"id": p["id"], "name": p["name"], "known": p["known"],
+			"active": _pad_active == p["id"] or _pad_active == ANY_PAD})
 	return out
 
 func _apply_deadzone() -> void:
@@ -300,6 +342,7 @@ func _ready() -> void:
 	apply_all()
 	refresh_pads()
 	Input.joy_connection_changed.connect(_on_joy_changed)
+	_schedule_hint()
 
 func _exit_tree() -> void:
 	if _save_timer and not _save_timer.is_stopped():
