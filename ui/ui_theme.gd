@@ -365,7 +365,13 @@ static func fade_to(node: CanvasItem, a: float, dur := MOTION_MED) -> Tween:
 	if dur <= 0.0 or reduced_motion() or not node.is_inside_tree():
 		node.modulate.a = a
 		return null
+	# One fade per node: a new one replaces the old, so two tweens never fight over alpha.
+	if node.has_meta("_ui_fade"):
+		var old: Tween = node.get_meta("_ui_fade")
+		if old != null and old.is_valid():
+			old.kill()
 	var tw := node.create_tween()
+	node.set_meta("_ui_fade", tw)
 	tw.tween_property(node, "modulate:a", a, dur).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	return tw
 

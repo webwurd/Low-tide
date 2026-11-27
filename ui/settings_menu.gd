@@ -258,6 +258,7 @@ func _on_setting_changed(key: String) -> void:
 			ob.select(int(val))
 	elif c is CheckBox:
 		(c as CheckBox).set_pressed_no_signal(bool(val))
+		(c as CheckBox).text = "On" if bool(val) else "Off"
 
 func _reset_tab() -> void:
 	var i := tabs.current_tab
@@ -285,7 +286,7 @@ func _refresh_pad_label() -> void:
 		return
 	var pads: Array = Settings.pad_status()
 	if pads.is_empty():
-		_pad_label.text = "No controllers detected."
+		_set_pad_text("No controllers detected.")
 		return
 	var lines: Array = []
 	for pd in pads:
@@ -294,7 +295,11 @@ func _refresh_pad_label() -> void:
 		lines.append("%s (%s)   left %.2f, %.2f   right %.2f, %.2f" % [pd["name"], state,
 			Input.get_joy_axis(id, JOY_AXIS_LEFT_X), Input.get_joy_axis(id, JOY_AXIS_LEFT_Y),
 			Input.get_joy_axis(id, JOY_AXIS_RIGHT_X), Input.get_joy_axis(id, JOY_AXIS_RIGHT_Y)])
-	_pad_label.text = "\n".join(lines)
+	_set_pad_text("\n".join(lines))
+
+func _set_pad_text(t: String) -> void:
+	if _pad_label.text != t:
+		_pad_label.text = t
 
 func _process(delta: float) -> void:
 	if not is_visible_in_tree() or _pad_label == null:

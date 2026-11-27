@@ -26,6 +26,15 @@ var _pro_len := 8.0
 ## visual: the clock, director and save state are never touched.
 const TITLE_MINUTE := 978.0
 const TITLE_DAY := 5
+## The title is alive only for a player who already has a save: the sea flows
+## and the beam sweeps, in the weather of the saved day. A new player gets a
+## still dusk: lamp lit, sea glassy, camera drift only.
+const TITLE_LIVE_WAVE := 0.18        # least swell shown on a live title (m)
+const TITLE_STILL_WAVE := 0.06       # glassy
+const TITLE_CAM_CLEARANCE := 1.2     # camera stays this far above ground and sea
+var title_day := 0                   # day in the save (0 = no usable save)
+var _title_live := false
+var _title_peek_t := 99.0
 var location := "cottage"          # outdoors | cottage | tower_base | tower_top
 var started := false
 var _busy := false
@@ -429,6 +438,13 @@ func _apply_lighting() -> void:
 
 func _set_title_mode(on: bool) -> void:
 	title_cam.current = on
+	if on:
+		# Place the camera at once: callers that show the title on a started game
+		# (tests, screenshots) never reach the drift in _process.
+		_refresh_title_save()
+		_update_title_backdrop(0.0)
+	else:
+		ocean.time_scale = 1.0
 	player.cam.current = not on
 	# Nothing the player does before the game starts (keys, mouse, a stray controller)
 	# may turn or move Arthur behind the title, tutorial and prologue.
@@ -437,17 +453,42 @@ func _set_title_mode(on: bool) -> void:
 	if not on:
 		_apply_island_lamp()
 
+## A save with a readable day makes the title live (damaged saves don't:
+## Continue would fall back to a new game for those).
+func _refresh_title_save() -> void:
+	title_day = SaveSystem.peek_day()
+	_title_live = title_day > 0
+
+func title_is_live() -> bool:
+	return _title_live
+
+## Camera on the drift path: `a` runs 0..1 from the south-west shore towards the light.
+static func title_cam_position(a: float) -> Vector3:
+	return Vector3(-30.0, 3.4, 34.0).lerp(Vector3(-18.0, 4.2, 40.0), a)
+
+## Lowest the title camera may sit at (x, z): clear of the ground and the sea.
+func _title_cam_floor(p: Vector3) -> float:
+	return maxf(Terrain.height(p.x, p.z), TideSystem.current_height) + TITLE_CAM_CLEARANCE
+
 ## Slow drift from the south-west shore towards the light, then back.
 func _update_title_backdrop(delta: float) -> void:
 	_title_t += delta
+	_title_peek_t += delta
+	if _title_peek_t >= 1.0:
+		_title_peek_t = 0.0
+		_refresh_title_save()
 	var a := sin(_title_t * 0.035) * 0.5 + 0.5
-	var pos := Vector3(-30.0, 3.4, 34.0).lerp(Vector3(-18.0, 4.2, 40.0), a)
-	title_cam.global_position = pos + Vector3(0, sin(_title_t * 0.21) * 0.15, 0)
-	title_cam.look_at(Vector3(-4.0, 13.5, -4.0).lerp(Vector3(0.0, 14.5, -6.0), a), Vector3.UP)
-	var dd := Days.get_day(TITLE_DAY)
+	var pos := title_cam_position(a) + Vector3(0, sin(_title_t * 0.21) * 0.15, 0)
+	pos.y = maxf(pos.y, _title_cam_floor(pos))
+	title_cam.global_position = pos
+	# Aimed a little below the lamp so the sea fills more of the frame (it is what moves).
+	title_cam.look_at(Vector3(-4.0, 9.5, -4.0).lerp(Vector3(0.0, 10.5, -6.0), a), Vector3.UP)
+	var dd := Days.get_day(clampi(title_day, 1, 7) if _title_live else TITLE_DAY)
 	sky_rig.apply(true, TITLE_MINUTE, dd)
-	ocean.set_wave_height(dd.wave_height)
+	ocean.set_wave_height(maxf(dd.wave_height, TITLE_LIVE_WAVE) if _title_live else TITLE_STILL_WAVE)
+	ocean.time_scale = 1.0 if _title_live else 0.0
 	island.set_lamp(true, true, sky_rig.daylight(TITLE_MINUTE))
+	island.beam_spinning = _title_live
 	rain.emitting = false
 
 ## Prologue crossing: ride the tender through the dawn fog towards the light.
@@ -470,6 +511,7 @@ func _update_prologue(delta: float) -> void:
 	var dd := Days.get_day(1)
 	sky_rig.apply(true, minute, dd)
 	ocean.set_wave_height(0.22)
+	ocean.time_scale = 1.0
 	island.set_lamp(true, true, sky_rig.daylight(minute))
 	rain.emitting = false
 

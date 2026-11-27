@@ -1366,6 +1366,63 @@ func _run() -> void:
 	m3.queue_free()
 	await _frames(2)
 
+	print("== title screen: still without a save, alive with one")
+	save.delete_save()
+	ok(save.peek_day() == 0, "peek_day: 0 when there is no save")
+	var mt: Node3D = load("res://main.tscn").instantiate()
+	root.add_child(mt)
+	await _frames(8)
+	ok(not mt.title_is_live() and mt.title_day == 0, "no save: the title is not live")
+	ok(not mt.island.beam_spinning and mt.ocean.time_scale == 0.0, "no save: the beam is still and the sea is frozen")
+	var rot0: float = mt.island.beam_pivot.rotation.y
+	await create_timer(0.4).timeout
+	ok(is_equal_approx(mt.island.beam_pivot.rotation.y, rot0), "no save: the beam does not turn")
+	var tp0: Vector3 = mt.title_cam.global_position
+	ok(tp0.y >= Terrain.height(tp0.x, tp0.z) + 1.0 and tp0.y > 2.0, "the title camera is clear of the island (y %.1f over ground %.1f)" % [tp0.y, Terrain.height(tp0.x, tp0.z)])
+	var drift_ok := true
+	for i in 11:
+		var dp: Vector3 = mt.get_script().title_cam_position(i / 10.0)
+		if mt._title_cam_floor(dp) < Terrain.height(dp.x, dp.z) + 1.0 or mt._title_cam_floor(dp) < root.get_node("TideSystem").current_height + 1.0:
+			drift_ok = false
+	ok(drift_ok, "the whole camera drift stays above the ground and the sea")
+	# A save makes it live, in the weather of the saved day. The file is written by hand:
+	# moving the shared game clock would queue a sandbar swell in the music director.
+	var fs := FileAccess.open(save.path, FileAccess.WRITE)
+	fs.store_string(JSON.stringify({"version": 1, "location": "cottage", "clock": {"day": 4, "minute": 600.0}, "state": {}, "director": {}}))
+	fs.close()
+	var clock_day0: int = clock.day
+	ok(save.peek_day() == 4, "peek_day: the saved day")
+	ok(clock.day == clock_day0, "peek_day only reads: the running game's clock is untouched")
+	mt._refresh_title_save()
+	await _frames(4)
+	ok(mt.title_is_live() and mt.title_day == 4, "a save: the title is live and reads its day")
+	ok(mt.island.beam_spinning and mt.ocean.time_scale == 1.0, "a save: the beam sweeps and the sea flows")
+	var rot1: float = mt.island.beam_pivot.rotation.y
+	await create_timer(0.4).timeout
+	ok(not is_equal_approx(mt.island.beam_pivot.rotation.y, rot1), "a save: the beam turns")
+	var wh: float = (mt.ocean.material_override as ShaderMaterial).get_shader_parameter("wave_height")
+	ok(is_equal_approx(wh, load("res://story/days.gd").get_day(4).wave_height), "a save: the swell is the saved day's (%.2f)" % wh)
+	var fh := FileAccess.open(save.path, FileAccess.WRITE)
+	fh.store_string("{ not json")
+	fh.close()
+	ok(save.peek_day() == 0, "peek_day: a damaged save counts as no save")
+	save.delete_save()
+	mt.queue_free()
+	await _frames(2)
+	# Showing the title on an already-started game (tests, screenshots) must not leave the camera at the origin.
+	var mstart: Node3D = load("res://main.tscn").instantiate()
+	mstart.autostart = true
+	root.add_child(mstart)
+	await _frames(8)
+	mstart._set_title_mode(true)
+	await _frames(3)
+	var tp1: Vector3 = mstart.title_cam.global_position
+	ok(mstart.started and tp1.y >= Terrain.height(tp1.x, tp1.z) + 1.0, "title shown on a started game: the camera is placed clear of the island (y %.1f)" % tp1.y)
+	mstart._set_title_mode(false)
+	ok(mstart.ocean.time_scale == 1.0, "leaving the title puts the sea back at full speed")
+	mstart.queue_free()
+	await _frames(2)
+
 	print("-- typography: standard capitalisation")
 	var shouty: Array = []
 	var seen := [0]    # lambdas capture ints by value, so count in an array
@@ -1451,11 +1508,33 @@ func _run() -> void:
 	ok(rm_tween != null, "with motion allowed fade_to returns a tween")
 	rm_tween.kill()
 	rm_node.queue_free()
+	# The pause dim fades in while the tree is paused (the menu layer keeps running).
+	main.menus.open_pause()
+	await create_timer(0.6, true).timeout
+	ok(paused, "(the tree is paused behind the menu)")
+	ok(main.menus._dim.modulate.a > 0.99, "the pause screen's dim fades in while the game is paused (alpha %.2f)" % main.menus._dim.modulate.a)
+	main.menus.resume()
+	# A newer fade replaces the older one on the same node.
+	var fade_node := ColorRect.new()
+	main.hud.add_child(fade_node)
+	var fade1: Tween = UiTheme.fade_to(fade_node, 0.0, 5.0)
+	var fade2: Tween = UiTheme.fade_to(fade_node, 1.0, 0.2)
+	ok(fade1 != null and fade2 != null and not fade1.is_running() and fade2.is_running(), "a new fade on a node kills the previous one")
+	fade2.kill()
+	fade_node.queue_free()
 	var rm_box = main.menus.settings_menu().controls["reduce_motion"]
 	rm_box.button_pressed = true
 	ok(rm_box.text == "On", "settings check boxes read On when set")
 	rm_box.button_pressed = false
 	ok(rm_box.text == "Off", "settings check boxes read Off when cleared")
+	# A reset flips the setting without toggling the box: the text must follow the state.
+	var sm_t = main.menus.settings_menu()
+	sm_t.tabs.current_tab = 4
+	cfg.set_v("reduce_motion", true)
+	ok(rm_box.button_pressed and rm_box.text == "On", "the box follows a setting changed from elsewhere (On)")
+	sm_t._reset_tab()
+	ok(not rm_box.button_pressed and rm_box.text == "Off", "after 'Reset this tab' the check box reads Off again (state and text agree)")
+
 
 	print("-- radio panel layout")
 	var all_ok := true

@@ -33,6 +33,16 @@ func load_game() -> String:
 	TideSystem.refresh()
 	return String(parsed["location"])
 
+## The day recorded in the save, or 0 when there is no usable save. Reads the
+## file only; nothing is applied (load_game() does that).
+func peek_day() -> int:
+	if not has_save():
+		return 0
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not _valid(parsed):
+		return 0
+	return int(parsed["clock"]["day"])
+
 ## A save is only applied if every part is present and the right type, so a
 ## truncated or hand-edited file can't leave the game half-loaded.
 func _valid(d: Variant) -> bool:
