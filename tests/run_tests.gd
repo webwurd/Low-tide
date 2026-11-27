@@ -1366,6 +1366,64 @@ func _run() -> void:
 	m3.queue_free()
 	await _frames(2)
 
+	print("== title screen: still without a save, alive with one")
+	save.delete_save()
+	ok(save.peek_day() == 0, "peek_day: 0 when there is no save")
+	var mt: Node3D = load("res://main.tscn").instantiate()
+	root.add_child(mt)
+	await _frames(8)
+	ok(not mt.title_is_live() and mt.title_day == 0, "no save: the title is not live")
+	ok(not mt.island.beam_spinning and mt.ocean.time_scale == 0.0, "no save: the beam is still and the sea is frozen")
+	var rot0: float = mt.island.beam_pivot.rotation.y
+	await create_timer(0.4).timeout
+	ok(is_equal_approx(mt.island.beam_pivot.rotation.y, rot0), "no save: the beam does not turn")
+	var tp0: Vector3 = mt.title_cam.global_position
+	ok(tp0.y >= Terrain.height(tp0.x, tp0.z) + 1.0 and tp0.y > 2.0, "the title camera is clear of the island (y %.1f over ground %.1f)" % [tp0.y, Terrain.height(tp0.x, tp0.z)])
+	var drift_ok := true
+	for i in 11:
+		var dp: Vector3 = mt.get_script().title_cam_position(i / 10.0)
+		if mt._title_cam_floor(dp) < Terrain.height(dp.x, dp.z) + 1.0 or mt._title_cam_floor(dp) < root.get_node("TideSystem").current_height + 1.0:
+			drift_ok = false
+	ok(drift_ok, "the whole camera drift stays above the ground and the sea")
+	# A save makes it live, in the weather of the saved day. The file is written by hand:
+	# moving the shared game clock would queue a sandbar swell in the music director.
+	var fs := FileAccess.open(save.path, FileAccess.WRITE)
+	fs.store_string(JSON.stringify({"version": 1, "location": "cottage", "clock": {"day": 4, "minute": 600.0}, "state": {}, "director": {}}))
+	fs.close()
+	var clock_day0: int = clock.day
+	ok(save.peek_day() == 4, "peek_day: the saved day")
+	ok(clock.day == clock_day0, "peek_day only reads: the running game's clock is untouched")
+	mt._refresh_title_save()
+	await _frames(4)
+	ok(mt.title_is_live() and mt.title_day == 4, "a save: the title is live and reads its day")
+	ok(mt.island.beam_spinning and mt.ocean.time_scale == 1.0, "a save: the beam sweeps and the sea flows")
+	var rot1: float = mt.island.beam_pivot.rotation.y
+	await create_timer(0.4).timeout
+	ok(not is_equal_approx(mt.island.beam_pivot.rotation.y, rot1), "a save: the beam turns")
+	var wh: float = (mt.ocean.material_override as ShaderMaterial).get_shader_parameter("wave_height")
+	ok(is_equal_approx(wh, load("res://story/days.gd").get_day(4).wave_height), "a save: the swell is the saved day's (%.2f)" % wh)
+	var fh := FileAccess.open(save.path, FileAccess.WRITE)
+	fh.store_string("{ not json")
+	fh.close()
+	ok(save.peek_day() == 0, "peek_day: a damaged save counts as no save")
+	save.delete_save()
+	mt.queue_free()
+	await _frames(2)
+	# Showing the title on an already-started game (tests, screenshots) must not leave the camera at the origin.
+	var mstart: Node3D = load("res://main.tscn").instantiate()
+	mstart.autostart = true
+	root.add_child(mstart)
+	await _frames(8)
+	mstart._set_title_mode(true)
+	await _frames(3)
+	var tp1: Vector3 = mstart.title_cam.global_position
+	ok(mstart.started and tp1.y >= Terrain.height(tp1.x, tp1.z) + 1.0, "title shown on a started game: the camera is placed clear of the island (y %.1f)" % tp1.y)
+	mstart._set_title_mode(false)
+	ok(mstart.ocean.time_scale == 1.0, "leaving the title puts the sea back at full speed")
+	mstart.queue_free()
+	await _frames(2)
+
+
 	print("== gamepad guard: menus stay reachable, hint, held actions")
 	cfg.set_v("gamepad_input", 0)
 	cfg._pads_fake = []
@@ -1485,6 +1543,79 @@ func _run() -> void:
 	ok(seen[0] > 150, "capitalisation scan covers the whole UI (%d strings)" % seen[0])
 	ok(shouty.is_empty(), "no all-caps UI text outside key names and acronyms: %s" % [shouty])
 	ok(_shouty("LOW TIDE") and _shouty("NEW WATCH") and _shouty("Tape 1 - WALT JANUARY") and not _shouty("Low tide") and not _shouty("MSAA") and not _shouty("W A S D") and not _shouty("Hold LB / LT"), "the capitalisation guard flags shouting but allows key names")
+
+	print("-- UI overhaul: one design system")
+	ok(UiTheme.AMBER == UiTheme.ACCENT and UiTheme.TEXT == UiTheme.CREAM, "legacy amber/text names alias the one colour family")
+	ok(UiTheme.text_size(9) == UiTheme.MIN_TEXT and UiTheme.text_size(30) == 30, "text_size() never goes below the 14 px floor")
+	var small: Array = []
+	var small_n := [0]
+	var small_scan := func() -> void:
+		var st: Array = [main.hud, main.menus]
+		while not st.is_empty():
+			var sn: Node = st.pop_back()
+			st.append_array(sn.get_children())
+			if sn is Label or sn is Button or sn is CheckBox or sn is OptionButton:
+				small_n[0] += 1
+				var fsz: int = sn.get_theme_font_size("font_size")
+				if fsz < UiTheme.MIN_TEXT:
+					small.append("%s.%s %dpx" % [sn.get_class(), sn.name, fsz])
+	for sc_min in [1.0, 0.8]:
+		cfg.set_v("subtitle_scale", sc_min)
+		main.hud.apply_text_scale()
+		small_scan.call()
+	cfg.set_v("subtitle_scale", 1.0)
+	main.hud.apply_text_scale()
+	ok(small_n[0] > 150, "min-size scan covers the whole UI (%d controls)" % small_n[0])
+	ok(small.is_empty(), "no UI text under %d px, even at the smallest subtitle size: %s" % [UiTheme.MIN_TEXT, small])
+	var unfocusable: Array = []
+	var menu_btns: Array = [main.hud.title_screen]
+	while not menu_btns.is_empty():
+		var mb: Node = menu_btns.pop_back()
+		menu_btns.append_array(mb.get_children())
+		if mb is Button and mb.focus_mode == Control.FOCUS_NONE and mb.get_parent() != main.hud._radio_opts:
+			unfocusable.append(mb.name)
+	ok(unfocusable.is_empty(), "every title-screen button can take keyboard / gamepad focus: %s" % [unfocusable])
+	var title_btn: Button = main.hud.title_screen._new_btn
+	var focus_sb: StyleBoxFlat = title_btn.get_theme_stylebox("focus")
+	ok(focus_sb.border_color == UiTheme.ACCENT and focus_sb.border_width_left == 3, "focused title entry gets the amber left rule (amber is spent on focus)")
+	var rm_node := ColorRect.new()
+	main.hud.add_child(rm_node)
+	cfg.set_v("reduce_motion", true)
+	var rm_tween = UiTheme.fade_to(rm_node, 0.4, 1.0)
+	ok(rm_tween == null and is_equal_approx(rm_node.modulate.a, 0.4), "Reduce motion: fade_to jumps to the end value with no tween")
+	cfg.set_v("reduce_motion", false)
+	rm_node.modulate.a = 1.0
+	rm_tween = UiTheme.fade_to(rm_node, 0.4, 1.0)
+	ok(rm_tween != null, "with motion allowed fade_to returns a tween")
+	rm_tween.kill()
+	rm_node.queue_free()
+	# The pause dim fades in while the tree is paused (the menu layer keeps running).
+	main.menus.open_pause()
+	await create_timer(0.6, true).timeout
+	ok(paused, "(the tree is paused behind the menu)")
+	ok(main.menus._dim.modulate.a > 0.99, "the pause screen's dim fades in while the game is paused (alpha %.2f)" % main.menus._dim.modulate.a)
+	main.menus.resume()
+	# A newer fade replaces the older one on the same node.
+	var fade_node := ColorRect.new()
+	main.hud.add_child(fade_node)
+	var fade1: Tween = UiTheme.fade_to(fade_node, 0.0, 5.0)
+	var fade2: Tween = UiTheme.fade_to(fade_node, 1.0, 0.2)
+	ok(fade1 != null and fade2 != null and not fade1.is_running() and fade2.is_running(), "a new fade on a node kills the previous one")
+	fade2.kill()
+	fade_node.queue_free()
+	var rm_box = main.menus.settings_menu().controls["reduce_motion"]
+	rm_box.button_pressed = true
+	ok(rm_box.text == "On", "settings check boxes read On when set")
+	rm_box.button_pressed = false
+	ok(rm_box.text == "Off", "settings check boxes read Off when cleared")
+	# A reset flips the setting without toggling the box: the text must follow the state.
+	var sm_t = main.menus.settings_menu()
+	sm_t.tabs.current_tab = 4
+	cfg.set_v("reduce_motion", true)
+	ok(rm_box.button_pressed and rm_box.text == "On", "the box follows a setting changed from elsewhere (On)")
+	sm_t._reset_tab()
+	ok(not rm_box.button_pressed and rm_box.text == "Off", "after 'Reset this tab' the check box reads Off again (state and text agree)")
+
 
 	print("-- radio panel layout")
 	var all_ok := true

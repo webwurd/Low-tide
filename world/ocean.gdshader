@@ -19,6 +19,7 @@ uniform sampler2D foam_tex : source_color, filter_linear_mipmap, repeat_enable, 
 uniform vec4 shallow_col : source_color = vec4(0.18, 0.42, 0.42, 1.0);
 uniform vec4 deep_col : source_color = vec4(0.05, 0.13, 0.18, 1.0);
 uniform vec4 foam_col : source_color = vec4(0.88, 0.91, 0.9, 1.0);
+uniform float flow_time = 0.0;         // advanced by Ocean (time_scale 0 freezes the sea)
 uniform float wave_height = 0.14;      // from DayData; 0.06 still .. 0.45 storm
 uniform float clarity = 3.2;           // metres of water before it reads as deep
 uniform float detail_strength = 0.35;
@@ -33,7 +34,7 @@ vec3 gerstner(vec4 w, vec3 p, float amp, inout vec3 tangent, inout vec3 binormal
 	float k = TAU / w.w;
 	float c = sqrt(9.8 / k);
 	vec2 d = normalize(w.xy);
-	float f = k * (dot(d, p.xz) - c * TIME * 0.6);
+	float f = k * (dot(d, p.xz) - c * flow_time * 0.6);
 	float steep = w.z * amp;
 	float a = steep / k;
 	tangent += vec3(-d.x * d.x * steep * sin(f), d.x * steep * cos(f), -d.x * d.y * steep * sin(f));
@@ -67,14 +68,14 @@ float scene_distance(vec2 uv, mat4 inv_proj) {
 void fragment() {
 	// Detail normals (two scrolling layers) on top of the swell normal.
 	float drift = 0.6 + wind;
-	vec2 uv1 = v_world.xz * 0.045 + TIME * vec2(0.011, 0.007) * drift;
-	vec2 uv2 = v_world.xz * 0.12 - TIME * vec2(0.009, 0.016) * drift;
+	vec2 uv1 = v_world.xz * 0.045 + flow_time * vec2(0.011, 0.007) * drift;
+	vec2 uv2 = v_world.xz * 0.12 - flow_time * vec2(0.009, 0.016) * drift;
 	vec2 dn = (texture(normal_tex, uv1).xy * 2.0 - 1.0) + (texture(normal_tex, uv2).xy * 2.0 - 1.0) * 0.6;
 	float dist = length(VERTEX);
 	dn *= detail_strength * mix(1.0, 0.35, smoothstep(30.0, 220.0, dist));
 	// Rain: a fast, fine third layer pocks the surface near the camera.
 	if (wetness > 0.01) {
-		vec2 r1 = texture(normal_tex, v_world.xz * 0.9 + vec2(TIME * 0.37, -TIME * 0.29)).xy * 2.0 - 1.0;
+		vec2 r1 = texture(normal_tex, v_world.xz * 0.9 + vec2(flow_time * 0.37, -flow_time * 0.29)).xy * 2.0 - 1.0;
 		dn += r1 * 0.22 * wetness * (1.0 - smoothstep(10.0, 60.0, dist));
 	}
 	vec3 wn = normalize(v_nrm + vec3(dn.x, 0.0, -dn.y));
@@ -99,12 +100,12 @@ void fragment() {
 	vec3 transmit = refr * mix(vec3(0.75, 0.9, 0.88), vec3(0.3, 0.5, 0.55), absorb) * (1.0 - absorb);
 
 	// Foam: a lacy band at the shoreline, plus wind-whipped crests.
-	vec2 fuv = v_world.xz * 0.42 + vec2(TIME * 0.03, -TIME * 0.02);
+	vec2 fuv = v_world.xz * 0.42 + vec2(flow_time * 0.03, -flow_time * 0.02);
 	float lace = mix(texture(foam_tex, fuv).r, texture(foam_tex, fuv * 1.9 + 0.37).r, 0.5);
-	float lace2 = texture(foam_tex, v_world.xz * 0.09 - TIME * 0.012).r;
+	float lace2 = texture(foam_tex, v_world.xz * 0.09 - flow_time * 0.012).r;
 	float shore = 1.0 - smoothstep(0.0, foam_width, depth_m + (lace2 - 0.5) * 0.25);
 	shore *= shore;
-	float pulse = 0.65 + 0.35 * sin(TIME * 0.9 + v_world.x * 0.05 + v_world.z * 0.04);
+	float pulse = 0.65 + 0.35 * sin(flow_time * 0.9 + v_world.x * 0.05 + v_world.z * 0.04);
 	float crest = smoothstep(0.55, 0.95, v_crest + lace2 * 0.2) * clamp(wave_height * 2.5, 0.0, 1.0);
 	float foam = clamp(shore * pulse * smoothstep(0.2, 0.75, lace + shore * 0.35) * 0.85 + crest * smoothstep(0.4, 0.7, lace), 0.0, 1.0);
 

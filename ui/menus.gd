@@ -48,27 +48,35 @@ func _build_pause() -> void:
 	v.custom_minimum_size = Vector2(380, 0)
 	v.add_theme_constant_override("separation", 10)
 	_pause.add_child(v)
-	var t := Label.new()
-	t.text = "Paused"
-	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	UiFonts.style(t, "display", 36)
-	v.add_child(t)
+	v.add_child(UiTheme.label("Paused", 38, UiTheme.CREAM, "display"))
+	v.add_child(UiTheme.rule())
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 4)
 	v.add_child(gap)
-	_resume_btn = _btn(v, "Resume", resume)
-	_btn(v, "Settings", func(): _show_only("settings"))
-	_btn(v, "Controls", func(): _open_controls())
-	_btn(v, "Save and return to title", func():
+	_resume_btn = _item(v, "Resume", resume)
+	_item(v, "Settings", func(): _show_only("settings"))
+	_item(v, "Controls", func(): _open_controls())
+	_item(v, "Save and return to title", func():
 		close_all()
 		title_requested.emit())
-	_btn(v, "Quit game", func(): quit_requested.emit())
+	_item(v, "Quit game", func(): quit_requested.emit())
 	_center.add_child(_pause)
 
-func _btn(parent: Control, text: String, cb: Callable) -> Button:
+## A pause-menu entry: the same quiet item as the title screen.
+func _item(parent: Control, text: String, cb: Callable) -> Button:
+	var b := Button.new()
+	b.text = text
+	UiTheme.style_menu_item(b, 24, "display")
+	b.custom_minimum_size = Vector2(0, 46)
+	b.pressed.connect(cb)
+	parent.add_child(b)
+	return b
+
+func _btn(parent: Control, text: String, cb: Callable, kind := "secondary") -> Button:
 	var b := Button.new()
 	b.text = text
 	b.custom_minimum_size = Vector2(0, 46)
+	UiTheme.style_button(b, kind, UiTheme.T_BODY)
 	b.pressed.connect(cb)
 	parent.add_child(b)
 	return b
@@ -82,15 +90,14 @@ func _build_controls() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	_controls.add_child(v)
-	_ctl_title = Label.new()
-	UiFonts.style(_ctl_title, "display", 24)
+	_ctl_title = UiTheme.label("", 26, UiTheme.CREAM, "display")
 	_ctl_body = VBoxContainer.new()
 	_ctl_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	_btn(row, "Previous", func(): _ctl_go(_ctl_idx - 1))
 	_btn(row, "Next", func(): _ctl_go(_ctl_idx + 1))
-	_btn(row, "Back", back)
+	_btn(row, "Back", back, "primary")
 	for n in [_ctl_title, _ctl_body, row]:
 		v.add_child(n)
 	_center.add_child(_controls)
@@ -109,14 +116,11 @@ func _ctl_go(i: int) -> void:
 		grid.add_theme_constant_override("v_separation", 8)
 		for r in rows.size():
 			for cell in rows[r]:
-				var l := Label.new()
-				l.text = cell
-				l.add_theme_color_override("font_color", UiTheme.AMBER if r == 0 else UiTheme.TEXT)
+				var l := UiTheme.label(cell, UiTheme.T_BODY, UiTheme.ACCENT if r == 0 else UiTheme.CREAM, "ui_bold" if r == 0 else "ui")
 				grid.add_child(l)
 		_ctl_body.add_child(grid)
 	if pg["text"] != "":
-		var t := Label.new()
-		t.text = pg["text"]
+		var t := UiTheme.label(pg["text"], UiTheme.T_BODY, UiTheme.CREAM)
 		t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		t.custom_minimum_size = Vector2(720, 0)
 		_ctl_body.add_child(t)
@@ -134,6 +138,8 @@ func is_paused_menu() -> bool:
 	return _pause.visible or _controls.visible or (_settings.visible and not _from_title)
 
 func _show_only(which: String) -> void:
+	if not _dim.visible:
+		UiTheme.appear(_dim, UiTheme.MOTION_MED)
 	_dim.visible = true
 	_pause.visible = which == "pause"
 	_controls.visible = which == "controls"

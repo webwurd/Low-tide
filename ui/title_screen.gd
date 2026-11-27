@@ -46,10 +46,9 @@ func _ready() -> void:
 	margin.add_child(col)
 	panel = col
 
-	var kicker := _label("Gannet Rock Light Station", UiTheme.ui_font(500), 13, Color(1, 0.86, 0.62, 0.85))
-	kicker.add_theme_constant_override("outline_size", 0)
-	var title := _label("Low Tide", UiTheme.title_font(600, 2), 96, Color("f3ead6"))
-	var sub := _label("Maine coast  ·  winter, 1998", UiTheme.title_font(500, 1), 22, Color(0.85, 0.82, 0.76, 0.85))
+	var kicker := _label("Gannet Rock Light Station", UiTheme.ui_font(500), UiTheme.T_CAPTION, Color(UiTheme.MUTED, 0.95))
+	var title := _label("Low Tide", UiTheme.title_font(600, 2), UiTheme.T_DISPLAY, Color("f3ead6"))
+	var sub := _label("Maine coast  ·  winter, 1998", UiTheme.title_font(500, 1), 22, Color(UiTheme.CREAM, 0.85))
 	col.add_child(kicker)
 	col.add_child(title)
 	col.add_child(sub)
@@ -69,13 +68,13 @@ func _ready() -> void:
 	_button(menu, "Quit", func(): get_tree().quit())
 	_first_focus = continue_btn if continue_btn.visible else _new_btn
 
-	endings_label = _label("", UiTheme.ui_font(420), 13, Color(0.85, 0.82, 0.76, 0.6))
+	endings_label = _label("", UiTheme.ui_font(420), UiTheme.T_CAPTION, Color(UiTheme.MUTED, 0.9))
 	col.add_child(endings_label)
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_child(spacer)
-	var foot := _label("Mouse, keyboard or gamepad  ·  Enter / A to choose", UiTheme.ui_font(400), 12, Color(0.85, 0.82, 0.76, 0.5))
+	var foot := _label("Mouse, keyboard or gamepad  ·  Enter / A to choose", UiTheme.ui_font(400), UiTheme.T_CAPTION, Color(UiTheme.MUTED, 0.8))
 	col.add_child(foot)
 	visibility_changed.connect(_on_visible)
 	_on_visible()
@@ -84,7 +83,7 @@ func _label(text: String, font: Font, size: int, color: Color) -> Label:
 	var l := Label.new()
 	l.text = text
 	l.add_theme_font_override("font", font)
-	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_font_size_override("font_size", UiTheme.text_size(size))
 	l.add_theme_color_override("font_color", color)
 	l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.45))
 	l.add_theme_constant_override("shadow_offset_y", 2)
@@ -93,9 +92,7 @@ func _label(text: String, font: Font, size: int, color: Color) -> Label:
 func _button(parent: Control, text: String, cb: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.add_theme_font_override("font", UiTheme.title_font(600, 1))
-	b.add_theme_font_size_override("font_size", 28)
+	UiTheme.style_menu_item(b, 28, "display")
 	b.pressed.connect(cb)
 	parent.add_child(b)
 	return b
@@ -106,6 +103,6 @@ func _on_visible() -> void:
 		# Re-pick every time: the save can appear or disappear between visits.
 		_first_focus = continue_btn if continue_btn.visible else _new_btn
 		modulate.a = 0.0
-		create_tween().tween_property(self, "modulate:a", 1.0, 1.2)
+		UiTheme.fade_to(self, 1.0, 1.2)
 		if _first_focus:
 			_first_focus.grab_focus.call_deferred()

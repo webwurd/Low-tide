@@ -6,12 +6,6 @@ signal new_game_pressed
 signal continue_pressed
 signal settings_requested
 
-const AMBER := Color("ffb84d")
-const CARD_BG := Color(0.07, 0.1, 0.13, 0.88)
-const INK := Color("101a21")
-const CREAM := Color("efe4c8")
-const POSTER_TEAL := Color("1f4b52")
-const POSTER_BRASS := Color("d9a441")      # thin rules only
 const TYPE_CPS := 55.0                     # radio text types in at about reading speed
 # Radio panel (sizes at subtitle scale 1.0; apply_text_scale() multiplies them).
 const RADIO_SPEAKER_SIZE := 15
@@ -132,33 +126,8 @@ func _full(c: Control) -> void:
 	c.set_anchors_preset(Control.PRESET_FULL_RECT)
 	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-func _style(bg := CARD_BG, border := Color(0.85, 0.7, 0.42, 0.35)) -> StyleBoxFlat:
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = bg
-	sb.border_color = border
-	sb.set_border_width_all(1)
-	sb.set_corner_radius_all(10)
-	sb.set_content_margin_all(16)
-	return sb
-
-func _flat_box(bg: Color, left_accent := Color(0, 0, 0, 0), margin_h := 16, margin_v := 10) -> StyleBoxFlat:
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = bg
-	sb.border_color = left_accent
-	sb.border_width_left = 3 if left_accent.a > 0.0 else 0
-	sb.set_corner_radius_all(2)
-	sb.content_margin_left = margin_h
-	sb.content_margin_right = margin_h
-	sb.content_margin_top = margin_v
-	sb.content_margin_bottom = margin_v
-	return sb
-
-func _label(text: String, size := 14, color := Color("e8dfc8"), role := "ui") -> Label:
-	var l := Label.new()
-	l.text = text
-	UiFonts.style(l, role, size)
-	l.add_theme_color_override("font_color", color)
-	return l
+func _label(text: String, size := UiTheme.T_CAPTION, color := UiTheme.CREAM, role := "ui") -> Label:
+	return UiTheme.label(text, size, color, role)
 
 # --- build -------------------------------------------------------------
 
@@ -189,19 +158,9 @@ func _build_reticle() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	(kit[1] as Control).add_child(row)
-	var cap := PanelContainer.new()
-	var cap_sb := StyleBoxFlat.new()
-	cap_sb.bg_color = Color(1, 0.96, 0.88, 0.92)
-	cap_sb.set_corner_radius_all(5)
-	cap_sb.content_margin_left = 8
-	cap_sb.content_margin_right = 8
-	cap_sb.content_margin_top = 1
-	cap_sb.content_margin_bottom = 1
-	cap.add_theme_stylebox_override("panel", cap_sb)
-	cap.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_prompt_key = _label("E", 15, Color("1c140a"), "ui_bold")
-	cap.add_child(_prompt_key)
-	row.add_child(cap)
+	var kc := UiTheme.keycap("E")
+	_prompt_key = kc[1]
+	row.add_child(kc[0])
 	_prompt = _label("", PROMPT_SIZE, UiTheme.CREAM)
 	row.add_child(_prompt)
 
@@ -213,11 +172,11 @@ func _build_binoculars() -> void:
 	_bino.material = mat
 	_bino.visible = false
 	add_child(_bino)
-	_bino_range = _label("Distance: --- m", 14, AMBER)
+	_bino_range = _label("Distance: --- m", UiTheme.T_CAPTION, UiTheme.ACCENT)
 	_bino_range.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	_bino_range.position = Vector2(-60, 40)
 	_bino.add_child(_bino_range)
-	_bino_label = _label("Scanning the horizon...", 14, AMBER)
+	_bino_label = _label("Scanning the horizon...", UiTheme.T_CAPTION, UiTheme.ACCENT)
 	_bino_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_bino_label.position = Vector2(-160, -80)
 	_bino_label.size = Vector2(320, 24)
@@ -330,7 +289,7 @@ func _layout_radio() -> void:
 ## colour, so it reads as a notice rather than part of the world.
 func _build_banner() -> void:
 	var tag := PanelContainer.new()
-	tag.add_theme_stylebox_override("panel", UiTheme.pill(Color(POSTER_TEAL.r, POSTER_TEAL.g, POSTER_TEAL.b, 0.96), Vector2(20, 12)))
+	tag.add_theme_stylebox_override("panel", UiTheme.pill(Color(UiTheme.POSTER_TEAL.r, UiTheme.POSTER_TEAL.g, UiTheme.POSTER_TEAL.b, 0.96), Vector2(20, 12)))
 	tag.anchor_left = 0.5
 	tag.anchor_right = 0.5
 	tag.grow_horizontal = Control.GROW_DIRECTION_BOTH
@@ -349,7 +308,7 @@ func _build_banner() -> void:
 	dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(dot)
-	row.add_child(_label("New radio message", 22, CREAM, "display"))
+	row.add_child(_label("New radio message", 22, UiTheme.CREAM, "display"))
 
 func show_banner() -> void:
 	var calm: bool = Settings.v("reduce_motion")
@@ -386,27 +345,11 @@ func _build_fade() -> void:
 	_fade.color = Color("0b1117")
 	_fade.modulate.a = 0.0
 	add_child(_fade)
-	_fade_label = _label("The tide caught you\n\nFreezing swells drove you back to the pier.", 20, AMBER)
+	_fade_label = _label("The tide caught you\n\nFreezing swells drove you back to the pier.", 20, UiTheme.ACCENT)
 	_fade_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_fade_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_full(_fade_label)
 	_fade.add_child(_fade_label)
-
-func _title_button(text: String) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.flat = true
-	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.focus_mode = Control.FOCUS_ALL
-	UiFonts.style(b, "display", 32)
-	b.add_theme_color_override("font_color", CREAM)
-	b.add_theme_color_override("font_hover_color", AMBER)
-	b.add_theme_color_override("font_focus_color", AMBER)
-	b.add_theme_color_override("font_pressed_color", POSTER_BRASS)
-	var empty := StyleBoxEmpty.new()
-	for st in ["normal", "hover", "pressed", "focus"]:
-		b.add_theme_stylebox_override(st, empty)
-	return b
 
 ## Title: a live view of Gannet Rock at dusk (Main drives the backdrop) with
 ## the menu column on the left (ui/title_screen.gd). New watch plays the
@@ -767,7 +710,7 @@ func show_ending(letter: String, ending_name: String, body: String) -> void:
 	_ending_name.text = ending_name
 	_ending_body.text = body
 	_ending_panel.visible = true
-	create_tween().tween_property(_ending_panel, "modulate:a", 1.0, 2.0)
+	UiTheme.fade_to(_ending_panel, 1.0, 2.0)
 	_ending_open = true
 	_ending_opened_at = Time.get_ticks_msec() / 1000.0
 
@@ -840,7 +783,7 @@ func _build_card() -> void:
 	_card.z_index = 3
 	add_child(_card)
 	_card_band = ColorRect.new()
-	_card_band.color = Color(POSTER_TEAL.r, POSTER_TEAL.g, POSTER_TEAL.b, 0.94)
+	_card_band.color = Color(UiTheme.POSTER_TEAL.r, UiTheme.POSTER_TEAL.g, UiTheme.POSTER_TEAL.b, 0.94)
 	_card_band.set_anchors_preset(Control.PRESET_CENTER_LEFT)
 	_card_band.anchor_right = 1.0
 	_card_band.offset_top = -270.0
@@ -850,7 +793,7 @@ func _build_card() -> void:
 	# Hairline brass edges, like the rule on a printed poster.
 	for edge in [0.0, 1.0]:
 		var line := ColorRect.new()
-		line.color = Color(POSTER_BRASS.r, POSTER_BRASS.g, POSTER_BRASS.b, 0.7)
+		line.color = Color(UiTheme.POSTER_BRASS.r, UiTheme.POSTER_BRASS.g, UiTheme.POSTER_BRASS.b, 0.7)
 		line.anchor_right = 1.0
 		line.anchor_top = edge
 		line.anchor_bottom = edge
@@ -865,11 +808,11 @@ func _build_card() -> void:
 	v.add_theme_constant_override("separation", 6)
 	c.add_child(v)
 	var rule := ColorRect.new()
-	rule.color = POSTER_BRASS
+	rule.color = UiTheme.POSTER_BRASS
 	rule.custom_minimum_size = Vector2(110, 4)
 	rule.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_card_title = _label("", 84, CREAM, "display")
+	_card_title = _label("", 84, UiTheme.CREAM, "display")
 	_card_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_card_sub = _label("", 24, Color(1, 0.86, 0.6), "display")
 	_card_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -990,19 +933,22 @@ func _place_note() -> void:
 ## Radio, tape and toast text follow the "subtitle size" accessibility setting.
 func apply_text_scale() -> void:
 	var k: float = float(Settings.v("subtitle_scale"))
-	_radio_speaker.add_theme_font_size_override("font_size", int(RADIO_SPEAKER_SIZE * k))
-	_radio_text.add_theme_font_size_override("font_size", int(RADIO_TEXT_SIZE * k))
+	_radio_speaker.add_theme_font_size_override("font_size", UiTheme.text_size(int(RADIO_SPEAKER_SIZE * k)))
+	_radio_text.add_theme_font_size_override("font_size", UiTheme.text_size(int(RADIO_TEXT_SIZE * k)))
 	for b in _opt_buttons:
-		b.add_theme_font_size_override("font_size", int(RADIO_OPT_SIZE * k))
-	_tape_title.add_theme_font_size_override("font_size", int(TAPE_TITLE_SIZE * k))
-	_tape_text.add_theme_font_size_override("font_size", int(TAPE_TEXT_SIZE * k))
-	_note.add_theme_font_size_override("font_size", int(NOTE_SIZE * k))
+		b.add_theme_font_size_override("font_size", UiTheme.text_size(int(RADIO_OPT_SIZE * k)))
+	_tape_title.add_theme_font_size_override("font_size", UiTheme.text_size(int(TAPE_TITLE_SIZE * k)))
+	_tape_text.add_theme_font_size_override("font_size", UiTheme.text_size(int(TAPE_TEXT_SIZE * k)))
+	_note.add_theme_font_size_override("font_size", UiTheme.text_size(int(NOTE_SIZE * k)))
 	_layout_radio()
 
 func _on_line(speaker: String, text: String, options: Array) -> void:
-	if not _radio.visible:
+	var fresh := not _radio.visible
+	if fresh:
 		show_banner()                      # a new call, not a follow-up line
 	_radio.visible = true
+	if fresh:
+		UiTheme.appear(_radio, UiTheme.MOTION_FAST)
 	_radio_speaker.text = speaker
 	_type_in(text)
 	_radio_opts.visible = options.size() > 0

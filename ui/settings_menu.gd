@@ -34,8 +34,7 @@ func _ready() -> void:
 	_build_lighting()
 	_build_controls()
 	_build_access()
-	_hint = Label.new()
-	_hint.add_theme_color_override("font_color", UiTheme.AMBER)
+	_hint = UiTheme.label("", 15, UiTheme.ACCENT)
 	root.add_child(_hint)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
@@ -72,13 +71,21 @@ func _page(title: String) -> VBoxContainer:
 func _line(parent: Control, text: String, ctrl: Control) -> void:
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 16)
-	var l := Label.new()
-	l.text = text
+	var l := UiTheme.label(text, UiTheme.T_BODY, UiTheme.CREAM)
 	l.custom_minimum_size = Vector2(360, 0)
 	h.add_child(l)
 	ctrl.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN if ctrl is CheckBox else Control.SIZE_EXPAND_FILL
 	h.add_child(ctrl)
 	parent.add_child(h)
+
+## A quiet section heading inside a page: display face and a hairline under it.
+func _heading(parent: Control, text: String) -> void:
+	if parent.get_child_count() > 0:
+		var gap := Control.new()
+		gap.custom_minimum_size = Vector2(0, 8)
+		parent.add_child(gap)
+	parent.add_child(UiTheme.label(text, 22, UiTheme.CREAM, "display"))
+	parent.add_child(UiTheme.rule())
 
 func _register(key: String, ctrl: Control) -> void:
 	controls[key] = ctrl
@@ -90,7 +97,7 @@ func _slider(parent: Control, key: String, text: String, step := 0.05, percent :
 	s.min_value = float(r[0]); s.max_value = float(r[1]); s.step = step
 	s.value = float(Settings.v(key))
 	s.custom_minimum_size = Vector2(260, 24)
-	var val := Label.new()
+	var val := UiTheme.label("", UiTheme.T_BODY, UiTheme.MUTED)
 	val.custom_minimum_size = Vector2(70, 0)
 	val.text = _fmt(float(s.value), percent)
 	s.value_changed.connect(func(x: float):
@@ -122,15 +129,18 @@ func _option(parent: Control, key: String, text: String, items: Array) -> Option
 
 func _check(parent: Control, key: String, text: String) -> CheckBox:
 	var c := CheckBox.new()
-	c.text = "On"
+	c.text = "On" if bool(Settings.v(key)) else "Off"
 	c.button_pressed = bool(Settings.v(key))
-	c.toggled.connect(func(on: bool): Settings.set_v(key, on))
+	c.toggled.connect(func(on: bool):
+		c.text = "On" if on else "Off"
+		Settings.set_v(key, on))
 	_line(parent, text, c)
 	_register(key, c)
 	return c
 
 func _build_graphics() -> void:
 	var p := _page("Graphics")
+	_heading(p, "Display")
 	_option(p, "quality_preset", "Quality preset", ["Low", "Medium", "High", "Steam Deck", "Custom"])
 	controls["quality_preset"].item_selected.disconnect(controls["quality_preset"].item_selected.get_connections()[0]["callable"])
 	controls["quality_preset"].item_selected.connect(func(i: int): Settings.set_preset(i))
@@ -143,15 +153,14 @@ func _build_graphics() -> void:
 	fps.item_selected.connect(func(i: int): Settings.set_v("fps_cap", FPS_CAPS[i]))
 	_line(p, "Frame rate cap", fps)
 	_register("fps_cap", fps)
+	_heading(p, "Quality")
 	_slider(p, "render_scale", "Render scale", 0.05)
 	_option(p, "msaa", "Anti-aliasing (MSAA)", ["Off", "2x", "4x", "8x"])
 	_option(p, "shadow_quality", "Shadow quality", ["Off", "Low", "Medium", "High"])
 	_option(p, "ocean_detail", "Ocean detail", ["Low", "Medium", "High"])
-	var note := Label.new()
 	var method := RenderingServer.get_current_rendering_method()
-	note.text = "Renderer: %s.  Render scale and MSAA apply to Forward+/Mobile; the Compatibility renderer ignores them." % method
+	var note := UiTheme.label("Renderer: %s.  Render scale and MSAA apply to Forward+/Mobile; the Compatibility renderer ignores them." % method, UiTheme.T_CAPTION, UiTheme.MUTED)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	note.add_theme_color_override("font_color", Color("9aa7b0"))
 	p.add_child(note)
 
 func _build_audio() -> void:
@@ -175,16 +184,15 @@ func _build_lighting() -> void:
 
 func _build_controls() -> void:
 	var p := _page("Controls")
+	_heading(p, "Looking")
 	_slider(p, "mouse_sens", "Mouse sensitivity")
 	_slider(p, "bino_sens", "Binocular sensitivity")
 	_slider(p, "pad_sens", "Gamepad look speed")
 	_slider(p, "deadzone", "Stick dead zone")
 	_option(p, "gamepad_input", "Gamepad input", ["Recognised controllers only", "Any device", "Off"])
-	_pad_label = Label.new()
+	_pad_label = UiTheme.label("", UiTheme.T_CAPTION, UiTheme.MUTED)
 	_pad_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_pad_label.custom_minimum_size = Vector2(820, 0)
-	_pad_label.add_theme_font_size_override("font_size", 13)
-	_pad_label.add_theme_color_override("font_color", Color("9aa7b0"))
 	p.add_child(_pad_label)
 	_refresh_pad_label()
 	Settings.controllers_changed.connect(_refresh_pad_label)
@@ -192,18 +200,16 @@ func _build_controls() -> void:
 	_check(p, "toggle_binoculars", "Binoculars: toggle, not hold")
 	_check(p, "toggle_watch", "Pocket watch: toggle, not hold")
 	_check(p, "toggle_hold", "Hold-to-use: tap once instead")
+	_heading(p, "Bindings")
 	var head := HBoxContainer.new()
 	for t in ["Action", "Keyboard and mouse", "Gamepad"]:
-		var l := Label.new()
-		l.text = t
-		l.add_theme_color_override("font_color", UiTheme.AMBER)
+		var l := UiTheme.label(t, UiTheme.T_CAPTION, UiTheme.ACCENT, "ui_bold")
 		l.custom_minimum_size = Vector2(260 if t == "Action" else 240, 0)
 		head.add_child(l)
 	p.add_child(head)
 	for a in Settings.ACTIONS:
 		var row := HBoxContainer.new()
-		var lab := Label.new()
-		lab.text = a[1]
+		var lab := UiTheme.label(a[1], UiTheme.T_BODY, UiTheme.CREAM)
 		lab.custom_minimum_size = Vector2(260, 0)
 		row.add_child(lab)
 		for dev in [Settings.KB, Settings.PAD]:
@@ -227,7 +233,7 @@ func _build_controls() -> void:
 func _build_access() -> void:
 	var p := _page("Accessibility")
 	_check(p, "assist_mode", "Assist readout always on")
-	_check(p, "reduce_motion", "Reduce motion (no head-bob)")
+	_check(p, "reduce_motion", "Reduce motion (fades, slides, head-bob)")
 	_slider(p, "ui_scale", "Interface size")
 	_slider(p, "subtitle_scale", "Subtitle / radio text size")
 
@@ -252,6 +258,7 @@ func _on_setting_changed(key: String) -> void:
 			ob.select(int(val))
 	elif c is CheckBox:
 		(c as CheckBox).set_pressed_no_signal(bool(val))
+		(c as CheckBox).text = "On" if bool(val) else "Off"
 
 func _reset_tab() -> void:
 	var i := tabs.current_tab
@@ -279,7 +286,7 @@ func _refresh_pad_label() -> void:
 		return
 	var pads: Array = Settings.pad_status()
 	if pads.is_empty():
-		_pad_label.text = "No controllers detected."
+		_set_pad_text("No controllers detected.")
 		return
 	var lines: Array = []
 	for pd in pads:
@@ -288,7 +295,11 @@ func _refresh_pad_label() -> void:
 		lines.append("%s (%s)   left %.2f, %.2f   right %.2f, %.2f" % [pd["name"], state,
 			Input.get_joy_axis(id, JOY_AXIS_LEFT_X), Input.get_joy_axis(id, JOY_AXIS_LEFT_Y),
 			Input.get_joy_axis(id, JOY_AXIS_RIGHT_X), Input.get_joy_axis(id, JOY_AXIS_RIGHT_Y)])
-	_pad_label.text = "\n".join(lines)
+	_set_pad_text("\n".join(lines))
+
+func _set_pad_text(t: String) -> void:
+	if _pad_label.text != t:
+		_pad_label.text = t
 
 func _process(delta: float) -> void:
 	if not is_visible_in_tree() or _pad_label == null:

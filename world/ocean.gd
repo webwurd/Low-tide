@@ -11,6 +11,11 @@ const SIZE := 900.0
 ## wave is ~6 m, so High keeps vertices under 4 m apart; Low halves that.
 const DETAIL := [120, 180, 240]
 
+## Speed of the water's motion: 1 in play, 0 freezes the sea (a new player's
+## title screen). The shader reads `flow_time`, which only advances at this rate.
+var time_scale := 1.0
+var _flow_t := 0.0
+
 func _ready() -> void:
 	if ResourceLoader.exists(MAT):
 		material_override = load(MAT).duplicate()
@@ -33,8 +38,10 @@ func set_detail(level: int) -> void:
 	plane.subdivide_depth = n
 	mesh = plane
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	position.y = TideSystem.current_height
+	_flow_t += delta * time_scale
+	(material_override as ShaderMaterial).set_shader_parameter("flow_time", _flow_t)
 
 func set_wave_height(h: float) -> void:
 	(material_override as ShaderMaterial).set_shader_parameter("wave_height", h)
